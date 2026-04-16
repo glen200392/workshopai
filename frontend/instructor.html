@@ -617,14 +617,19 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
       </div>
 
       <div class="field-group">
-        <label class="field-label">Anthropic API Key <span style="color:var(--red)">*必填</span></label>
+        <label class="field-label">AI 對話 Provider <span style="color:var(--red)">*必填</span></label>
+        <select class="field-input" id="llmProvider" onchange="onProviderChange()" style="margin-bottom:6px">
+          <option value="anthropic">Anthropic Claude（sk-ant-...）</option>
+          <option value="groq">Groq — 免費（gsk_...）</option>
+          <option value="gemini">Google Gemini Text（AIza...）</option>
+        </select>
         <div style="display:flex;gap:6px">
           <input class="field-input" type="password" id="claudeKey" placeholder="sk-ant-..."
             style="flex:1" autocomplete="off">
           <button class="top-btn btn-ghost" style="font-size:10px;padding:0 10px;white-space:nowrap"
             onclick="testClaudeKey()">測試</button>
         </div>
-        <div style="font-size:10px;color:var(--text-dim);margin-top:4px">
+        <div id="llmProviderHint" style="font-size:10px;color:var(--text-dim);margin-top:4px">
           用於：AI 對話、角色扮演、想法整理、SVG 概念圖
         </div>
       </div>
@@ -878,8 +883,9 @@ const S = {
   supabaseKey: localStorage.getItem('_sbKey') || '',
 
   // ── AI Key（只在講師端 localStorage，開始工作坊時寫入 Supabase Secrets）──
-  claudeKey: localStorage.getItem('_ck') || '',
-  geminiKey: localStorage.getItem('_gk') || '',
+  claudeKey:   localStorage.getItem('_ck') || '',
+  geminiKey:   localStorage.getItem('_gk') || '',
+  llmProvider: localStorage.getItem('_llmProvider') || 'anthropic',
 
   // ── AI Config（開始工作坊時寫入 sessions.config，供 Edge Function 讀取）──
   aiConfig: {
@@ -982,6 +988,7 @@ async function writeSessionToSupabase() {
         tools: getEnabledTools(),
         memoryStrategy: document.getElementById('memoryStrategy')?.value || 'session',
         // Key 不寫在這裡 — 由 Edge Function 從 Supabase Secrets 讀取
+        provider: S.llmProvider || 'anthropic',
         proxyUrl: `${S.supabaseUrl}/functions/v1/ai-proxy`,
       },
       modules: S.modules,
@@ -1711,23 +1718,71 @@ function updateProxyUrl() {
   }
 }
 
+function onProviderChange() {
+  const provider = document.getElementById('llmProvider').value;
+  const input = document.getElementById('claudeKey');
+  const hint = document.getElementById('llmProviderHint');
+  const placeholders = {
+    anthropic: 'sk-ant-...',
+    groq: 'gsk_...',
+    gemini: 'AIza...',
+  };
+  const hints = {
+    anthropic: '用於：AI 對話、角色扮演、想法整理、SVG 概念圖',
+    groq: '免費 API，速度極快。申請：console.groq.com',
+    gemini: '同一個 Gemini Key 可用於文字對話 + 圖片生成',
+  };
+  input.placeholder = placeholders[provider] || 'API Key...';
+  hint.textContent = hints[provider] || '';
+  localStorage.setItem('_llmProvider', provider);
+}
+
 async function testClaudeKey() {
   const key = document.getElementById('claudeKey').value.trim();
-  if(!key) { showToast('請先輸入 Claude Key'); return; }
+  const provider = document.getElementById('llmProvider').value;
+  if(!key) { showToast('請先輸入 API Key'); return; }
   updateKeyStatus('claude', 'testing');
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'x-api-key':key, 'anthropic-version':'2023-06-01' },
-      body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:10, messages:[{role:'user',content:'hi'}] })
-    });
-    const data = await res.json();
-    if(data.content || data.id) {
+    let ok = false;
+    let errMsg = '未知錯誤';
+
+    if(provider === 'anthropic') {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'x-api-key':key, 'anthropic-version':'2023-06-01' },
+        body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:10, messages:[{role:'user',content:'hi'}] })
+      });
+      const data = await res.json();
+      ok = !!(data.content || data.id);
+      errMsg = data.error?.message || errMsg;
+
+    } else if(provider === 'groq') {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + key },
+        body: JSON.stringify({ model:'llama-3.3-70b-versatile', max_tokens:10, messages:[{role:'user',content:'hi'}] })
+      });
+      const data = await res.json();
+      ok = !!(data.choices?.length);
+      errMsg = data.error?.message || errMsg;
+
+    } else if(provider === 'gemini') {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+        { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ contents:[{parts:[{text:'hi'}]}] }) }
+      );
+      const data = await res.json();
+      ok = !!(data.candidates?.length);
+      errMsg = data.error?.message || errMsg;
+    }
+
+    if(ok) {
       updateKeyStatus('claude', 'ok');
-      showToast('✓ Claude Key 有效');
+      showToast('✓ Key 有效（' + provider + '）');
     } else {
       updateKeyStatus('claude', 'error');
-      showToast('✗ Claude Key 無效：' + (data.error?.message || '未知錯誤'));
+      showToast('✗ Key 無效：' + errMsg);
     }
   } catch(e) {
     updateKeyStatus('claude', 'error');
@@ -1769,7 +1824,12 @@ async function testGeminiKey() {
 function saveAgentConfig() {
   const ck = document.getElementById('claudeKey').value.trim();
   const gk = document.getElementById('geminiKey').value.trim();
+  const provider = document.getElementById('llmProvider').value;
 
+  if(provider) {
+    S.llmProvider = provider;
+    localStorage.setItem('_llmProvider', provider);
+  }
   if(ck) {
     S.claudeKey = ck;
     localStorage.setItem('_ck', ck);

@@ -24,6 +24,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // ── 從環境變數（Supabase Secrets）讀取，不硬編碼 ──
 const ANTHROPIC_KEY = Deno.env.get('ANTHROPIC_API_KEY') ?? ''
 const GEMINI_KEY    = Deno.env.get('GEMINI_API_KEY')    ?? ''
+const GROQ_KEY      = Deno.env.get('GROQ_API_KEY')      ?? ''
 const SUPABASE_URL  = Deno.env.get('SUPABASE_URL')      ?? ''
 const SUPABASE_KEY  = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
@@ -123,14 +124,13 @@ serve(async (req: Request) => {
   const claudeModel  = (aiConfig.claudeModel as string)  || 'claude-sonnet-4-20250514'
   const geminiModel  = (aiConfig.geminiModel as string)  || 'gemini-2.5-flash-image'
   const globalPrompt = (aiConfig.globalPrompt as string) || ''
+  const provider     = (aiConfig.provider as string)     || 'anthropic'
 
   // ════════════════════════════════
-  // TYPE: chat（Claude 對話）
+  // TYPE: chat（多 provider 路由）
   // ════════════════════════════════
   if(type === 'chat') {
-    if(!ANTHROPIC_KEY) return err('Claude API key not configured', 503)
-
-    const sys = (systemPrompt as string) || globalPrompt
+    const sys  = (systemPrompt as string) || globalPrompt
     const msgs = (messages as Array<{ role: string; content: string }>) || []
 
     // 記錄學員訊息
@@ -140,43 +140,73 @@ serve(async (req: Request) => {
     }
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': ANTHROPIC_KEY,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: claudeModel,
-          max_tokens: 800,
-          system: sys,
-          messages: msgs,
+      let text = ''
+      let usedModel = claudeModel
+
+      // ── Groq（OpenAI-compatible）──
+      if(provider === 'groq') {
+        if(!GROQ_KEY) return err('Groq API key not configured. Set GROQ_API_KEY in Supabase Secrets.', 503)
+        const groqModel = 'llama-3.3-70b-versatile'
+        usedModel = groqModel
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
+          body: JSON.stringify({
+            model: groqModel, max_tokens: 800,
+            messages: sys ? [{ role: 'system', content: sys }, ...msgs] : msgs,
+          })
         })
-      })
+        const data = await res.json() as Record<string, unknown>
+        if(!res.ok) return err((data.error as Record<string, unknown>)?.message as string || 'Groq error', res.status)
+        text = ((data.choices as Array<Record<string, unknown>>)?.[0]?.message as Record<string, unknown>)?.content as string || ''
 
-      const data = await res.json() as Record<string, unknown>
+      // ── Gemini Text ──
+      } else if(provider === 'gemini') {
+        if(!GEMINI_KEY) return err('Gemini API key not configured. Set GEMINI_API_KEY in Supabase Secrets.', 503)
+        const geminiTextModel = 'gemini-2.0-flash'
+        usedModel = geminiTextModel
+        const contents = sys
+          ? [{ role: 'user', parts: [{ text: sys + '\n\n---\n' + (msgs[0]?.content || '') }] },
+             ...msgs.slice(1).map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }))]
+          : msgs.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }))
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${geminiTextModel}:generateContent?key=${GEMINI_KEY}`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents }) }
+        )
+        const data = await res.json() as Record<string, unknown>
+        if(!res.ok) return err((data.error as Record<string, unknown>)?.message as string || 'Gemini error', res.status)
+        text = (((data.candidates as Array<Record<string, unknown>>)?.[0]?.content as Record<string, unknown>)?.parts as Array<Record<string, unknown>>)?.[0]?.text as string || ''
 
-      if(!res.ok) {
-        const apiErr = (data.error as Record<string, unknown>)?.message || 'Claude API error'
-        return err(apiErr as string, res.status)
+      // ── Anthropic（預設）──
+      } else {
+        if(!ANTHROPIC_KEY) return err('Anthropic API key not configured. Set ANTHROPIC_API_KEY in Supabase Secrets.', 503)
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+          body: JSON.stringify({ model: claudeModel, max_tokens: 800, system: sys, messages: msgs })
+        })
+        const data = await res.json() as Record<string, unknown>
+        if(!res.ok) return err((data.error as Record<string, unknown>)?.message as string || 'Claude API error', res.status)
+        text = ((data.content as Array<Record<string, unknown>>)?.[0]?.text as string) || ''
+        if(text && sessionId) {
+          await logMessage(supabase, sessionId as string, participantId as string, 'assistant', text, 'text', {
+            model: usedModel,
+            input_tokens:  (data.usage as Record<string, unknown>)?.input_tokens,
+            output_tokens: (data.usage as Record<string, unknown>)?.output_tokens,
+          })
+        }
+        return ok({ text })
       }
 
-      const text = ((data.content as Array<Record<string, unknown>>)?.[0]?.text as string) || ''
-
-      // 記錄 AI 回應
+      // 非 Anthropic provider 的記錄
       if(text && sessionId) {
-        await logMessage(supabase, sessionId as string, participantId as string, 'assistant', text, 'text', {
-          model: claudeModel,
-          input_tokens:  (data.usage as Record<string, unknown>)?.input_tokens,
-          output_tokens: (data.usage as Record<string, unknown>)?.output_tokens,
-        })
+        await logMessage(supabase, sessionId as string, participantId as string, 'assistant', text, 'text', { model: usedModel })
       }
-
       return ok({ text })
 
     } catch(e) {
-      console.error('Claude error:', e)
+      console.error('chat error:', e)
       return err('AI service unavailable', 503)
     }
   }
