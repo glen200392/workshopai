@@ -1603,7 +1603,9 @@ function _doInstructorSubscribe(sb) {
         addLog('checkin', `${p.display_name} 已報到（${(checkin.picks||[]).join('、')}）`, 'participant');
       }
     })
-    .subscribe();
+    .subscribe(status => {
+      if(status === 'CHANNEL_ERROR') addLog('realtime', '學員報到訂閱失敗，請重新整理頁面', 'error');
+    });
 
   // ② 學員新訊息
   sb.channel('instructor-conversations:' + S.sessionId)
@@ -1626,7 +1628,9 @@ function _doInstructorSubscribe(sb) {
         }
       }
     })
-    .subscribe();
+    .subscribe(status => {
+      if(status === 'CHANNEL_ERROR') addLog('realtime', '對話訂閱失敗，學員訊息將無法即時更新', 'error');
+    });
 
   addLog('realtime', 'Supabase Realtime 已訂閱（學員報到 + 對話）', 'system');
 }

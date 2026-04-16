@@ -1106,7 +1106,7 @@ async function joinSession() {
 
   try {
     const res = await fetch(
-      `${CONFIG.supabaseUrl}/rest/v1/sessions?join_code=eq.${code}&status=eq.active&select=id,config`,
+      `${CONFIG.supabaseUrl}/rest/v1/sessions?join_code=eq.${code}&status=in.(active,waiting)&select=id,config`,
       { headers: { 'apikey': CONFIG.supabaseKey, 'Authorization': `Bearer ${CONFIG.supabaseKey}` }}
     );
     const data = await res.json();
@@ -1764,7 +1764,9 @@ function _doSubscribe(sb) {
         _handleModuleChange(newModuleId);
       }
     })
-    .subscribe();
+    .subscribe(status => {
+      if(status === 'CHANNEL_ERROR') console.error('Realtime 訂閱失敗，模組推送將無法即時接收');
+    });
 }
 
 function _handleModuleChange(moduleId) {
