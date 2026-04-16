@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>WorkshopAI 學員</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f0e8;
+  --surface: #faf7f2;
+  --surface2: #ede8de;
+  --border: #d8d0c0;
+  --accent: #2d5a3d;
+  --accent-light: #4a7c5f;
+  --accent-glow: rgba(45,90,61,0.15);
+  --amber: #c17f24;
+  --amber-light: #e8a83a;
+  --rust: #8b3a2a;
+  --text: #1a1612;
+  --text-mid: #4a4035;
+  --text-dim: #8a7d6a;
+  --ai-bg: #1a2820;
+  --ai-surface: #243320;
+  --ai-accent: #5aad78;
+  --ai-text: #d8eedf;
+  --ai-dim: #7aaa88;
+  --serif: 'Instrument Serif', Georgia, serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --topbar: 56px;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+html {
+  height: 100%; overflow: hidden;
+  -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+}
+
+body {
+  height: 100%; overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.5;
+  padding-top: var(--sat);
+  padding-bottom: var(--sab);
+  padding-left: var(--sal);
+  padding-right: var(--sar);
+  overscroll-behavior: none;
+}
+
+/* ── SCREENS ── */
+.screen {
+  position: fixed;
+  inset: 0;
+  padding-top: var(--sat);
+  padding-bottom: var(--sab);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  z-index: 10;
+}
+.screen.hidden { opacity: 0; pointer-events: none; transform: translateY(12px); }
+
+/* ─────────────────────────────
+   SCREEN 1: JOIN / ENTRY
+───────────────────────────── */
+#screen-join {
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  background: var(--bg);
+  padding: 24px 28px;
+}
+
+.join-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.join-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.35;
+}
+.blob-1 { width:260px; height:260px; background:var(--accent); top:-40px; right:-60px; }
+.blob-2 { width:200px; height:200px; background:var(--amber); bottom:60px; left:-40px; }
+.blob-3 { width:160px; height:160px; background:var(--rust); bottom:200px; right:-20px; opacity:0.2; }
+
+.join-content {
+  position: relative; z-index:1;
+  display: flex; flex-direction: column; align-items: center;
+  width: 100%; max-width: 340px; gap: 0;
+}
+
+.join-logo {
+  font-family: var(--serif);
+  font-size: clamp(36px, 11vw, 52px);
+  color: var(--text);
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+  text-align: center;
+}
+.join-logo em { color: var(--accent); font-style: italic; }
+
+.join-tagline {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 40px;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+.join-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  align-self: flex-start;
+  margin-bottom: 8px;
+}
+
+.join-code-input {
+  width: 100%;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  font-family: var(--sans);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  color: var(--text);
+  text-align: center;
+  text-transform: uppercase;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  margin-bottom: 14px;
+}
+.join-code-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-glow);
+}
+.join-code-input::placeholder { color: var(--border); letter-spacing: 0.1em; font-size: 22px; }
+
+.join-btn {
+  width: 100%;
+  min-height: 54px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--sans);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.02em;
+  margin-bottom: 20px;
+}
+.join-btn:active { transform: scale(0.97); }
+.join-btn:disabled { opacity: 0.4; }
+
+.join-divider {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; margin-bottom: 20px;
+}
+.join-divider::before, .join-divider::after {
+  content:''; flex:1; height:1px; background:var(--border);
+}
+.join-divider span { font-size: 12px; color: var(--text-dim); }
+
+.join-demo-btn {
+  width: 100%;
+  min-height: 48px;
+  background: transparent;
+  color: var(--text-mid);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--sans);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.join-demo-btn:active { background: var(--surface2); }
+
+/* ─────────────────────────────
+   SCREEN 2: CHECK-IN (3步驟)
+───────────────────────────── */
+#screen-checkin {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.checkin-topbar {
+  height: var(--topbar);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  position: sticky; top: 0; z-index: 20;
+}
+
+.checkin-progress-bar {
+  height: 3px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.checkin-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.4s cubic-bezier(0.34,1.2,0.64,1);
+}
+
+.checkin-scroll-body {
+  padding: 24px 20px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.step-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-bottom: 4px;
+}
+
+.step-question {
+  font-family: var(--serif);
+  font-size: clamp(22px, 6vw, 28px);
+  line-height: 1.25;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+
+/* Name input */
+.name-field {
+  width: 100%;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  font-family: var(--sans);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.name-field:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-glow);
+}
+.name-field::placeholder { color: var(--border); }
+
+/* Card grid */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(90px,27vw,115px),1fr));
+  gap: clamp(8px, 2.5vw, 12px);
+}
+
+.dim-header {
+  grid-column: 1/-1;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 8px 0 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+.dim-header:first-child { border-top: none; margin-top: 0; }
+
+.word-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: clamp(10px,3vw,14px) clamp(6px,1.8vw,10px);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.18s;
+  user-select: none;
+  position: relative;
+  min-height: 44px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px;
+}
+.word-card:active { transform: scale(0.94); }
+.word-card.selected {
+  border-color: var(--accent);
+  background: rgba(45,90,61,0.07);
+}
+.word-card .card-check {
+  position: absolute; top: 5px; right: 5px;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  display: none; align-items: center; justify-content: center;
+}
+.word-card.selected .card-check { display: flex; }
+.card-emoji { font-size: clamp(20px,6vw,26px); line-height: 1; }
+.card-word {
+  font-size: clamp(11px,3.2vw,13px);
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.2;
+  word-break: keep-all;
+}
+.card-sub {
+  font-size: clamp(9px,2.3vw,10px);
+  color: var(--text-dim);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Mood row */
+.mood-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: clamp(5px,1.5vw,8px);
+}
+.mood-btn {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  min-height: 60px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.18s;
+  user-select: none;
+}
+.mood-btn:active { transform: scale(0.92); }
+.mood-btn.selected { border-color: var(--amber); background: rgba(193,127,36,0.08); }
+.mood-emoji { font-size: clamp(18px,5.5vw,22px); line-height: 1; }
+.mood-label { font-size: clamp(9px,2.5vw,11px); color: var(--text-dim); font-weight: 500; }
+.mood-btn.selected .mood-label { color: var(--amber); }
+
+/* Step nav */
+.step-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  padding: 12px 20px;
+  padding-bottom: calc(12px + var(--sab));
+  background: linear-gradient(to top, var(--bg) 70%, transparent);
+  display: flex; gap: 10px;
+  z-index: 30;
+}
+.nav-back {
+  width: 54px; min-height: 52px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius); font-size: 18px;
+  cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+}
+.nav-next {
+  flex: 1; min-height: 52px;
+  background: var(--accent); color: #fff;
+  border: none; border-radius: var(--radius);
+  font-family: var(--sans); font-size: 16px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.nav-next:active { transform: scale(0.97); }
+.nav-next:disabled { opacity: 0.35; }
+
+/* ─────────────────────────────
+   SCREEN 3: AI 助理主畫面
+───────────────────────────── */
+#screen-session {
+  background: var(--ai-bg);
+  color: var(--ai-text);
+}
+
+/* Session topbar */
+.session-bar {
+  height: var(--topbar);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px;
+  background: var(--ai-surface);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+.session-companion {
+  display: flex; align-items: center; gap: 10px;
+}
+.companion-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--ai-accent), #2d7a4a);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  position: relative;
+  flex-shrink: 0;
+}
+.companion-status {
+  position: absolute; bottom: 1px; right: 1px;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--ai-accent);
+  border: 2px solid var(--ai-surface);
+  animation: status-pulse 2.5s infinite;
+}
+@keyframes status-pulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.companion-info { display: flex; flex-direction: column; gap: 1px; }
+.companion-name { font-size: 14px; font-weight: 600; color: var(--ai-text); }
+.companion-state { font-size: 11px; color: var(--ai-dim); }
+
+.session-module-badge {
+  background: rgba(90,173,120,0.15);
+  border: 1px solid rgba(90,173,120,0.3);
+  color: var(--ai-accent);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Chat area */
+.chat-area {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scrollbar-width: none;
+}
+.chat-area::-webkit-scrollbar { display: none; }
+
+/* Messages */
+.msg-row {
+  display: flex;
+  gap: 8px;
+  animation: msg-in 0.28s cubic-bezier(0.34,1.2,0.64,1) both;
+}
+@keyframes msg-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+.msg-row.user { flex-direction: row-reverse; }
+
+.msg-avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  margin-top: 2px;
+}
+.msg-row.ai .msg-avatar {
+  background: linear-gradient(135deg, var(--ai-accent), #2d7a4a);
+}
+.msg-row.user .msg-avatar {
+  background: rgba(255,255,255,0.1);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ai-dim);
+}
+
+.msg-bubble {
+  max-width: 78%;
+  padding: clamp(10px,3vw,13px) clamp(12px,3.5vw,16px);
+  border-radius: 18px;
+  font-size: clamp(14px,3.8vw,16px);
+  line-height: 1.55;
+}
+.msg-row.ai .msg-bubble {
+  background: var(--ai-surface);
+  border: 1px solid rgba(255,255,255,0.07);
+  color: var(--ai-text);
+  border-radius: 4px 18px 18px 18px;
+}
+.msg-row.user .msg-bubble {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 18px 4px 18px 18px;
+}
+
+/* Artifact card (image / mindmap output) */
+.artifact-card {
+  width: 100%;
+  background: var(--ai-surface);
+  border: 1px solid rgba(90,173,120,0.25);
+  border-radius: var(--radius);
+  overflow: hidden;
+  animation: msg-in 0.35s cubic-bezier(0.34,1.2,0.64,1) both;
+}
+.artifact-header {
+  padding: 10px 14px;
+  display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.artifact-type-badge {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ai-accent);
+  background: rgba(90,173,120,0.12);
+  padding: 3px 8px; border-radius: 10px;
+}
+.artifact-label { font-size: 12px; color: var(--ai-dim); flex: 1; }
+.artifact-img {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  display: block;
+  background: var(--ai-bg);
+}
+.artifact-img-placeholder {
+  width: 100%; aspect-ratio: 4/3;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px;
+  background: var(--ai-bg);
+  color: var(--ai-dim);
+  font-size: 13px;
+}
+.artifact-text-body {
+  padding: 14px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--ai-text);
+  white-space: pre-wrap;
+}
+
+/* Module task card (pushed by instructor) */
+.task-card {
+  background: linear-gradient(135deg, rgba(45,90,61,0.3), rgba(26,40,32,0.5));
+  border: 1px solid rgba(90,173,120,0.3);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  animation: msg-in 0.35s ease both;
+}
+.task-card-label {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ai-accent); margin-bottom: 6px;
+}
+.task-card-title {
+  font-family: var(--serif);
+  font-size: clamp(17px,5vw,20px);
+  color: var(--ai-text);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+.task-card-desc { font-size: 13px; color: var(--ai-dim); line-height: 1.5; }
+
+/* AI thinking */
+.ai-thinking {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: var(--ai-surface);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 4px 18px 18px 18px;
+  width: fit-content;
+  color: var(--ai-dim);
+  font-size: 13px;
+}
+.thinking-dots { display: flex; gap: 4px; }
+.thinking-dots span {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--ai-accent);
+  animation: think 1.2s infinite;
+  opacity: 0.4;
+}
+.thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes think {
+  0%,80%,100% { opacity:0.3; transform:scale(0.7); }
+  40% { opacity:1; transform:scale(1); }
+}
+
+/* Input bar */
+.input-bar {
+  flex-shrink: 0;
+  background: var(--ai-surface);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: clamp(10px,3vw,14px) 14px;
+  padding-bottom: calc(clamp(10px,3vw,14px) + var(--sab));
+}
+
+.input-actions {
+  display: flex; gap: 8px; margin-bottom: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.input-actions::-webkit-scrollbar { display: none; }
+
+.action-chip {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ai-dim);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  min-height: 34px;
+}
+.action-chip:active { background: rgba(90,173,120,0.2); color: var(--ai-accent); border-color: rgba(90,173,120,0.4); }
+.action-chip.active { background: rgba(90,173,120,0.2); color: var(--ai-accent); border-color: rgba(90,173,120,0.4); }
+
+.input-row {
+  display: flex; gap: 8px; align-items: flex-end;
+}
+
+.chat-textarea {
+  flex: 1;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 22px;
+  padding: 12px 16px;
+  color: var(--ai-text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.4;
+  resize: none;
+  max-height: 120px;
+  min-height: 44px;
+  overflow-y: auto;
+  transition: border-color 0.2s;
+  -webkit-text-size-adjust: 100%;
+}
+.chat-textarea:focus { outline: none; border-color: rgba(90,173,120,0.5); }
+.chat-textarea::placeholder { color: rgba(122,170,136,0.5); }
+
+.send-btn {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.send-btn:active { transform: scale(0.9); }
+.send-btn:disabled { opacity: 0.3; }
+
+/* ── TUTORIAL OVERLAY ── */
+.tutorial-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10,20,14,0.82);
+  backdrop-filter: blur(3px);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  transition: opacity 0.35s ease;
+  pointer-events: auto;
+}
+.tutorial-overlay.dismissed { opacity: 0; pointer-events: none; }
+
+.tutorial-sheet {
+  background: var(--ai-surface);
+  border: 1px solid rgba(90,173,120,0.25);
+  border-radius: 24px 24px 0 0;
+  padding: 20px 20px calc(20px + var(--sab));
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 88dvh;
+  overflow-y: auto;
+  transform: translateY(0);
+  transition: transform 0.4s cubic-bezier(0.34,1.1,0.64,1);
+}
+.tutorial-overlay.dismissed .tutorial-sheet {
+  transform: translateY(100%);
+}
+
+.tutorial-handle {
+  width: 36px; height: 4px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 2px;
+  margin: 0 auto 18px;
+}
+
+.tutorial-title {
+  font-family: var(--serif);
+  font-size: 22px;
+  color: var(--ai-text);
+  margin-bottom: 4px;
+  line-height: 1.25;
+}
+.tutorial-sub {
+  font-size: 13px;
+  color: var(--ai-dim);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.tutorial-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.tutorial-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  transition: border-color 0.2s;
+}
+.tutorial-step-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: rgba(90,173,120,0.15);
+  border: 1px solid rgba(90,173,120,0.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.tutorial-step-body { flex: 1; min-width: 0; }
+.tutorial-step-name {
+  font-size: 14px; font-weight: 600;
+  color: var(--ai-text);
+  margin-bottom: 3px;
+}
+.tutorial-step-desc {
+  font-size: 12px;
+  color: var(--ai-dim);
+  line-height: 1.5;
+}
+.tutorial-step-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ai-accent);
+  background: rgba(90,173,120,0.12);
+  padding: 2px 7px;
+  border-radius: 8px;
+  margin-top: 4px;
+}
+
+.tutorial-close-btn {
+  width: 100%;
+  min-height: 50px;
+  background: var(--ai-accent);
+  color: var(--ai-bg);
+  border: none;
+  border-radius: 14px;
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.01em;
+}
+.tutorial-close-btn:active { transform: scale(0.97); }
+
+/* ── TUTORIAL MINI BUTTON (collapsed state) ── */
+.tutorial-fab {
+  position: absolute;
+  bottom: calc(var(--sab) + 140px);
+  right: 16px;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: rgba(90,173,120,0.2);
+  border: 1px solid rgba(90,173,120,0.4);
+  color: var(--ai-accent);
+  font-size: 16px;
+  display: none;
+  align-items: center; justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  transition: all 0.2s;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+.tutorial-fab.visible { display: flex; }
+.tutorial-fab:active { transform: scale(0.9); }
+
+/* ── SVG ARTIFACT ── */
+.artifact-svg-body {
+  padding: 12px;
+  background: var(--ai-bg);
+  overflow-x: auto;
+}
+.artifact-svg-body svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  max-height: 320px;
+}
+.artifact-generating {
+  width: 100%; aspect-ratio: 3/2;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px;
+  background: var(--ai-bg);
+  color: var(--ai-dim);
+  font-size: 13px;
+}
+.gen-spinner {
+  width: 28px; height: 28px;
+  border: 2px solid rgba(90,173,120,0.2);
+  border-top-color: var(--ai-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════════════════════
+     SCREEN 1: JOIN
+═══════════════════════════════ -->
+<div class="screen" id="screen-join">
+  <div class="join-bg">
+    <div class="join-blob blob-1"></div>
+    <div class="join-blob blob-2"></div>
+    <div class="join-blob blob-3"></div>
+  </div>
+  <div class="join-content">
+    <div class="join-logo">Workshop<em>AI</em></div>
+    <div class="join-tagline">你的 AI 學習夥伴，從今天開始</div>
+    <div class="join-label">輸入課程代碼</div>
+    <input class="join-code-input" id="joinCode" maxlength="6"
+      placeholder="ABC123" autocomplete="off" autocapitalize="characters"
+      oninput="this.value=this.value.toUpperCase()">
+    <button class="join-btn" onclick="joinSession()" id="joinBtn">進入工作坊</button>
+    <div class="join-divider"><span>或</span></div>
+    <button class="join-demo-btn" onclick="joinDemo()">使用示範模式體驗</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     SCREEN 2: CHECK-IN
+═══════════════════════════════ -->
+<div class="screen hidden" id="screen-checkin">
+  <div class="checkin-topbar">
+    <span style="font-family:var(--serif);font-size:18px;color:var(--text)">報到</span>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span id="stepLabel" style="font-size:12px;color:var(--text-dim)">步驟 1／3</span>
+    </div>
+  </div>
+  <div class="checkin-progress-bar">
+    <div class="checkin-progress-fill" id="progressFill" style="width:33%"></div>
+  </div>
+
+  <div class="checkin-scroll-body" id="checkinBody">
+    <!-- Steps rendered by JS -->
+  </div>
+
+  <div class="step-nav">
+    <button class="nav-back" id="navBack" onclick="prevStep()">←</button>
+    <button class="nav-next" id="navNext" onclick="nextStep()">繼續</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════
+     SCREEN 3: SESSION (AI助理)
+═══════════════════════════════ -->
+<div class="screen hidden" id="screen-session">
+
+  <!-- TUTORIAL OVERLAY (shown on first entry, dismissed by user) -->
+  <div class="tutorial-overlay" id="tutorialOverlay">
+    <div class="tutorial-sheet" id="tutorialSheet">
+      <div class="tutorial-handle"></div>
+      <div class="tutorial-title">你的 AI 學習夥伴 ✦</div>
+      <div class="tutorial-sub">根據你剛才的選擇，AI 夥伴已經了解你的背景。以下是你可以用它做的事：</div>
+
+      <div class="tutorial-steps">
+        <div class="tutorial-step">
+          <div class="tutorial-step-icon">💬</div>
+          <div class="tutorial-step-body">
+            <div class="tutorial-step-name">自由對話</div>
+            <div class="tutorial-step-desc">直接在下方輸入框打字，AI 會根據你的字卡選擇給出個人化的回應與提問。</div>
+            <span class="tutorial-step-tag">隨時可用</span>
+          </div>
+        </div>
+        <div class="tutorial-step">
+          <div class="tutorial-step-icon">🎨</div>
+          <div class="tutorial-step-body">
+            <div class="tutorial-step-name">視覺化你的想法</div>
+            <div class="tutorial-step-desc">點「🎨 視覺化」或說「幫我畫出來」，AI 會生成概念圖或心智圖，讓想法變得清晰可見。</div>
+            <span class="tutorial-step-tag">立即試試</span>
+          </div>
+        </div>
+        <div class="tutorial-step">
+          <div class="tutorial-step-icon">⚡</div>
+          <div class="tutorial-step-body">
+            <div class="tutorial-step-name">角色扮演練習</div>
+            <div class="tutorial-step-desc">點「⚡ 挑戰我」，AI 會扮演你字卡對應的阻力角色，讓你練習真實對話情境。</div>
+            <span class="tutorial-step-tag">根據你的字卡個人化</span>
+          </div>
+        </div>
+        <div class="tutorial-step">
+          <div class="tutorial-step-icon">📋</div>
+          <div class="tutorial-step-body">
+            <div class="tutorial-step-name">整理 & 反思</div>
+            <div class="tutorial-step-desc">「📋 幫我整理」可隨時生成你這段對話的重點摘要；「🔍 深度反思」讓 AI 給你一個深化的追問。</div>
+            <span class="tutorial-step-tag">任何時間點都有效</span>
+          </div>
+        </div>
+        <div class="tutorial-step">
+          <div class="tutorial-step-icon">🎯</div>
+          <div class="tutorial-step-body">
+            <div class="tutorial-step-name">講師推送的任務</div>
+            <div class="tutorial-step-desc">當講師切換活動模組時，這裡會自動出現一張任務卡，引導你進行當前活動。</div>
+            <span class="tutorial-step-tag">自動顯示</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="tutorial-close-btn" onclick="dismissTutorial()">
+        了解了，開始吧 →
+      </button>
+    </div>
+  </div>
+
+  <!-- FAB: re-open tutorial -->
+  <div class="tutorial-fab" id="tutorialFab" onclick="reopenTutorial()" title="查看使用說明">?</div>
+
+  <div class="session-bar">
+    <div class="session-companion">
+      <div class="companion-avatar">
+        🤖<div class="companion-status"></div>
+      </div>
+      <div class="companion-info">
+        <div class="companion-name" id="companionName">AI 學習夥伴</div>
+        <div class="companion-state" id="companionState">就緒</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="session-module-badge" id="moduleBadge">報到完成</div>
+    </div>
+  </div>
+
+  <div class="chat-area" id="chatArea"></div>
+
+  <div class="input-bar">
+    <div class="input-actions" id="inputActions">
+      <div class="action-chip" onclick="triggerAction('discuss')">💬 討論</div>
+      <div class="action-chip" onclick="triggerAction('visualize')">🎨 視覺化</div>
+      <div class="action-chip" onclick="triggerAction('challenge')">⚡ 挑戰我</div>
+      <div class="action-chip" onclick="triggerAction('summarize')">📋 幫我整理</div>
+      <div class="action-chip" onclick="triggerAction('reflect')">🔍 深度反思</div>
+    </div>
+    <div class="input-row">
+      <textarea class="chat-textarea" id="chatInput"
+        placeholder="和你的 AI 夥伴說話..."
+        rows="1"
+        onkeydown="handleKey(event)"
+        oninput="autoResize(this)"></textarea>
+      <button class="send-btn" onclick="sendMessage()" id="sendBtn">↑</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// ══════════════════════════════════════════
+// CONFIG — 由講師端 session 注入，學員端不持有任何 key
+// ══════════════════════════════════════════
+const CONFIG = {
+  // 後端 proxy（Supabase Edge Function）
+  // 學員端只送 sessionId，key 由後端持有
+  proxyUrl:     'https://akubvdnrbghxcujdfhzk.supabase.co/functions/v1/ai-proxy',
+  supabaseUrl:  'https://akubvdnrbghxcujdfhzk.supabase.co',
+  supabaseKey:  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFrdWJ2ZG5yYmdoeGN1amRmaHprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MzQ3MzQsImV4cCI6MjA4NjExMDczNH0.uOCt7uh-9R_j22LiG0tF-Hupt6dXtOM-P-y9d4MZQCY',
+
+  // 示範模式：無後端時使用
+  demoMode: false,
+
+  // 模型選擇（由講師端 session config 覆蓋）
+  claudeModel:  'claude-sonnet-4-20250514',
+  geminiModel:  'gemini-2.5-flash-image',
+};
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+const S = {
+  sessionId:     null,
+  joinCode:      '',
+  participantId: null,
+  name:          '',
+  picks:         [],
+  mood:          '',
+  memory:        {},
+  checkinStep:   1,
+  messages:      [],      // {role, content, type, url}
+  activeModule:  null,
+  isThinking:    false,
+  sessionConfig: {},      // 由講師端 session 注入：ai_config, cards, welcome...
+  cards: [
+    { emoji:'🔭', word:'觀望中',   sub:'先看看再說',        dim:'A', hint:'催促轉型的主管' },
+    { emoji:'⚡', word:'已在用了', sub:'走在大家前面',       dim:'A', hint:'質疑效果的同事' },
+    { emoji:'⚖️', word:'半信半疑', sub:'需要更多說服',       dim:'A', hint:'過度樂觀的顧問' },
+    { emoji:'🌊', word:'被推著走', sub:'還沒準備好',         dim:'A', hint:'不情願的同事' },
+    { emoji:'📄', word:'文件海',   sub:'表單永遠填不完',     dim:'B', hint:'要求標準化的稽核' },
+    { emoji:'💬', word:'人心難測', sub:'溝通協調最燒腦',     dim:'B', hint:'情緒激動的員工' },
+    { emoji:'📊', word:'數字壓力', sub:'成本效益要說清楚',   dim:'B', hint:'質疑ROI的財務主管' },
+    { emoji:'🏛️', word:'規則叢林', sub:'合規讓我頭很大',     dim:'B', hint:'抗拒新系統的法務' },
+    { emoji:'🔓', word:'解放重複', sub:'把時間留給重要的事', dim:'C', hint:'害怕被取代的同事' },
+    { emoji:'🍚', word:'飯碗問題', sub:'說出口需要勇氣',     dim:'C', hint:'樂觀不切實際的主管' },
+    { emoji:'✨', word:'品質提升', sub:'做更好的決策',       dim:'C', hint:'習慣舊方法的前輩' },
+    { emoji:'❓', word:'誰來負責', sub:'AI出錯怎麼算',       dim:'C', hint:'強調風控的法遵主管' },
+  ],
+  moods: [
+    { emoji:'🔥', label:'滿血' },
+    { emoji:'💡', label:'好奇' },
+    { emoji:'🤔', label:'思考中' },
+    { emoji:'😴', label:'需要咖啡' },
+    { emoji:'😬', label:'緊張期待' },
+  ],
+};
+
+// ══════════════════════════════════════════
+// SCREEN NAVIGATION
+// ══════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  // scroll to top
+  const body = document.getElementById(id);
+  if(body) body.scrollTop = 0;
+}
+
+// ══════════════════════════════════════════
+// JOIN
+// ══════════════════════════════════════════
+async function joinSession() {
+  const code = document.getElementById('joinCode').value.trim().toUpperCase();
+  if(code.length < 4) { showToast('請輸入課程代碼'); return; }
+
+  const btn = document.getElementById('joinBtn');
+  btn.disabled = true;
+  btn.textContent = '驗證中...';
+
+  // 恢復上次的 session（刷新頁面後保持身份）
+  const savedSession = localStorage.getItem('_sid_' + code);
+  const savedParticipant = localStorage.getItem('_pid_' + code);
+
+  if(!CONFIG.supabaseUrl || CONFIG.demoMode) {
+    // Demo 模式：不查資料庫
+    S.joinCode = code;
+    S.sessionId = 'demo-' + code;
+    if(savedParticipant) S.participantId = savedParticipant;
+    btn.disabled = false;
+    btn.textContent = '進入工作坊';
+    renderCheckinStep(1);
+    showScreen('screen-checkin');
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      `${CONFIG.supabaseUrl}/rest/v1/sessions?join_code=eq.${code}&status=eq.active&select=id,config`,
+      { headers: { 'apikey': CONFIG.supabaseKey, 'Authorization': `Bearer ${CONFIG.supabaseKey}` }}
+    );
+    const data = await res.json();
+
+    if(!Array.isArray(data) || !data.length) {
+      showToast('找不到此代碼，請確認後再試');
+      btn.disabled = false;
+      btn.textContent = '進入工作坊';
+      return;
+    }
+
+    const session = data[0];
+    S.sessionId    = session.id;
+    S.joinCode     = code;
+    S.sessionConfig = session.config || {};
+
+    // 從 session config 注入 proxy URL
+    const proxyUrl = session.config?.ai_config?.proxyUrl || '';
+    if(proxyUrl) {
+      CONFIG.proxyUrl  = proxyUrl;
+      CONFIG.demoMode  = false;
+    }
+
+    // 若已有上次的 participantId，嘗試恢復（避免重複報到）
+    if(savedSession === S.sessionId && savedParticipant) {
+      S.participantId = savedParticipant;
+      initSession();
+      showScreen('screen-session');
+      return;
+    }
+
+    renderCheckinStep(1);
+    showScreen('screen-checkin');
+
+  } catch(e) {
+    showToast('連線失敗，進入示範模式');
+    S.joinCode = code;
+    S.sessionId = 'demo-' + code;
+    CONFIG.demoMode = true;
+    renderCheckinStep(1);
+    showScreen('screen-checkin');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '進入工作坊';
+  }
+}
+
+function joinDemo() {
+  S.joinCode = 'DEMO01';
+  S.sessionId = 'demo-session';
+  renderCheckinStep(1);
+  showScreen('screen-checkin');
+}
+
+// ══════════════════════════════════════════
+// CHECK-IN STEPS
+// ══════════════════════════════════════════
+function renderCheckinStep(step) {
+  S.checkinStep = step;
+  document.getElementById('stepLabel').textContent = `步驟 ${step}／3`;
+  document.getElementById('progressFill').style.width = `${(step/3)*100}%`;
+  document.getElementById('navBack').style.visibility = step > 1 ? 'visible' : 'hidden';
+
+  const body = document.getElementById('checkinBody');
+
+  if(step === 1) {
+    document.getElementById('navNext').textContent = '繼續';
+    document.getElementById('navNext').disabled = false;
+    body.innerHTML = `
+      <div class="step-tag">第一步</div>
+      <div class="step-question">你叫什麼名字？</div>
+      <input class="name-field" id="nameField" maxlength="12"
+        placeholder="輸入名字或暱稱"
+        value="${S.name}"
+        oninput="S.name=this.value.trim()"
+        autocomplete="off">
+      <p style="font-size:12px;color:var(--text-dim);text-align:center;margin-top:-8px">最多 12 字，會顯示在大螢幕</p>`;
+    setTimeout(() => document.getElementById('nameField')?.focus(), 100);
+  }
+
+  else if(step === 2) {
+    document.getElementById('navNext').textContent = '繼續';
+    const dimLabels = { A:'A — 此刻心理位置', B:'B — 工作現實痛點', C:'C — 期待或擔心' };
+    const dimColors = { A:'var(--accent)', B:'var(--amber)', C:'var(--rust)' };
+    let html = `
+      <div class="step-tag">第二步</div>
+      <div class="step-question">選出最像你現在的字卡</div>
+      <p style="font-size:13px;color:var(--text-dim);margin-top:-8px">最多選 2 張，你的選擇會個人化你的 AI 夥伴</p>
+      <div class="card-grid" id="cardGrid">`;
+    let curDim = null;
+    S.cards.forEach(c => {
+      if(c.dim !== curDim) {
+        curDim = c.dim;
+        html += `<div class="dim-header" style="color:${dimColors[c.dim]}">${dimLabels[c.dim]}</div>`;
+      }
+      const sel = S.picks.includes(c.word) ? 'selected' : '';
+      html += `<div class="word-card ${sel}" onclick="toggleCard(this,'${c.word}')" data-word="${c.word}">
+        <div class="card-check">✓</div>
+        <div class="card-emoji">${c.emoji}</div>
+        <div class="card-word">${c.word}</div>
+        <div class="card-sub">${c.sub}</div>
+      </div>`;
+    });
+    html += `</div>`;
+    body.innerHTML = html;
+  }
+
+  else if(step === 3) {
+    document.getElementById('navNext').textContent = '完成報到 →';
+    body.innerHTML = `
+      <div class="step-tag">第三步</div>
+      <div class="step-question">今天帶著什麼能量來？</div>
+      <div class="mood-row" id="moodRow">
+        ${S.moods.map(m => `
+          <div class="mood-btn ${S.mood===m.label?'selected':''}"
+            onclick="selectMood(this,'${m.label}')" data-mood="${m.label}">
+            <div class="mood-emoji">${m.emoji}</div>
+            <div class="mood-label">${m.label}</div>
+          </div>`).join('')}
+      </div>
+      <div style="margin-top:16px;padding:16px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px">你的選擇</div>
+        <div style="font-size:14px;color:var(--text-mid)">
+          字卡：<strong>${S.picks.length > 0 ? S.picks.join('、') : '尚未選擇'}</strong>
+        </div>
+      </div>`;
+  }
+}
+
+function toggleCard(el, word) {
+  if(el.classList.contains('selected')) {
+    el.classList.remove('selected');
+    S.picks = S.picks.filter(p => p !== word);
+  } else {
+    if(S.picks.length >= 2) {
+      document.querySelector('.word-card.selected')?.classList.remove('selected');
+      S.picks.shift();
+    }
+    el.classList.add('selected');
+    S.picks.push(word);
+  }
+}
+
+function selectMood(el, label) {
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  S.mood = label;
+}
+
+function prevStep() {
+  if(S.checkinStep > 1) renderCheckinStep(S.checkinStep - 1);
+}
+
+function nextStep() {
+  if(S.checkinStep === 1) {
+    if(!S.name) { showToast('請輸入你的名字'); return; }
+    renderCheckinStep(2);
+  } else if(S.checkinStep === 2) {
+    if(S.picks.length === 0) { showToast('請至少選 1 張字卡'); return; }
+    renderCheckinStep(3);
+  } else if(S.checkinStep === 3) {
+    if(!S.mood) { showToast('請選擇今天的能量狀態'); return; }
+    completeCheckin();
+  }
+}
+
+async function completeCheckin() {
+  const roleHint = S.cards.find(c => S.picks.includes(c.word))?.hint || '一般同事';
+  S.memory = {
+    profile: { name: S.name, picks: S.picks, mood: S.mood, roleHint },
+    learning_state: { visited_modules: [], key_insights: [], unresolved_questions: [] },
+    conversation_summary: '',
+    last_updated: new Date().toISOString(),
+  };
+
+  // 寫入 Supabase（若已設定）
+  if(CONFIG.supabaseUrl && !CONFIG.demoMode) {
+    await saveParticipant();
+  }
+
+  initSession();
+  showScreen('screen-session');
+}
+
+// ══════════════════════════════════════════
+// SESSION — AI 助理
+// ══════════════════════════════════════════
+function initSession() {
+  document.getElementById('companionName').textContent = `${S.name} 的 AI 夥伴`;
+  document.getElementById('companionState').textContent = '已連線';
+
+  // Show tutorial on first visit
+  if(localStorage.getItem('_tutorialSeen')) {
+    document.getElementById('tutorialOverlay').style.display = 'none';
+    document.getElementById('tutorialFab').classList.add('visible');
+  }
+
+  // Personalised opening message
+  const pickStr = S.picks.join('、');
+  const openMsg =
+    `嗨 ${S.name}！很高興成為你今天的學習夥伴 ✨\n\n` +
+    `我看到你選了「${pickStr}」，能量狀態是「${S.mood}」——` +
+    `這讓我對你今天的狀態有了初步的了解。\n\n` +
+    `今天的工作坊我會一直陪著你：` +
+    `幫你**發散想法**、**整理思路**、**練習對話**，或者把討論**視覺化**。\n\n` +
+    `隨時可以開口，你想從哪裡開始？`;
+
+  addMessage('ai', openMsg);
+
+  // 訂閱 Realtime（有 Supabase 時才啟用）
+  subscribeToSession();
+}
+
+function addMessage(role, content, type='text', url=null) {
+  const msg = { role, content, type, url, id: Date.now() };
+  S.messages.push(msg);
+  renderMessage(msg);
+  scrollChat();
+}
+
+function renderMessage(msg) {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = `msg-row ${msg.role}`;
+  div.id = `msg-${msg.id}`;
+
+  let avatarContent = msg.role === 'ai' ? '🤖' : (S.name ? S.name[0] : 'U');
+  let bubbleContent = '';
+
+  if(msg.type === 'text') {
+    bubbleContent = `<div class="msg-bubble">${formatMarkdown(msg.content)}</div>`;
+  } else if(msg.type === 'artifact-image') {
+    bubbleContent = `<div class="artifact-card">
+      <div class="artifact-header">
+        <div class="artifact-type-badge">🎨 圖像</div>
+        <div class="artifact-label">${msg.content}</div>
+      </div>
+      ${msg.url
+        ? `<img class="artifact-img" src="${msg.url}" alt="${msg.content}" loading="lazy">`
+        : `<div class="artifact-img-placeholder">
+            <div style="font-size:32px">🎨</div>
+            <div>圖像生成中...</div>
+          </div>`
+      }
+    </div>`;
+  } else if(msg.type === 'artifact-text') {
+    bubbleContent = `<div class="artifact-card">
+      <div class="artifact-header">
+        <div class="artifact-type-badge">📋 整理</div>
+        <div class="artifact-label">${msg.content.split('\n')[0]}</div>
+      </div>
+      <div class="artifact-text-body">${msg.content}</div>
+    </div>`;
+  } else if(msg.type === 'task') {
+    area.appendChild(createTaskCard(msg.content));
+    return;
+  }
+
+  div.innerHTML = `
+    <div class="msg-avatar">${avatarContent}</div>
+    <div style="flex:1;min-width:0">${bubbleContent}</div>`;
+  area.appendChild(div);
+}
+
+function createTaskCard(data) {
+  const div = document.createElement('div');
+  div.className = 'task-card';
+  div.innerHTML = `
+    <div class="task-card-label">▶ 當前活動</div>
+    <div class="task-card-title">${data.title || '新活動'}</div>
+    <div class="task-card-desc">${data.desc || ''}</div>`;
+  return div;
+}
+
+function formatMarkdown(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+}
+
+function scrollChat() {
+  const area = document.getElementById('chatArea');
+  requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; });
+}
+
+// ── ACTION CHIPS ──
+function triggerAction(type) {
+  const prompts = {
+    discuss:    '請針對目前的討論主題，給我一個能打開新視角的問題。',
+    visualize:  '請把我們目前討論的核心概念，用視覺化方式呈現出來。',
+    challenge:  '請以「' + (S.memory.profile?.roleHint || '持懷疑態度的同事') + '」的角色，挑戰我的想法。',
+    summarize:  '請把目前的對話整理成一份簡潔的重點摘要。',
+    reflect:    '請給我一個深化思考的反思問題，幫助我把學到的東西跟工作實際連結。',
+  };
+  document.getElementById('chatInput').value = prompts[type] || '';
+  autoResize(document.getElementById('chatInput'));
+  document.getElementById('chatInput').focus();
+}
+
+// ── SEND MESSAGE ──
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text || S.isThinking) return;
+
+  input.value = '';
+  autoResize(input);
+  addMessage('user', text);
+
+  // Log to Supabase
+  if(CONFIG.supabaseUrl) logConversation('user', text);
+
+  S.isThinking = true;
+  document.getElementById('sendBtn').disabled = true;
+  document.getElementById('companionState').textContent = '思考中...';
+
+  const thinkingEl = showThinking();
+
+  // Detect if user wants visualisation
+  const wantsVisual = /視覺化|畫出|圖片|圖像|mind.*map|心智圖|示意圖|概念圖|幫我畫|畫一個/.test(text);
+
+  if(wantsVisual) {
+    await generateVisual(text, thinkingEl);
+  } else {
+    await chatWithAI(text, thinkingEl);
+  }
+
+  S.isThinking = false;
+  document.getElementById('sendBtn').disabled = false;
+  document.getElementById('companionState').textContent = '已連線';
+}
+
+function showThinking() {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'msg-row ai';
+  div.id = 'thinking-indicator';
+  div.innerHTML = `
+    <div class="msg-avatar">🤖</div>
+    <div class="ai-thinking">
+      <div class="thinking-dots">
+        <span></span><span></span><span></span>
+      </div>
+      思考中
+    </div>`;
+  area.appendChild(div);
+  scrollChat();
+  return div;
+}
+
+// ══════════════════════════════════════════
+// AI PROXY LAYER
+// 學員端所有 AI 呼叫都走這裡
+// 後端（Supabase Edge Function）持有 key，學員只送 sessionId
+// ══════════════════════════════════════════
+
+async function callProxy(type, payload) {
+  // Demo mode：無後端時使用預設回應
+  if(CONFIG.demoMode || !CONFIG.proxyUrl) {
+    return { demo: true };
+  }
+  const res = await fetch(CONFIG.proxyUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type,                   // 'chat' | 'image' | 'svg'
+      sessionId: S.sessionId,
+      participantId: S.participantId,
+      ...payload
+    })
+  });
+  if(!res.ok) throw new Error(`Proxy error ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+async function chatWithAI(userText, thinkingEl) {
+  const systemPrompt = buildSystemPrompt();
+  const messages = S.messages
+    .filter(m => m.type === 'text')
+    .slice(-12)
+    .map(m => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.content }));
+
+  try {
+    const result = await callProxy('chat', { systemPrompt, messages });
+
+    thinkingEl.remove();
+
+    let reply;
+    if(result.demo) {
+      // Demo mode：預設回應
+      await new Promise(r => setTimeout(r, 900 + Math.random() * 600));
+      reply = getDemoResponse(userText);
+    } else {
+      reply = result.text;
+    }
+
+    addMessage('ai', reply);
+    updateMemory('ai', reply);
+    if(CONFIG.supabaseUrl) logConversation('assistant', reply);
+
+  } catch(e) {
+    thinkingEl.remove();
+    addMessage('ai', '連線出現問題，請稍後再試。');
+    console.error('chatWithAI error:', e);
+  }
+}
+
+// ── 視覺化生成（統一入口）────────────────────────────────────
+// 後端 proxy 決定用 Gemini（真實圖片）還是 Claude SVG（fallback）
+// 學員端完全不知道用哪個模型，不需要任何 key
+async function generateVisual(userPrompt, thinkingEl) {
+  const placeholderId = 'artifact-' + Date.now();
+  thinkingEl.remove();
+
+  // 即時顯示生成中卡片
+  const area = document.getElementById('chatArea');
+  const cardDiv = document.createElement('div');
+  cardDiv.id = placeholderId;
+  cardDiv.innerHTML = `
+    <div class="artifact-card">
+      <div class="artifact-header">
+        <div class="artifact-type-badge">🎨 視覺化生成中</div>
+        <div class="artifact-label">AI 正在為你繪製概念圖...</div>
+      </div>
+      <div class="artifact-generating">
+        <div class="gen-spinner"></div>
+        <div style="font-size:12px;color:var(--ai-dim);margin-top:4px">稍等一下</div>
+      </div>
+    </div>`;
+  area.appendChild(cardDiv);
+  scrollChat();
+
+  // 對話脈絡（傳給後端，讓 AI 知道要視覺化什麼）
+  const convoContext = S.messages
+    .filter(m => m.type === 'text').slice(-6)
+    .map(m => `${m.role === 'user' ? '學員' : 'AI'}：${m.content.slice(0,120)}`)
+    .join('\n');
+
+  const existing = document.getElementById(placeholderId);
+
+  try {
+    const result = await callProxy('visual', {
+      userPrompt,
+      convoContext,
+      systemPrompt: buildSystemPrompt(),
+      picks: S.picks,
+      mood: S.mood,
+    });
+
+    if(result.demo) {
+      // Demo mode：用 Claude SVG 直接生成（示範用，實際部署走 proxy）
+      await generateSvgDemo(userPrompt, convoContext, existing);
+      return;
+    }
+
+    if(result.type === 'image' && result.base64) {
+      // Gemini 真實圖片
+      const src = `data:${result.mimeType || 'image/png'};base64,${result.base64}`;
+      if(existing) existing.innerHTML = `
+        <div class="artifact-card">
+          <div class="artifact-header">
+            <div class="artifact-type-badge">🍌 AI 圖像</div>
+            <div class="artifact-label">${userPrompt.slice(0,35)}${userPrompt.length>35?'...':''}</div>
+            <a href="${src}" download="workshop-visual.png"
+              style="font-size:11px;color:var(--ai-dim);text-decoration:none;margin-left:auto;flex-shrink:0;padding:4px 8px;border:1px solid rgba(255,255,255,0.1);border-radius:6px">↓</a>
+          </div>
+          <img src="${src}"
+            style="width:100%;display:block;border-radius:0 0 12px 12px;max-height:340px;object-fit:contain;background:var(--ai-bg)"
+            alt="AI 視覺化圖片">
+        </div>`;
+
+    } else if(result.type === 'svg' && result.svg) {
+      // Claude SVG 概念圖
+      if(existing) existing.innerHTML = `
+        <div class="artifact-card">
+          <div class="artifact-header">
+            <div class="artifact-type-badge">📐 概念圖</div>
+            <div class="artifact-label">${userPrompt.slice(0,35)}${userPrompt.length>35?'...':''}</div>
+          </div>
+          <div class="artifact-svg-body">${result.svg}</div>
+        </div>`;
+    } else {
+      if(existing) existing.innerHTML = '';
+      addMessage('ai', '視覺化生成異常，請再試一次或換個方式描述。');
+    }
+
+    scrollChat();
+    addMessage('ai', result.followUp || '這是根據我們討論生成的視覺化。你覺得有抓到你想整理的概念嗎？');
+
+  } catch(e) {
+    if(existing) existing.innerHTML = '';
+    addMessage('ai', '視覺化暫時無法使用，請繼續文字討論，稍後再試。');
+    console.error('generateVisual error:', e);
+  }
+}
+
+// Demo mode 用：直接呼叫 Claude 生成 SVG（僅用於示範，不在生產環境暴露 key）
+async function generateSvgDemo(userPrompt, convoContext, placeholderEl) {
+  // 示範模式沒有 key，顯示靜態範例 SVG
+  await new Promise(r => setTimeout(r, 1200));
+  const demoSvg = `<svg viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg" style="background:#1a2820">
+    <text x="200" y="28" text-anchor="middle" fill="#5aad78" font-size="14" font-family="sans-serif" font-weight="bold">AI 轉型概念圖（示範）</text>
+    <rect x="140" y="50" width="120" height="36" rx="8" fill="none" stroke="#5aad78" stroke-width="1.5"/>
+    <text x="200" y="73" text-anchor="middle" fill="#d8eedf" font-size="12" font-family="sans-serif">你的字卡選擇</text>
+    <line x1="200" y1="86" x2="120" y2="130" stroke="#7aaa88" stroke-width="1" marker-end="url(#arr)"/>
+    <line x1="200" y1="86" x2="280" y2="130" stroke="#7aaa88" stroke-width="1" marker-end="url(#arr)"/>
+    <rect x="60" y="130" width="120" height="36" rx="8" fill="none" stroke="#c17f24" stroke-width="1.5"/>
+    <text x="120" y="153" text-anchor="middle" fill="#d8eedf" font-size="12" font-family="sans-serif">工作現實痛點</text>
+    <rect x="220" y="130" width="120" height="36" rx="8" fill="none" stroke="#4d9fff" stroke-width="1.5"/>
+    <text x="280" y="153" text-anchor="middle" fill="#d8eedf" font-size="12" font-family="sans-serif">期待與擔心</text>
+    <line x1="120" y1="166" x2="200" y2="210" stroke="#7aaa88" stroke-width="1" marker-end="url(#arr)"/>
+    <line x1="280" y1="166" x2="200" y2="210" stroke="#7aaa88" stroke-width="1" marker-end="url(#arr)"/>
+    <rect x="140" y="210" width="120" height="36" rx="8" fill="#2d5a3d" stroke="#5aad78" stroke-width="1.5"/>
+    <text x="200" y="233" text-anchor="middle" fill="#5aad78" font-size="12" font-family="sans-serif" font-weight="bold">行動方向</text>
+    <defs><marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#7aaa88"/></marker></defs>
+  </svg>`;
+
+  if(placeholderEl) placeholderEl.innerHTML = `
+    <div class="artifact-card">
+      <div class="artifact-header">
+        <div class="artifact-type-badge">📐 概念圖（示範）</div>
+        <div class="artifact-label">示範模式 — 實際部署後由 AI 動態生成</div>
+      </div>
+      <div class="artifact-svg-body">${demoSvg}</div>
+    </div>`;
+  scrollChat();
+  addMessage('ai', '這是示範模式的靜態概念圖。連接後端後，AI 會根據你的實際對話動態生成客製化的視覺化圖表。');
+}
+// ── CLAUDE SVG 概念圖生成（Nano Banana 的 fallback）─────────
+function buildSystemPrompt() {
+  const { name, picks, mood, roleHint } = S.memory.profile || {};
+  const { key_insights, unresolved_questions, conversation_summary } = S.memory.learning_state || {};
+  return `你是「${name || '學員'}」在 HR & 總務 AI 轉型工作坊中的專屬 AI 學習夥伴。
+
+【學員背景】
+- 名字：${name}
+- 字卡選擇：${(picks||[]).join('、')}（反映其對 AI 轉型的立場與痛點）
+- 能量狀態：${mood}
+- 適合的角色扮演對手：${roleHint}
+
+【學習記憶】
+${conversation_summary ? `對話摘要：${conversation_summary}` : ''}
+${(key_insights||[]).length ? `已發現的洞察：${key_insights.join('；')}` : ''}
+${(unresolved_questions||[]).length ? `未解決的問題：${unresolved_questions.join('；')}` : ''}
+
+【行為準則】
+- 語氣：溫暖、直接、有個性，像一個懂 HR 和 AI 的資深顧問朋友
+- 繁體中文，可自然混用英文專業術語
+- 每次回應 100-250 字，不要超過
+- 優先觸發認知衝突（問出讓學員停頓的問題）
+- 主動連結學員的字卡選擇到當前討論
+- 不要重複你之前說過的內容
+- 永遠不要跳出角色或解釋你是 AI`;
+}
+
+function updateMemory(role, content) {
+  if(role === 'user' && content.length > 20) {
+    const insights = S.memory.learning_state?.key_insights || [];
+    if(insights.length < 5) insights.push(content.slice(0, 60));
+    if(S.memory.learning_state) S.memory.learning_state.key_insights = insights;
+  }
+}
+
+function getDemoResponse(text) {
+  const responses = [
+    `你選了「${S.picks[0] || '觀望中'}」，這個選擇很誠實。我想問你：在你的工作裡，有沒有一件事情，你其實很想要有 AI 幫你做，但又說不太出口？`,
+    `有趣。你說的這個點，其實觸碰到 HR AI 轉型最核心的張力——「效率」和「信任」之間的拉鋸。在你的部門，同事最擔心的是哪一邊？`,
+    `我聽到了。「誰來負責」這個問題，幾乎每個 HR 主管都問過。我換個角度問你：如果 AI 做了一個你不確定的決定，你希望有什麼樣的機制可以讓你「喊暫停」？`,
+    `這個想法很值得深挖。你可以試著用一句話說說看：如果明天你的工作裡有一個 AI 助理，你最希望它幫你做掉的第一件事是什麼？`,
+    `很好的觀察。從你的字卡來看，你其實在「期待」和「擔心」之間擺動——這很正常。給「AI 轉型」打一個 0-10 分，你會打幾分？然後告訴我為什麼不是更高或更低。`,
+  ];
+  return responses[Math.floor(Math.random() * responses.length)];
+}
+
+// ── SUPABASE 實作 ──
+
+async function saveParticipant() {
+  try {
+    const res = await fetch(`${CONFIG.supabaseUrl}/rest/v1/participants`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': CONFIG.supabaseKey,
+        'Authorization': `Bearer ${CONFIG.supabaseKey}`,
+        'Prefer': 'return=representation',
+      },
+      body: JSON.stringify({
+        session_id:   S.sessionId,
+        display_name: S.name,
+        checkin_data: { picks: S.picks, mood: S.mood },
+        memory:       S.memory,
+      })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    S.participantId = data[0]?.id;
+    // 存入 localStorage（刷新頁面後恢復身份）
+    if(S.participantId) {
+      localStorage.setItem('_pid_' + S.joinCode, S.participantId);
+      localStorage.setItem('_sid_' + S.joinCode, S.sessionId);
+    }
+  } catch(e) {
+    console.warn('saveParticipant failed (continuing in local mode):', e.message);
+  }
+}
+
+async function logConversation(role, content) {
+  if(!CONFIG.supabaseUrl || !S.sessionId || CONFIG.demoMode) return;
+  try {
+    await fetch(`${CONFIG.supabaseUrl}/rest/v1/conversations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': CONFIG.supabaseKey,
+        'Authorization': `Bearer ${CONFIG.supabaseKey}`,
+      },
+      body: JSON.stringify({
+        session_id:     S.sessionId,
+        participant_id: S.participantId || null,
+        role,
+        content,
+        content_type: 'text',
+      })
+    });
+  } catch(e) {
+    console.warn('logConversation failed:', e.message);
+  }
+}
+
+function subscribeToSession() {
+  if(!CONFIG.supabaseUrl || !S.sessionId || CONFIG.demoMode) return;
+
+  // 動態載入 supabase-js（只在需要 Realtime 時才載入）
+  if(window.__sbClient) { _doSubscribe(window.__sbClient); return; }
+
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+  script.onload = () => {
+    window.__sbClient = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+    _doSubscribe(window.__sbClient);
+  };
+  document.head.appendChild(script);
+}
+
+function _doSubscribe(sb) {
+  sb.channel('session:' + S.sessionId)
+    .on('postgres_changes', {
+      event: 'UPDATE', schema: 'public', table: 'sessions',
+      filter: `id=eq.${S.sessionId}`
+    }, payload => {
+      const newModuleId = payload.new?.active_module_id;
+      if(newModuleId && newModuleId !== S.activeModule) {
+        S.activeModule = newModuleId;
+        _handleModuleChange(newModuleId);
+      }
+    })
+    .subscribe();
+}
+
+function _handleModuleChange(moduleId) {
+  const module = (S.sessionConfig?.modules || []).find(m => m.id === moduleId);
+  if(!module) return;
+  document.getElementById('moduleBadge').textContent = module.name || '新活動';
+  const taskMsg = { role:'task', content: { title: module.name, desc: module.prompt || '' }, type:'task', id: Date.now() };
+  S.messages.push(taskMsg);
+  renderMessage(taskMsg);
+  scrollChat();
+  addMessage('ai', `講師推送了新活動「${module.name}」。${module.prompt || ''}`);
+}
+
+// ── UTILS ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── VIEWPORT ──
+function fixVh() {
+  document.documentElement.style.setProperty('--dvh', window.innerHeight * 0.01 + 'px');
+}
+window.addEventListener('resize', fixVh);
+window.addEventListener('orientationchange', () => setTimeout(fixVh, 200));
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', () => {
+  fixVh();
+  // Prevent double-tap zoom
+  let lt = 0;
+  document.addEventListener('touchend', e => {
+    const now = Date.now();
+    if(now - lt < 300 && !['INPUT','TEXTAREA'].includes(e.target.tagName)) e.preventDefault();
+    lt = now;
+  }, { passive: false });
+});
+</script>
+</body>
+</html>

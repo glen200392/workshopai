@@ -1,0 +1,1912 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WorkshopAI 講師後台</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,700;1,400&family=IBM+Plex+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0f12;
+  --surface: #141720;
+  --surface2: #1c2030;
+  --surface3: #242840;
+  --border: #2a2f45;
+  --border2: #353b58;
+  --green: #00e676;
+  --green-dim: #1a4a2a;
+  --green-glow: rgba(0,230,118,0.12);
+  --blue: #4d9fff;
+  --blue-dim: #0d2040;
+  --amber: #ffb830;
+  --amber-dim: #3a2800;
+  --red: #ff4757;
+  --red-dim: #3a0d12;
+  --purple: #9c6bff;
+  --purple-dim: #1a0d40;
+  --text: #e8eaf2;
+  --text-mid: #8890b0;
+  --text-dim: #4a5070;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans TC', system-ui, sans-serif;
+  --radius: 8px;
+  --topbar: 52px;
+  --sidebar-w: 280px;
+  --panel-w: 340px;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; }
+
+/* ── LAYOUT ── */
+.app {
+  display: grid;
+  grid-template-rows: var(--topbar) 1fr;
+  grid-template-columns: var(--sidebar-w) 1fr var(--panel-w);
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  grid-column: 1 / -1;
+  display: flex; align-items: center;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  gap: 20px;
+}
+
+.logo {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--green);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.logo span { color: var(--text-dim); font-weight: 400; font-size: 12px; margin-left: 6px; }
+
+.session-status {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 14px;
+}
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: background 0.3s;
+}
+.status-dot.live { background: var(--green); box-shadow: 0 0 8px var(--green); animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.status-text { font-family: var(--mono); font-size: 12px; color: var(--text-mid); }
+
+.join-code-badge {
+  background: var(--surface3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.18em;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.join-code-badge:hover { border-color: var(--green); color: var(--green); }
+
+.topbar-spacer { flex: 1; }
+
+.top-stat {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 4px 16px;
+  border-left: 1px solid var(--border);
+}
+.top-stat-num { font-family: var(--mono); font-size: 20px; font-weight: 700; line-height: 1; }
+.top-stat-label { font-size: 10px; color: var(--text-dim); margin-top: 2px; letter-spacing: 0.08em; }
+
+.top-btn {
+  min-height: 36px; padding: 0 16px;
+  border-radius: var(--radius);
+  border: 1px solid;
+  font-family: var(--mono); font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+  letter-spacing: 0.06em;
+}
+.btn-start { background: var(--green); color: var(--bg); border-color: var(--green); }
+.btn-start:hover { box-shadow: 0 0 16px rgba(0,230,118,0.4); }
+.btn-end { background: var(--red-dim); color: var(--red); border-color: var(--red); }
+.btn-end:hover { background: var(--red); color: #fff; }
+.btn-ghost { background: transparent; color: var(--text-mid); border-color: var(--border); }
+.btn-ghost:hover { border-color: var(--text-mid); color: var(--text); }
+
+/* ── LEFT SIDEBAR: Module Designer ── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.panel-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.panel-title strong { display: block; font-size: 13px; color: var(--text); margin-top: 2px; letter-spacing: 0; }
+
+.sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.stab {
+  flex: 1; padding: 10px 6px;
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-dim); text-align: center;
+  cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all 0.15s; background: none; border-top:none; border-left:none; border-right:none;
+}
+.stab.active { color: var(--green); border-bottom-color: var(--green); }
+
+.sidebar-body { flex: 1; overflow-y: auto; padding: 12px; scrollbar-width: thin; }
+.sidebar-body::-webkit-scrollbar { width: 3px; }
+.sidebar-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Module list */
+.module-item {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.module-item:hover { border-color: var(--border2); }
+.module-item.active-module { border-color: var(--green); background: var(--green-dim); }
+.module-seq {
+  font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-bottom: 4px;
+}
+.module-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.module-type-badge {
+  display: inline-block;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 2px 7px; border-radius: 10px;
+  background: var(--surface3); color: var(--text-mid);
+}
+.module-actions {
+  display: flex; gap: 4px; margin-top: 8px;
+}
+.maction {
+  flex: 1; padding: 5px 0; border-radius: 4px; border: 1px solid var(--border);
+  font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+  cursor: pointer; background: transparent; transition: all 0.12s; text-align:center;
+}
+.maction:hover { border-color: var(--green); color: var(--green); }
+.maction.push { background: var(--green); color: var(--bg); border-color: var(--green); font-weight:700; }
+
+/* Add module */
+.add-module-btn {
+  width: 100%; padding: 10px; border-radius: var(--radius);
+  border: 1px dashed var(--border); background: transparent;
+  color: var(--text-dim); font-family: var(--mono); font-size: 12px;
+  cursor: pointer; transition: all 0.15s; margin-top: 4px;
+}
+.add-module-btn:hover { border-color: var(--green); color: var(--green); }
+
+/* AI Agent config */
+.field-group { margin-bottom: 12px; }
+.field-label {
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text-dim); margin-bottom: 5px; display: block;
+}
+.field-input, .field-select, .field-textarea {
+  width: 100%; background: var(--bg);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 8px 10px; color: var(--text);
+  font-family: var(--sans); font-size: 13px;
+  transition: border-color 0.15s;
+}
+.field-input:focus, .field-select:focus, .field-textarea:focus {
+  outline: none; border-color: var(--green);
+}
+.field-textarea { resize: vertical; min-height: 80px; font-size: 12px; line-height: 1.5; }
+.field-select { cursor: pointer; }
+
+.tool-chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.tool-chip {
+  padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border);
+  font-size: 11px; color: var(--text-dim); cursor: pointer; transition: all 0.12s; background: transparent;
+}
+.tool-chip.on { border-color: var(--purple); color: var(--purple); background: var(--purple-dim); }
+
+/* ── CENTER: Participant Monitor ── */
+.main-panel {
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--bg);
+}
+
+.main-toolbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--surface);
+}
+
+.view-toggle { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.vtab { padding: 6px 14px; font-family: var(--mono); font-size: 11px; color: var(--text-dim); cursor: pointer; border: none; background: transparent; transition: all 0.12s; }
+.vtab.active { background: var(--surface2); color: var(--text); }
+
+.search-input {
+  flex: 1; max-width: 220px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 6px 12px;
+  font-family: var(--sans); font-size: 12px; color: var(--text);
+}
+.search-input:focus { outline: none; border-color: var(--border2); }
+
+.sort-select {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 6px 10px;
+  font-family: var(--mono); font-size: 11px; color: var(--text-mid); cursor: pointer;
+}
+
+.participant-grid {
+  flex: 1; overflow-y: auto;
+  padding: 14px 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  align-content: start;
+  scrollbar-width: thin;
+}
+.participant-grid::-webkit-scrollbar { width: 4px; }
+.participant-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Participant card */
+.p-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.p-card::before {
+  content:''; position:absolute; top:0; left:0;
+  width: 3px; height: 100%;
+  background: var(--border2);
+  transition: background 0.2s;
+}
+.p-card:hover { border-color: var(--border2); }
+.p-card:hover::before { background: var(--blue); }
+.p-card.selected { border-color: var(--blue); }
+.p-card.selected::before { background: var(--blue); }
+
+.p-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.p-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700;
+  flex-shrink: 0;
+}
+.p-name { font-size: 14px; font-weight: 600; color: var(--text); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.p-time { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+
+.p-picks { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.p-pick {
+  font-size: 10px; padding: 2px 7px; border-radius: 8px;
+  border: 1px solid var(--border); color: var(--text-dim); background: var(--surface2);
+}
+
+.p-last-msg {
+  font-size: 12px; color: var(--text-mid); line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.p-card-footer { display: flex; align-items: center; gap: 6px; }
+.p-msg-count { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+.p-status {
+  margin-left: auto; width: 7px; height: 7px;
+  border-radius: 50%; background: var(--text-dim);
+}
+.p-status.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+.p-card-actions { display: flex; gap: 4px; margin-top: 8px; }
+.pca {
+  flex: 1; padding: 4px 0; border-radius: 4px;
+  border: 1px solid var(--border); background: transparent;
+  font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+  cursor: pointer; text-align: center; transition: all 0.12s;
+}
+.pca:hover { border-color: var(--blue); color: var(--blue); }
+.pca.warn:hover { border-color: var(--amber); color: var(--amber); }
+.pca.danger:hover { border-color: var(--red); color: var(--red); }
+
+/* Projection view (center) */
+.projection-view {
+  flex: 1; overflow-y: auto; padding: 20px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.proj-question {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  text-align: center;
+}
+.proj-q-label { font-family: var(--mono); font-size: 10px; color: var(--green); letter-spacing: 0.15em; margin-bottom: 8px; }
+.proj-q-text { font-size: 22px; font-weight: 600; color: var(--text); }
+
+.proj-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.proj-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; overflow: hidden; }
+.proj-panel-title { font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+
+.word-cloud { display: flex; flex-wrap: wrap; gap: 8px; }
+.wc-bubble {
+  padding: 5px 12px; border-radius: 20px; border: 1px solid;
+  font-weight: 600; animation: popIn 0.3s cubic-bezier(0.34,1.5,0.64,1) both;
+}
+@keyframes popIn { from{transform:scale(0.6);opacity:0} to{transform:scale(1);opacity:1} }
+.wc-1 { font-size: 12px; color: var(--text-dim); border-color: var(--border); }
+.wc-2 { font-size: 14px; color: var(--text-mid); border-color: var(--border2); }
+.wc-3 { font-size: 17px; color: var(--text); border-color: var(--blue); background: rgba(77,159,255,0.06); }
+.wc-4 { font-size: 21px; color: var(--green); border-color: var(--green); background: var(--green-dim); }
+.wc-5 { font-size: 26px; font-weight: 700; color: var(--green); border-color: var(--green); background: var(--green-dim); box-shadow: 0 0 16px rgba(0,230,118,0.2); }
+
+.response-stream { display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; }
+.rstream-item {
+  padding: 8px 12px; border-left: 3px solid var(--blue);
+  background: var(--bg); border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 13px; color: var(--text-mid); animation: slideR 0.25s ease both;
+}
+@keyframes slideR { from{transform:translateX(-8px);opacity:0} to{transform:none;opacity:1} }
+
+/* Heatmap */
+.heatmap { display: flex; flex-direction: column; gap: 7px; }
+.hm-row { display: flex; align-items: center; gap: 10px; }
+.hm-label { font-size: 12px; color: var(--text); width: 80px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hm-bar { flex: 1; height: 20px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+.hm-fill { height: 100%; border-radius: 4px; transition: width 0.6s cubic-bezier(0.34,1.2,0.64,1); min-width: 4px; background: var(--blue); }
+.hm-count { font-family: var(--mono); font-size: 11px; color: var(--text-dim); width: 20px; text-align: right; flex-shrink:0; }
+
+.proj-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+.proj-stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; text-align: center; }
+.proj-stat-num { font-family: var(--mono); font-size: 28px; font-weight: 700; color: var(--green); line-height: 1; }
+.proj-stat-label { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+/* ── RIGHT PANEL: Participant Detail / AI Insight ── */
+.right-panel {
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+.right-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.rtab { flex: 1; padding: 10px 4px; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); text-align: center; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.12s; background: none; border-top:none; border-left:none; border-right:none; }
+.rtab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+.right-body { flex: 1; overflow-y: auto; scrollbar-width: thin; }
+.right-body::-webkit-scrollbar { width: 3px; }
+.right-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Participant detail */
+.p-detail-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.p-detail-name { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.p-detail-picks { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
+.p-detail-pick {
+  font-size: 11px; padding: 3px 9px; border-radius: 10px;
+  border: 1px solid var(--border2); color: var(--text-mid); background: var(--surface3);
+}
+.p-detail-memory { padding: 14px 16px; }
+.memory-section { margin-bottom: 14px; }
+.memory-label { font-family: var(--mono); font-size: 10px; color: var(--green); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px; }
+.memory-value { font-size: 13px; color: var(--text-mid); line-height: 1.55; }
+
+/* Conversation log */
+.convo-log { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.log-msg { padding: 8px 10px; border-radius: var(--radius); font-size: 12px; line-height: 1.5; }
+.log-msg.user { background: var(--blue-dim); border-left: 2px solid var(--blue); color: var(--text); }
+.log-msg.ai { background: var(--surface2); border-left: 2px solid var(--green); color: var(--text-mid); }
+.log-role { font-family: var(--mono); font-size: 9px; color: var(--text-dim); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.1em; }
+
+/* AI Insight panel */
+.insight-body { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.insight-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  position: relative; overflow: hidden;
+}
+.insight-card::before { content:''; position:absolute; top:0;left:0; width:3px;height:100%; background:var(--purple); }
+.insight-card-label { font-family: var(--mono); font-size: 10px; color: var(--purple); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px; }
+.insight-card-text { font-size: 13px; color: var(--text-mid); line-height: 1.6; }
+
+.tension-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.tension-tag {
+  font-size: 11px; padding: 3px 10px; border-radius: 10px;
+  border: 1px solid var(--amber); color: var(--amber); background: var(--amber-dim);
+}
+
+.insight-ai-textarea {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 12px;
+  color: var(--text); font-family: var(--sans); font-size: 13px;
+  resize: none; min-height: 80px; transition: border-color 0.15s;
+}
+.insight-ai-textarea:focus { outline: none; border-color: var(--purple); }
+
+.ai-run-btn {
+  width: 100%; padding: 10px; border-radius: var(--radius);
+  background: var(--purple-dim); border: 1px solid var(--purple);
+  color: var(--purple); font-family: var(--mono); font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+}
+.ai-run-btn:hover { background: var(--purple); color: #fff; }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  z-index: 500; display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: auto; }
+.modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px; width: min(520px, 90vw);
+  transform: translateY(12px); transition: transform 0.2s;
+}
+.modal-overlay.open .modal { transform: none; }
+.modal-title { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+.modal-footer { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 20px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--text); color: var(--bg);
+  padding: 10px 18px; border-radius: 20px;
+  font-size: 13px; font-weight: 600;
+  opacity: 0; transition: all 0.25s;
+  pointer-events: none; z-index: 999; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- MODULE MODAL -->
+<div class="modal-overlay" id="moduleModal">
+  <div class="modal">
+    <div class="modal-title">✦ 新增模組</div>
+    <div class="field-group">
+      <label class="field-label">模組類型</label>
+      <select class="field-select" id="newModuleType">
+        <option value="checkin">報到 Check-in</option>
+        <option value="discussion">開放討論</option>
+        <option value="roleplay">AI 角色扮演</option>
+        <option value="convergence">想法收斂</option>
+        <option value="reflection">個人反思</option>
+        <option value="survey">即時問卷</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label class="field-label">模組名稱</label>
+      <input class="field-input" id="newModuleName" placeholder="例：AI 工具焦慮開場討論">
+    </div>
+    <div class="field-group">
+      <label class="field-label">AI System Prompt</label>
+      <textarea class="field-textarea" id="newModulePrompt" placeholder="描述這個模組中 AI 助理的行為..."></textarea>
+    </div>
+    <div class="field-group">
+      <label class="field-label">時間上限（分鐘）</label>
+      <input class="field-input" id="newModuleDuration" type="number" value="15" min="1" max="120">
+    </div>
+    <div class="modal-footer">
+      <button class="top-btn btn-ghost" onclick="closeModal()">取消</button>
+      <button class="top-btn btn-start" onclick="addModule()">新增</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div class="app">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="logo">WorkshopAI<span>講師後台</span></div>
+
+    <div class="session-status">
+      <div class="status-dot" id="statusDot"></div>
+      <span class="status-text" id="statusText">未開始</span>
+    </div>
+
+    <div class="join-code-badge" id="joinCodeBadge" onclick="copyCode()" title="點擊複製">
+      ——————
+    </div>
+
+    <div class="topbar-spacer"></div>
+
+    <div class="top-stat">
+      <div class="top-stat-num" id="statParticipants" style="color:var(--green)">0</div>
+      <div class="top-stat-label">在線學員</div>
+    </div>
+    <div class="top-stat">
+      <div class="top-stat-num" id="statMessages" style="color:var(--blue)">0</div>
+      <div class="top-stat-label">對話總數</div>
+    </div>
+    <div class="top-stat">
+      <div class="top-stat-num" id="statActive" style="color:var(--amber)">0</div>
+      <div class="top-stat-label">活躍模組</div>
+    </div>
+
+    <button class="top-btn btn-start" id="startBtn" onclick="startSession()">▶ 開始工作坊</button>
+    <button class="top-btn btn-end" id="endBtn" onclick="endSession()" style="display:none">■ 結束</button>
+    <button class="top-btn btn-ghost" onclick="toggleProjection()">📺 投影模式</button>
+    <button class="top-btn btn-ghost" onclick="showAIConfig()">⚙ AI 設定</button>
+  </header>
+
+  <!-- LEFT SIDEBAR: Module Designer -->
+  <aside class="sidebar">
+    <div class="panel-header">
+      <div class="panel-title">
+        工作坊流程
+        <strong id="workshopTitle">HR AI 轉型思維工作坊</strong>
+      </div>
+    </div>
+
+    <div class="sidebar-tabs">
+      <button class="stab active" id="stabModules" onclick="switchSidebarTab('modules')">模組</button>
+      <button class="stab" id="stabAgent" onclick="switchSidebarTab('agent')">AI 設定</button>
+      <button class="stab" id="stabCheckin" onclick="switchSidebarTab('checkin')">報到卡</button>
+    </div>
+
+    <!-- Modules tab -->
+    <div class="sidebar-body" id="tabModules">
+      <div id="moduleList"></div>
+      <button class="add-module-btn" onclick="openModal()">+ 新增模組</button>
+    </div>
+
+    <!-- AI Agent tab -->
+    <div class="sidebar-body" id="tabAgent" style="display:none">
+
+      <!-- ── 連線狀態指示 ── -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px">
+        <div id="claudeStatus" style="padding:8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);text-align:center">
+          <div style="font-size:10px;font-family:var(--mono);color:var(--text-dim);margin-bottom:3px">CLAUDE</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-dim)">未設定</div>
+        </div>
+        <div id="geminiStatus" style="padding:8px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);text-align:center">
+          <div style="font-size:10px;font-family:var(--mono);color:var(--text-dim);margin-bottom:3px">GEMINI</div>
+          <div style="font-size:11px;font-weight:700;color:var(--text-dim)">未設定</div>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Anthropic API Key <span style="color:var(--red)">*必填</span></label>
+        <div style="display:flex;gap:6px">
+          <input class="field-input" type="password" id="claudeKey" placeholder="sk-ant-..."
+            style="flex:1" autocomplete="off">
+          <button class="top-btn btn-ghost" style="font-size:10px;padding:0 10px;white-space:nowrap"
+            onclick="testClaudeKey()">測試</button>
+        </div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:4px">
+          用於：AI 對話、角色扮演、想法整理、SVG 概念圖
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">Google Gemini API Key <span style="color:var(--text-dim)">(圖片生成)</span></label>
+        <div style="display:flex;gap:6px">
+          <input class="field-input" type="password" id="geminiKey" placeholder="AIza..."
+            style="flex:1" autocomplete="off">
+          <button class="top-btn btn-ghost" style="font-size:10px;padding:0 10px;white-space:nowrap"
+            onclick="testGeminiKey()">測試</button>
+        </div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:4px">
+          用於：Nano Banana 真實圖片生成（未設定時改用 SVG 概念圖）
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">圖片生成模型</label>
+        <select class="field-select" id="geminiModel">
+          <option value="gemini-2.5-flash-image">Nano Banana（快速，低成本）</option>
+          <option value="gemini-3.1-flash-image-preview">Nano Banana 2（品質提升）</option>
+          <option value="gemini-3-pro-image-preview">Nano Banana Pro（最高品質）</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">對話模型</label>
+        <select class="field-select" id="claudeModel">
+          <option value="claude-sonnet-4-20250514">Claude Sonnet 4（主力，推薦）</option>
+          <option value="claude-haiku-4-5-20251001">Claude Haiku（超快速，低延遲）</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">全局 System Prompt</label>
+        <textarea class="field-textarea" id="globalPrompt" style="min-height:100px">你是一個 HR & 總務 AI 轉型工作坊的學習夥伴。語氣溫暖直接，繁體中文，每次回應 100-250 字，善用認知衝突問題促進深度學習。</textarea>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">啟用工具</label>
+        <div class="tool-chip-row" id="toolChips">
+          <button class="tool-chip on" onclick="toggleTool(this)" data-tool="image">🍌 圖片生成</button>
+          <button class="tool-chip on" onclick="toggleTool(this)" data-tool="summarize">📋 想法整理</button>
+          <button class="tool-chip on" onclick="toggleTool(this)" data-tool="roleplay">⚡ 角色扮演</button>
+          <button class="tool-chip" onclick="toggleTool(this)" data-tool="search">🔍 網路搜尋</button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label">記憶保留策略</label>
+        <select class="field-select" id="memoryStrategy">
+          <option value="session">整個 Session（預設）</option>
+          <option value="module">每個模組重置</option>
+          <option value="none">不保留記憶</option>
+        </select>
+      </div>
+
+      <button class="ai-run-btn" onclick="saveAgentConfig()" style="margin-top:4px">
+        ✓ 儲存 AI 設定
+      </button>
+
+      <!-- Proxy URL (自動產生) -->
+      <div style="margin-top:14px;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:6px">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-bottom:5px;letter-spacing:0.1em">PROXY ENDPOINT（學員端呼叫用）</div>
+        <div id="proxyUrlDisplay" style="font-family:var(--mono);font-size:10px;color:var(--text-mid);word-break:break-all">
+          尚未設定 Supabase URL
+        </div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:6px">
+          Key 儲存於後端，學員端不可見
+        </div>
+      </div>
+    </div>
+
+    <!-- Check-in cards tab -->
+    <div class="sidebar-body" id="tabCheckin" style="display:none">
+      <div class="field-group">
+        <label class="field-label">歡迎訊息</label>
+        <input class="field-input" id="welcomeMsg" value="歡迎參加 HR & 總務 AI 轉型思維工作坊">
+      </div>
+      <div class="field-group">
+        <label class="field-label">字卡內容（可編輯）</label>
+        <div id="cardConfigList"></div>
+      </div>
+      <button class="ai-run-btn" onclick="saveCheckinConfig()" style="margin-top:8px">▶ 套用並開放報到</button>
+    </div>
+  </aside>
+
+  <!-- CENTER: Monitor / Projection -->
+  <main class="main-panel">
+    <div class="main-toolbar">
+      <div class="view-toggle">
+        <button class="vtab active" id="vtabGrid" onclick="switchView('grid')">格狀監控</button>
+        <button class="vtab" id="vtabProjection" onclick="switchView('projection')">投影大螢幕</button>
+        <button class="vtab" id="vtabLog" onclick="switchView('log')">事件 Log</button>
+      </div>
+      <input class="search-input" placeholder="搜尋學員..." oninput="filterParticipants(this.value)">
+      <select class="sort-select" onchange="sortParticipants(this.value)">
+        <option value="joined">加入時間</option>
+        <option value="active">最後活躍</option>
+        <option value="messages">訊息數量</option>
+        <option value="name">名字</option>
+      </select>
+      <button class="top-btn btn-ghost" style="font-size:11px" onclick="broadcastMessage()">📢 廣播訊息</button>
+      <button class="top-btn btn-ghost" style="font-size:11px" onclick="runGroupInsight()">🧠 群體洞察</button>
+    </div>
+
+    <!-- Grid view -->
+    <div class="participant-grid" id="participantGrid">
+      <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-dim);font-family:var(--mono);font-size:13px">
+        ── 等待學員報到中 ──<br>
+        <span style="font-size:11px;margin-top:8px;display:block">分享代碼給學員後，將在這裡看到所有人的狀態</span>
+      </div>
+    </div>
+
+    <!-- Projection view (hidden initially) -->
+    <div class="projection-view" id="projectionView" style="display:none">
+      <div class="proj-question">
+        <div class="proj-q-label">▶ 當前題目</div>
+        <div class="proj-q-text" id="projQuestion">等待發布題目中...</div>
+      </div>
+      <div class="proj-grid">
+        <div class="proj-panel">
+          <div class="proj-panel-title" style="color:var(--green)">⬡ 關鍵詞雲</div>
+          <div class="word-cloud" id="projWordCloud">
+            <span style="color:var(--text-dim);font-size:12px;font-family:var(--mono)">等待回應中...</span>
+          </div>
+        </div>
+        <div class="proj-panel">
+          <div class="proj-panel-title" style="color:var(--blue)">▸ 即時回應</div>
+          <div class="response-stream" id="projResponses">
+            <span style="color:var(--text-dim);font-size:12px;font-family:var(--mono)">等待回應中...</span>
+          </div>
+        </div>
+        <div class="proj-panel">
+          <div class="proj-panel-title" style="color:var(--amber)">報到字卡分佈</div>
+          <div class="heatmap" id="projCardHeat"></div>
+        </div>
+        <div class="proj-panel">
+          <div class="proj-panel-title" style="color:var(--purple)">能量分佈</div>
+          <div class="heatmap" id="projMoodHeat"></div>
+        </div>
+      </div>
+      <div class="proj-stats">
+        <div class="proj-stat"><div class="proj-stat-num" id="pstatP">0</div><div class="proj-stat-label">在線人數</div></div>
+        <div class="proj-stat"><div class="proj-stat-num" id="pstatR" style="color:var(--blue)">0</div><div class="proj-stat-label">回應數</div></div>
+        <div class="proj-stat"><div class="proj-stat-num" id="pstatW" style="color:var(--amber)">0</div><div class="proj-stat-label">關鍵詞</div></div>
+        <div class="proj-stat"><div class="proj-stat-num" id="pstatT" style="color:var(--purple)">—</div><div class="proj-stat-label">張力點</div></div>
+      </div>
+    </div>
+
+    <!-- Log view -->
+    <div style="display:none;flex:1;overflow-y:auto;padding:14px;font-family:var(--mono);font-size:12px" id="logView">
+      <div id="logList" style="display:flex;flex-direction:column;gap:4px"></div>
+    </div>
+  </main>
+
+  <!-- RIGHT PANEL -->
+  <aside class="right-panel">
+    <div class="right-tabs">
+      <button class="rtab active" id="rtabDetail" onclick="switchRightTab('detail')">學員詳情</button>
+      <button class="rtab" id="rtabInsight" onclick="switchRightTab('insight')">AI 洞察</button>
+      <button class="rtab" id="rtabSession" onclick="switchRightTab('session')">場次設定</button>
+    </div>
+
+    <!-- Detail tab -->
+    <div class="right-body" id="rtabDetail-body">
+      <div style="padding:40px 20px;text-align:center;color:var(--text-dim);font-family:var(--mono);font-size:12px">
+        點擊學員卡片<br>查看詳細資訊
+      </div>
+    </div>
+
+    <!-- Insight tab -->
+    <div class="right-body" id="rtabInsight-body" style="display:none">
+      <div class="insight-body">
+        <div class="field-group">
+          <label class="field-label">分析指令</label>
+          <textarea class="insight-ai-textarea" id="insightPrompt" placeholder="例：分析所有學員的字卡選擇，找出今天群體最大的集體焦慮..."></textarea>
+        </div>
+        <button class="ai-run-btn" onclick="runInsight()">✦ 執行 AI 洞察分析</button>
+        <div id="insightResults"></div>
+      </div>
+    </div>
+
+    <!-- Session tab -->
+    <div class="right-body" id="rtabSession-body" style="display:none">
+      <div style="padding:14px;display:flex;flex-direction:column;gap:12px">
+
+        <div class="field-group">
+          <label class="field-label">工作坊名稱</label>
+          <input class="field-input" value="HR AI 轉型思維工作坊" id="wsName">
+        </div>
+
+        <!-- Supabase -->
+        <div style="padding:10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--blue);letter-spacing:0.12em;margin-bottom:10px">
+            SUPABASE 連線
+          </div>
+          <div class="field-group">
+            <label class="field-label">Project URL</label>
+            <input class="field-input" id="sbUrl" placeholder="https://xxx.supabase.co"
+              oninput="updateProxyUrl()">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Anon Key（公開，安全）</label>
+            <input class="field-input" id="sbKey" placeholder="eyJ...">
+          </div>
+          <div style="font-size:10px;color:var(--text-dim);margin-top:-6px;line-height:1.5">
+            ⚠ API Key（Claude/Gemini）存在 Supabase Secrets，<br>
+            不在此填寫，學員端永遠看不到
+          </div>
+        </div>
+
+        <!-- Edge Function setup guide -->
+        <div style="padding:10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--purple);letter-spacing:0.12em;margin-bottom:8px">
+            EDGE FUNCTION 部署狀態
+          </div>
+          <div id="edgeFnStatus" style="font-size:12px;color:var(--text-dim);margin-bottom:8px">
+            尚未連線，請先設定 Supabase URL
+          </div>
+          <button class="top-btn btn-ghost" style="width:100%;font-size:11px"
+            onclick="checkEdgeFunction()">⟳ 檢查 Proxy 連線</button>
+        </div>
+
+        <button class="ai-run-btn" onclick="saveSessionConfig()">✓ 儲存設定</button>
+
+        <div style="border-top:1px solid var(--border);padding-top:12px">
+          <div class="field-label" style="margin-bottom:8px;color:var(--red)">危險操作</div>
+          <button class="top-btn btn-end" style="width:100%;margin-bottom:6px"
+            onclick="resetAllMemory()">↺ 重置所有學員記憶</button>
+          <button class="top-btn btn-end" style="width:100%"
+            onclick="exportSession()">↓ 匯出場次完整記錄 (JSON)</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+const S = {
+  sessionId: null,
+  joinCode: '',
+  isLive: false,
+
+  // ── 後端連線（講師端持有，不傳給學員）──
+  supabaseUrl: localStorage.getItem('_sbUrl') || '',
+  supabaseKey: localStorage.getItem('_sbKey') || '',
+
+  // ── AI Key（只在講師端 localStorage，開始工作坊時寫入 Supabase Secrets）──
+  claudeKey: localStorage.getItem('_ck') || '',
+  geminiKey: localStorage.getItem('_gk') || '',
+
+  // ── AI Config（開始工作坊時寫入 sessions.config，供 Edge Function 讀取）──
+  aiConfig: {
+    claudeModel:    'claude-sonnet-4-20250514',
+    geminiModel:    'gemini-2.5-flash-image',
+    globalPrompt:   '你是一個 HR & 總務 AI 轉型工作坊的學習夥伴。語氣溫暖直接，繁體中文，每次回應 100-250 字。',
+    tools:          ['image', 'summarize', 'roleplay'],
+    memoryStrategy: 'session',
+  },
+
+  participants: [],
+  wordFreq: {},
+  modules: [
+    { id:'m1', seq:1, type:'checkin',    name:'學員報到 Check-in',  prompt:'引導學員選擇字卡，建立個人化記憶。',                               isActive:false, duration:10 },
+    { id:'m2', seq:2, type:'discussion', name:'AI 焦慮開場討論',    prompt:'探索學員對 AI 轉型的真實感受，不評判，鼓勵說出擔憂。',              isActive:false, duration:20 },
+    { id:'m3', seq:3, type:'roleplay',   name:'困難對話練習',        prompt:'讓學員與 AI 扮演的阻力角色對話，練習推進 AI 採用的溝通技巧。',       isActive:false, duration:25 },
+    { id:'m4', seq:4, type:'convergence',name:'想法收斂與整理',      prompt:'協助學員整理今天的關鍵洞察，形成具體行動計畫。',                    isActive:false, duration:15 },
+    { id:'m5', seq:5, type:'reflection', name:'個人行動承諾',        prompt:'引導學員承諾一個具體的改變行動，並設定可測量的指標。',               isActive:false, duration:10 },
+  ],
+  selectedParticipant: null,
+  logs: [],
+};
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  S.joinCode = generateCode();
+  document.getElementById('joinCodeBadge').textContent = S.joinCode;
+  renderModules();
+  renderCardConfig();
+  restoreSettings();
+  setTimeout(loadDemoParticipants, 1500);
+});
+
+function restoreSettings() {
+  // Restore saved keys (obfuscated display only)
+  const ck = localStorage.getItem('_ck') || '';
+  const gk = localStorage.getItem('_gk') || '';
+  const sbUrl = localStorage.getItem('_sbUrl') || '';
+  const sbKey = localStorage.getItem('_sbKey') || '';
+
+  S.claudeKey = ck;
+  S.geminiKey = gk;
+  S.supabaseUrl = sbUrl;
+  S.supabaseKey = sbKey;
+
+  if(ck) { document.getElementById('claudeKey').value = ck; updateKeyStatus('claude', 'saved'); }
+  if(gk) { document.getElementById('geminiKey').value = gk; updateKeyStatus('gemini', 'saved'); }
+  if(sbUrl) {
+    document.getElementById('sbUrl').value = sbUrl;
+    updateProxyUrl();
+  }
+  if(sbKey) document.getElementById('sbKey').value = sbKey;
+}
+
+function generateCode() {
+  return Math.random().toString(36).slice(2,8).toUpperCase();
+}
+
+// ══════════════════════════════════════════
+// SESSION CONTROL
+// ══════════════════════════════════════════
+async function startSession() {
+  if(!S.claudeKey) {
+    showToast('⚠ 請先設定 Anthropic API Key');
+    switchSidebarTab('agent');
+    return;
+  }
+
+  S.isLive = true;
+  S.sessionId = 'sess-' + Date.now();
+  document.getElementById('statusDot').classList.add('live');
+  document.getElementById('statusText').textContent = '直播中';
+  document.getElementById('startBtn').style.display = 'none';
+  document.getElementById('endBtn').style.display = '';
+
+  // 寫入 Supabase session（若已設定）
+  if(S.supabaseUrl && S.supabaseKey) {
+    await writeSessionToSupabase();
+  } else {
+    addLog('session', '工作坊已開始（本地模式，未連接資料庫）', 'system');
+  }
+
+  showToast('▶ 工作坊已開始');
+
+  // 開始訂閱 Realtime（有 Supabase 時）
+  subscribeToRealtime();
+}
+
+async function writeSessionToSupabase() {
+  try {
+    const sessionConfig = {
+      workshop_title: document.getElementById('wsName')?.value || 'WorkshopAI',
+      join_code: S.joinCode,
+      ai_config: {
+        claudeModel: S.aiConfig.claudeModel,
+        geminiModel: S.aiConfig.geminiModel,
+        globalPrompt: document.getElementById('globalPrompt')?.value || S.aiConfig.globalPrompt,
+        tools: getEnabledTools(),
+        memoryStrategy: document.getElementById('memoryStrategy')?.value || 'session',
+        // Key 不寫在這裡 — 由 Edge Function 從 Supabase Secrets 讀取
+        proxyUrl: `${S.supabaseUrl}/functions/v1/ai-proxy`,
+      },
+      modules: S.modules,
+    };
+
+    const res = await fetch(`${S.supabaseUrl}/rest/v1/sessions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': S.supabaseKey,
+        'Authorization': `Bearer ${S.supabaseKey}`,
+        'Prefer': 'return=representation',
+      },
+      body: JSON.stringify({
+        join_code: S.joinCode,
+        status: 'active',
+        config: sessionConfig,
+        started_at: new Date().toISOString(),
+      })
+    });
+
+    if(res.ok) {
+      const data = await res.json();
+      S.sessionId = data[0]?.id || S.sessionId;
+      addLog('session', `工作坊已開始 · 場次 ID: ${S.sessionId}`, 'system');
+      addLog('session', `學員加入代碼: ${S.joinCode} · AI Proxy 已啟用`, 'system');
+    } else {
+      throw new Error(await res.text());
+    }
+  } catch(e) {
+    addLog('session', `⚠ Supabase 寫入失敗：${e.message}`, 'error');
+    addLog('session', '工作坊繼續以本地模式運作', 'system');
+  }
+}
+
+async function endSession() {
+  if(!confirm('確定要結束工作坊？所有學員記憶將存入資料庫。')) return;
+
+  S.isLive = false;
+  document.getElementById('statusDot').classList.remove('live');
+  document.getElementById('statusText').textContent = '已結束';
+  document.getElementById('startBtn').style.display = '';
+  document.getElementById('endBtn').style.display = 'none';
+
+  // 更新 Supabase session 狀態
+  if(S.supabaseUrl && S.supabaseKey && S.sessionId) {
+    try {
+      await fetch(`${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': S.supabaseKey,
+          'Authorization': `Bearer ${S.supabaseKey}`,
+        },
+        body: JSON.stringify({ status: 'ended', ended_at: new Date().toISOString() })
+      });
+      addLog('session', '工作坊已結束，Supabase 狀態已更新', 'system');
+    } catch(e) {
+      addLog('session', `⚠ 結束狀態寫入失敗：${e.message}`, 'error');
+    }
+  } else {
+    addLog('session', '工作坊已結束（本地模式）', 'system');
+  }
+
+  showToast('工作坊已結束');
+}
+
+// ══════════════════════════════════════════
+// MODULE MANAGEMENT
+// ══════════════════════════════════════════
+function renderModules() {
+  const list = document.getElementById('moduleList');
+  const typeColors = { checkin:'var(--green)', discussion:'var(--blue)', roleplay:'var(--amber)', convergence:'var(--purple)', reflection:'var(--red)', survey:'var(--text-mid)' };
+  list.innerHTML = S.modules.map(m => `
+    <div class="module-item ${m.isActive?'active-module':''}" id="mod-${m.id}">
+      <div class="module-seq">模組 ${m.seq} · ${m.duration}分</div>
+      <div class="module-name">${m.name}</div>
+      <div class="module-type-badge" style="border-color:${typeColors[m.type]||'var(--border)'};color:${typeColors[m.type]||'var(--text-dim)'}">${m.type}</div>
+      <div class="module-actions">
+        <button class="maction ${m.isActive?'push':''}" onclick="pushModule('${m.id}')">${m.isActive?'✓ 進行中':'▶ 推送'}</button>
+        <button class="maction" onclick="editModule('${m.id}')">編輯</button>
+        <button class="maction" onclick="deleteModule('${m.id}')">刪除</button>
+      </div>
+    </div>`).join('');
+}
+
+async function pushModule(id) {
+  S.modules.forEach(m => m.isActive = (m.id === id));
+  const m = S.modules.find(m => m.id === id);
+  renderModules();
+  document.getElementById('statActive').textContent = 1;
+  addLog('module', `已推送模組：${m.name}`, 'system');
+  showToast(`▶ 已推送：${m.name}`);
+
+  // 寫入 Supabase → 觸發 Realtime → 學員端自動切換模組
+  if(S.supabaseUrl && S.supabaseKey && S.sessionId) {
+    try {
+      const res = await fetch(
+        `${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': S.supabaseKey,
+            'Authorization': `Bearer ${S.supabaseKey}`,
+          },
+          body: JSON.stringify({ active_module_id: id })
+        }
+      );
+      if(!res.ok) throw new Error(await res.text());
+      addLog('module', `Supabase 已更新 active_module_id → 學員端 Realtime 觸發`, 'system');
+    } catch(e) {
+      addLog('module', `⚠ Supabase 推送失敗：${e.message}`, 'error');
+    }
+  }
+}
+
+function openModal() { document.getElementById('moduleModal').classList.add('open'); }
+function closeModal() { document.getElementById('moduleModal').classList.remove('open'); }
+
+function addModule() {
+  const type = document.getElementById('newModuleType').value;
+  const name = document.getElementById('newModuleName').value.trim() || '新模組';
+  const prompt = document.getElementById('newModulePrompt').value.trim();
+  const duration = parseInt(document.getElementById('newModuleDuration').value) || 15;
+  S.modules.push({ id:'m'+Date.now(), seq:S.modules.length+1, type, name, prompt, isActive:false, duration });
+  closeModal();
+  renderModules();
+  showToast('✓ 模組已新增');
+}
+
+function deleteModule(id) {
+  S.modules = S.modules.filter(m => m.id !== id);
+  S.modules.forEach((m,i) => m.seq = i+1);
+  renderModules();
+}
+
+function editModule(id) {
+  const m = S.modules.find(m => m.id === id);
+  document.getElementById('newModuleName').value = m.name;
+  document.getElementById('newModulePrompt').value = m.prompt;
+  document.getElementById('newModuleDuration').value = m.duration;
+  document.getElementById('newModuleType').value = m.type;
+  openModal();
+}
+
+// ══════════════════════════════════════════
+// PARTICIPANT RENDERING
+// ══════════════════════════════════════════
+const colors = ['#00e676','#4d9fff','#ffb830','#ff4757','#9c6bff','#00ccff','#ff6b9d'];
+
+function renderParticipants(list) {
+  const grid = document.getElementById('participantGrid');
+  if(list.length === 0) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-dim);font-family:var(--mono);font-size:13px">── 等待學員報到中 ──</div>`;
+    return;
+  }
+  grid.innerHTML = list.map((p,i) => {
+    const col = colors[i % colors.length];
+    const lastMsg = p.messages?.at(-1)?.content || '尚未開始對話';
+    return `<div class="p-card ${p.id === S.selectedParticipant?.id ? 'selected':''}" onclick="selectParticipant('${p.id}')">
+      <div style="position:absolute;top:0;left:0;width:3px;height:100%;background:${col};border-radius:4px 0 0 4px"></div>
+      <div class="p-card-top">
+        <div class="p-avatar" style="background:${col}22;color:${col};font-size:13px;font-weight:700">${p.name[0]}</div>
+        <div class="p-name">${p.name}</div>
+        <div class="p-time">${p.joinedAt}</div>
+      </div>
+      <div class="p-picks">
+        ${(p.picks||[]).map(pk => `<span class="p-pick">${pk}</span>`).join('')}
+        ${p.mood ? `<span class="p-pick" style="color:var(--amber);border-color:var(--amber)">${p.mood}</span>` : ''}
+      </div>
+      <div class="p-last-msg">${lastMsg}</div>
+      <div class="p-card-footer">
+        <span class="p-msg-count">${p.messages?.length || 0} 則對話</span>
+        <div class="p-status ${p.isActive ? 'active' : ''}"></div>
+      </div>
+      <div class="p-card-actions">
+        <button class="pca" onclick="viewConvo(event,'${p.id}')">對話</button>
+        <button class="pca" onclick="pushToUser(event,'${p.id}')">推送</button>
+        <button class="pca warn" onclick="resetMemory(event,'${p.id}')">重置</button>
+        <button class="pca danger" onclick="removeUser(event,'${p.id}')">移除</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('statParticipants').textContent = list.filter(p=>p.isActive).length;
+  document.getElementById('statMessages').textContent = list.reduce((a,p)=>a+(p.messages?.length||0),0);
+  document.getElementById('pstatP').textContent = list.filter(p=>p.isActive).length;
+}
+
+function selectParticipant(id) {
+  S.selectedParticipant = S.participants.find(p => p.id === id);
+  renderParticipants(S.participants);
+  showParticipantDetail(S.selectedParticipant);
+  switchRightTab('detail');
+}
+
+function showParticipantDetail(p) {
+  const col = colors[S.participants.indexOf(p) % colors.length];
+  const body = document.getElementById('rtabDetail-body');
+  body.innerHTML = `
+    <div class="p-detail-header">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="width:40px;height:40px;border-radius:50%;background:${col}22;color:${col};font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center">${p.name[0]}</div>
+        <div>
+          <div class="p-detail-name">${p.name}</div>
+          <div style="font-size:11px;color:var(--text-dim);font-family:var(--mono)">加入時間 ${p.joinedAt}</div>
+        </div>
+      </div>
+      <div class="p-detail-picks">
+        ${(p.picks||[]).map(pk=>`<span class="p-detail-pick">${pk}</span>`).join('')}
+        ${p.mood?`<span class="p-detail-pick" style="color:var(--amber);border-color:var(--amber)">${p.mood}</span>`:''}
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px">
+        <button class="top-btn btn-ghost" style="flex:1;font-size:11px" onclick="pushToUser(null,'${p.id}')">推送訊息</button>
+        <button class="top-btn btn-ghost" style="flex:1;font-size:11px" onclick="resetMemory(null,'${p.id}')">重置記憶</button>
+      </div>
+    </div>
+    <div class="p-detail-memory">
+      <div class="memory-section">
+        <div class="memory-label">AI 記憶摘要</div>
+        <div class="memory-value">${p.memory?.conversation_summary || '尚無摘要'}</div>
+      </div>
+      <div class="memory-section">
+        <div class="memory-label">關鍵洞察</div>
+        <div class="memory-value">${(p.memory?.key_insights||[]).join('<br>')||'—'}</div>
+      </div>
+    </div>
+    <div style="padding:0 16px 8px;border-top:1px solid var(--border)">
+      <div class="memory-label" style="padding-top:12px;margin-bottom:8px">完整對話記錄</div>
+      <div class="convo-log">
+        ${(p.messages||[]).map(m=>`
+          <div class="log-msg ${m.role}">
+            <div class="log-role">${m.role==='user'?p.name:'AI 夥伴'}</div>
+            ${m.content}
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════
+// SIDEBAR TABS
+// ══════════════════════════════════════════
+function switchSidebarTab(tab) {
+  ['modules','agent','checkin'].forEach(t => {
+    document.getElementById('tab'+t.charAt(0).toUpperCase()+t.slice(1)).style.display = t===tab?'block':'none';
+    document.getElementById('stab'+t.charAt(0).toUpperCase()+t.slice(1)).classList.toggle('active', t===tab);
+  });
+}
+
+// ══════════════════════════════════════════
+// MAIN VIEW TABS
+// ══════════════════════════════════════════
+function switchView(view) {
+  document.getElementById('participantGrid').style.display = view==='grid'?'grid':'none';
+  document.getElementById('projectionView').style.display = view==='projection'?'flex':'none';
+  document.getElementById('logView').style.display = view==='log'?'flex':'none';
+  ['grid','projection','log'].forEach(v => document.getElementById('vtab'+v.charAt(0).toUpperCase()+v.slice(1))?.classList.toggle('active', v===view));
+  if(view==='projection') syncProjection();
+}
+
+function toggleProjection() {
+  switchView('projection');
+  document.getElementById('vtabProjection').classList.add('active');
+}
+
+// ══════════════════════════════════════════
+// RIGHT PANEL TABS
+// ══════════════════════════════════════════
+function switchRightTab(tab) {
+  ['detail','insight','session'].forEach(t => {
+    document.getElementById(`rtab${t.charAt(0).toUpperCase()+t.slice(1)}-body`).style.display = t===tab?'block':'none';
+    document.getElementById(`rtab${t.charAt(0).toUpperCase()+t.slice(1)}`).classList.toggle('active', t===tab);
+  });
+}
+
+// ══════════════════════════════════════════
+// PARTICIPANT ACTIONS
+// ══════════════════════════════════════════
+function viewConvo(e, id) {
+  e?.stopPropagation();
+  selectParticipant(id);
+}
+
+async function pushToUser(e, id) {
+  e?.stopPropagation();
+  const p = S.participants.find(p => p.id === id);
+  const msg = prompt(`推送訊息給 ${p?.name}（會出現在他的 AI 夥伴對話框）：`);
+  if(!msg) return;
+
+  addLog('push', `推送給 ${p?.name}：${msg}`, 'instructor');
+
+  // 寫入該學員的 conversations 表（role: system），Edge Function 不會轉發
+  // 學員端下次呼叫 AI 時，這條訊息會注入 system prompt 的尾部
+  if(S.supabaseUrl && S.supabaseKey && id) {
+    try {
+      await fetch(`${S.supabaseUrl}/rest/v1/conversations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': S.supabaseKey,
+          'Authorization': `Bearer ${S.supabaseKey}`,
+        },
+        body: JSON.stringify({
+          session_id:     S.sessionId,
+          participant_id: id,
+          role:           'system',
+          content:        `[講師提示] ${msg}`,
+          content_type:   'text',
+          metadata:       { source: 'instructor_push', sent_at: new Date().toISOString() },
+        })
+      });
+      showToast(`✓ 已推送給 ${p?.name}`);
+    } catch(err) {
+      addLog('push', `⚠ 推送失敗：${err.message}`, 'error');
+    }
+  } else {
+    showToast('✓ 訊息已記錄（本地模式）');
+  }
+}
+
+async function resetMemory(e, id) {
+  e?.stopPropagation();
+  const p = S.participants.find(p => p.id === id);
+  if(!confirm(`確定要重置 ${p?.name} 的 AI 記憶？此操作無法復原。`)) return;
+
+  const emptyMemory = {
+    profile: p?.memory?.profile,
+    learning_state: { visited_modules: [], key_insights: [], unresolved_questions: [] },
+    conversation_summary: '',
+    last_updated: new Date().toISOString(),
+  };
+
+  // 更新本地 state
+  if(p) p.memory = emptyMemory;
+
+  // 同步到 Supabase
+  if(S.supabaseUrl && S.supabaseKey && id) {
+    try {
+      await fetch(`${S.supabaseUrl}/rest/v1/participants?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': S.supabaseKey,
+          'Authorization': `Bearer ${S.supabaseKey}`,
+        },
+        body: JSON.stringify({ memory: emptyMemory })
+      });
+      addLog('reset', `已重置 ${p?.name} 的記憶（已同步 Supabase）`, 'instructor');
+    } catch(err) {
+      addLog('reset', `⚠ Supabase 同步失敗：${err.message}（本地已重置）`, 'error');
+    }
+  } else {
+    addLog('reset', `已重置 ${p?.name} 的記憶（本地）`, 'instructor');
+  }
+
+  renderParticipants(S.participants);
+  if(S.selectedParticipant?.id === id) showParticipantDetail(p);
+  showToast('↺ 記憶已重置');
+}
+
+function removeUser(e, id) {
+  e?.stopPropagation();
+  const p = S.participants.find(p=>p.id===id);
+  if(!confirm(`確定要移除 ${p?.name}？`)) return;
+  S.participants = S.participants.filter(p=>p.id!==id);
+  renderParticipants(S.participants);
+  showToast('已移除學員');
+}
+
+async function resetAllMemory() {
+  if(!confirm('確定要重置所有學員的 AI 記憶？此操作無法復原。')) return;
+
+  const now = new Date().toISOString();
+  S.participants.forEach(p => {
+    p.memory = {
+      profile: p.memory?.profile,
+      learning_state: { visited_modules: [], key_insights: [], unresolved_questions: [] },
+      conversation_summary: '',
+      last_updated: now,
+    };
+  });
+
+  // 批量更新 Supabase（依序非同步）
+  if(S.supabaseUrl && S.supabaseKey) {
+    let success = 0, fail = 0;
+    await Promise.allSettled(
+      S.participants.map(p =>
+        fetch(`${S.supabaseUrl}/rest/v1/participants?id=eq.${p.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': S.supabaseKey,
+            'Authorization': `Bearer ${S.supabaseKey}`,
+          },
+          body: JSON.stringify({ memory: p.memory })
+        }).then(r => r.ok ? success++ : fail++)
+          .catch(() => fail++)
+      )
+    );
+    addLog('reset', `已重置所有學員記憶（${success} 成功，${fail} 失敗）`, 'instructor');
+  } else {
+    addLog('reset', '已重置所有學員記憶（本地）', 'instructor');
+  }
+
+  renderParticipants(S.participants);
+  showToast('↺ 已重置所有記憶');
+}
+
+function filterParticipants(q) {
+  const filtered = S.participants.filter(p => p.name.includes(q) || (p.picks||[]).some(pk=>pk.includes(q)));
+  renderParticipants(filtered);
+}
+
+function sortParticipants(by) {
+  const sorted = [...S.participants].sort((a,b) => {
+    if(by==='messages') return (b.messages?.length||0)-(a.messages?.length||0);
+    if(by==='name') return a.name.localeCompare(b.name);
+    return 0;
+  });
+  renderParticipants(sorted);
+}
+
+// ══════════════════════════════════════════
+// PROJECTION SYNC
+// ══════════════════════════════════════════
+function syncProjection() {
+  const responses = S.participants.flatMap(p => (p.messages||[]).filter(m=>m.role==='user').slice(-2));
+  const words = {};
+  responses.forEach(m => {
+    m.content.split(/[\s，。？！、；：]/g).filter(w=>w.length>1).forEach(w=>{ words[w]=(words[w]||0)+1; });
+  });
+  const sorted = Object.entries(words).sort((a,b)=>b[1]-a[1]);
+  const max = sorted[0]?.[1]||1;
+  document.getElementById('projWordCloud').innerHTML = sorted.slice(0,20).map(([w,c])=>{
+    const r=c/max; const sz=r>0.8?5:r>0.6?4:r>0.4?3:r>0.2?2:1;
+    return `<span class="wc-bubble wc-${sz}">${w}</span>`;
+  }).join('') || '<span style="color:var(--text-dim);font-size:12px">等待回應...</span>';
+
+  document.getElementById('projResponses').innerHTML = responses.slice(-6).map(m=>
+    `<div class="rstream-item">${m.content}</div>`
+  ).join('') || '<span style="color:var(--text-dim);font-size:12px;font-family:var(--mono)">等待回應...</span>';
+
+  document.getElementById('pstatR').textContent = responses.length;
+  document.getElementById('pstatW').textContent = sorted.length;
+
+  // Card heatmap
+  const pickCounts = {};
+  S.participants.forEach(p=>(p.picks||[]).forEach(pk=>{ pickCounts[pk]=(pickCounts[pk]||0)+1; }));
+  renderHeatmap('projCardHeat', pickCounts, 'var(--blue)');
+
+  const moodCounts = {};
+  S.participants.forEach(p=>{ if(p.mood) moodCounts[p.mood]=(moodCounts[p.mood]||0)+1; });
+  renderHeatmap('projMoodHeat', moodCounts, 'var(--amber)');
+}
+
+function renderHeatmap(elId, data, color) {
+  const el = document.getElementById(elId);
+  const sorted = Object.entries(data).sort((a,b)=>b[1]-a[1]);
+  const max = sorted[0]?.[1]||1;
+  el.innerHTML = sorted.map(([label,count])=>`
+    <div class="hm-row">
+      <div class="hm-label">${label}</div>
+      <div class="hm-bar"><div class="hm-fill" style="width:${Math.max(8,(count/max)*100)}%;background:${color}"></div></div>
+      <div class="hm-count">${count}</div>
+    </div>`).join('') || '<div style="color:var(--text-dim);font-family:var(--mono);font-size:11px">暫無資料</div>';
+}
+
+// ══════════════════════════════════════════
+// AI INSIGHT (Instructor side)
+// ══════════════════════════════════════════
+async function runInsight() {
+  const prompt = document.getElementById('insightPrompt').value.trim();
+  if(!prompt) { showToast('請輸入分析指令'); return; }
+
+  const results = document.getElementById('insightResults');
+  results.innerHTML = `<div class="insight-card" style="margin-top:8px">
+    <div class="insight-card-label">分析中...</div>
+    <div class="insight-card-text">AI 正在分析群體資料...</div>
+  </div>`;
+
+  const context = `工作坊共 ${S.participants.length} 位學員。
+字卡分佈：${JSON.stringify(S.participants.reduce((acc,p)=>{ (p.picks||[]).forEach(pk=>{acc[pk]=(acc[pk]||0)+1;}); return acc; }, {}))}
+能量分佈：${JSON.stringify(S.participants.reduce((acc,p)=>{ if(p.mood) acc[p.mood]=(acc[p.mood]||0)+1; return acc; }, {}))}
+最近對話摘要：${S.participants.map(p=>`${p.name}: ${p.memory?.conversation_summary||'無'}`).join('\n')}`;
+
+  if(!S.claudeKey) {
+    setTimeout(() => {
+      results.innerHTML = `<div class="insight-card" style="margin-top:8px">
+        <div class="insight-card-label">⚡ 群體洞察</div>
+        <div class="insight-card-text">【示範模式】今天的群體整體呈現「觀望 → 好奇」的轉換動態。主要張力：效率期待 vs 責任歸屬的不確定。建議：在收斂環節直接點名「誰來負責」這個問題，讓它成為全場討論焦點。</div>
+        <div class="tension-row" style="margin-top:8px">
+          <span class="tension-tag">⚡ 效率 vs 責任</span>
+          <span class="tension-tag">⚡ 期待 vs 恐懼</span>
+        </div>
+      </div>`;
+    }, 1200);
+    return;
+  }
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': S.claudeKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: S.aiConfig.claudeModel || 'claude-sonnet-4-20250514',
+        max_tokens: 600,
+        system:'你是工作坊講師的 AI 助手，提供精準的群體動態洞察。繁體中文，直接、犀利、有洞察力。',
+        messages:[{role:'user',content:`${context}\n\n講師的問題：${prompt}`}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '分析失敗';
+    results.innerHTML = `<div class="insight-card" style="margin-top:8px">
+      <div class="insight-card-label">⚡ AI 洞察</div>
+      <div class="insight-card-text">${text.replace(/\n/g,'<br>')}</div>
+    </div>`;
+  } catch(e) {
+    results.innerHTML = `<div class="insight-card" style="margin-top:8px"><div class="insight-card-text">分析失敗：${e.message}</div></div>`;
+  }
+}
+
+async function runGroupInsight() {
+  switchRightTab('insight');
+  document.getElementById('insightPrompt').value = '分析今天所有學員的字卡選擇和對話狀態，找出群體最大的集體張力，並給我一個具體的引導建議。';
+  runInsight();
+}
+
+async function broadcastMessage() {
+  const msg = prompt('輸入要廣播給所有學員的訊息（會出現在所有學員的 AI 夥伴對話框）：');
+  if(!msg) return;
+
+  addLog('broadcast', `廣播：${msg}`, 'instructor');
+
+  // 寫入 sessions.config.broadcast → 學員端 Realtime 收到後顯示
+  if(S.supabaseUrl && S.supabaseKey && S.sessionId) {
+    try {
+      const broadcastPayload = {
+        message: msg,
+        sent_at: new Date().toISOString(),
+        sent_by: 'instructor',
+      };
+      // 更新 sessions 的 config，加入廣播訊息
+      // 學員端訂閱 sessions UPDATE 後讀取 config.broadcast
+      const res = await fetch(
+        `${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': S.supabaseKey,
+            'Authorization': `Bearer ${S.supabaseKey}`,
+          },
+          body: JSON.stringify({
+            config: { ...S.aiConfig, broadcast: broadcastPayload }
+          })
+        }
+      );
+      if(res.ok) {
+        showToast('📢 廣播已發送');
+      } else {
+        throw new Error(await res.text());
+      }
+    } catch(e) {
+      addLog('broadcast', `⚠ 廣播發送失敗：${e.message}`, 'error');
+      showToast('⚠ 廣播失敗，請查看 Log');
+    }
+  } else {
+    showToast('📢 廣播已記錄（本地模式）');
+  }
+}
+
+// ══════════════════════════════════════════
+// REALTIME（講師端訂閱）
+// ══════════════════════════════════════════
+function subscribeToRealtime() {
+  if(!S.supabaseUrl || !S.supabaseKey || !S.sessionId) return;
+
+  // 動態載入 supabase-js
+  if(window.__sbClient) { _doInstructorSubscribe(window.__sbClient); return; }
+
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+  script.onload = () => {
+    window.__sbClient = window.supabase.createClient(S.supabaseUrl, S.supabaseKey);
+    _doInstructorSubscribe(window.__sbClient);
+  };
+  document.head.appendChild(script);
+}
+
+function _doInstructorSubscribe(sb) {
+  // ① 新學員報到
+  sb.channel('instructor-participants:' + S.sessionId)
+    .on('postgres_changes', {
+      event: 'INSERT', schema: 'public', table: 'participants',
+      filter: `session_id=eq.${S.sessionId}`
+    }, payload => {
+      const p = payload.new;
+      const checkin = p.checkin_data || {};
+      const newParticipant = {
+        id:        p.id,
+        name:      p.display_name,
+        picks:     checkin.picks || [],
+        mood:      checkin.mood || '',
+        joinedAt:  new Date(p.joined_at).toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'}),
+        isActive:  true,
+        messages:  [],
+        memory:    p.memory || {},
+      };
+      // 避免重複
+      if(!S.participants.find(x => x.id === p.id)) {
+        S.participants.push(newParticipant);
+        renderParticipants(S.participants);
+        updateTopStats();
+        addLog('checkin', `${p.display_name} 已報到（${(checkin.picks||[]).join('、')}）`, 'participant');
+      }
+    })
+    .subscribe();
+
+  // ② 學員新訊息
+  sb.channel('instructor-conversations:' + S.sessionId)
+    .on('postgres_changes', {
+      event: 'INSERT', schema: 'public', table: 'conversations',
+      filter: `session_id=eq.${S.sessionId}`
+    }, payload => {
+      const c = payload.new;
+      if(c.role === 'system') return; // 忽略系統訊息
+      const p = S.participants.find(x => x.id === c.participant_id);
+      if(p) {
+        p.messages.push({ role: c.role, content: c.content });
+        p.lastActive = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'});
+        renderParticipants(S.participants);
+        updateTopStats();
+        // 如果目前右欄正在查看這位學員，即時更新
+        if(S.selectedParticipant?.id === c.participant_id) {
+          S.selectedParticipant = p;
+          showParticipantDetail(p);
+        }
+      }
+    })
+    .subscribe();
+
+  addLog('realtime', 'Supabase Realtime 已訂閱（學員報到 + 對話）', 'system');
+}
+
+function updateTopStats() {
+  const active = S.participants.filter(p => p.isActive).length;
+  const total  = S.participants.reduce((a, p) => a + (p.messages?.length || 0), 0);
+  document.getElementById('statParticipants').textContent = active;
+  document.getElementById('statMessages').textContent     = total;
+  document.getElementById('pstatP').textContent           = active;
+}
+
+// ══════════════════════════════════════════
+// CHECK-IN CARD CONFIG
+// ══════════════════════════════════════════
+const defaultCards = [
+  {emoji:'🔭',word:'觀望中',sub:'先看看再說',dim:'A'},
+  {emoji:'⚡',word:'已在用了',sub:'走在大家前面',dim:'A'},
+  {emoji:'⚖️',word:'半信半疑',sub:'需要更多說服',dim:'A'},
+  {emoji:'🌊',word:'被推著走',sub:'還沒準備好',dim:'A'},
+  {emoji:'📄',word:'文件海',sub:'表單永遠填不完',dim:'B'},
+  {emoji:'💬',word:'人心難測',sub:'溝通協調最燒腦',dim:'B'},
+  {emoji:'📊',word:'數字壓力',sub:'成本效益要說清楚',dim:'B'},
+  {emoji:'🏛️',word:'規則叢林',sub:'合規讓我頭很大',dim:'B'},
+  {emoji:'🔓',word:'解放重複',sub:'把時間留給重要的事',dim:'C'},
+  {emoji:'🍚',word:'飯碗問題',sub:'說出口需要勇氣',dim:'C'},
+  {emoji:'✨',word:'品質提升',sub:'做更好的決策',dim:'C'},
+  {emoji:'❓',word:'誰來負責',sub:'AI出錯怎麼算',dim:'C'},
+];
+
+function renderCardConfig() {
+  const el = document.getElementById('cardConfigList');
+  const dimColors = {A:'var(--green)',B:'var(--amber)',C:'var(--red)'};
+  el.innerHTML = defaultCards.map((c,i) => `
+    <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:16px">${c.emoji}</span>
+      <div style="flex:1;min-width:0">
+        <input style="width:100%;background:transparent;border:none;color:var(--text);font-family:var(--sans);font-size:12px;font-weight:600" value="${c.word}">
+        <input style="width:100%;background:transparent;border:none;color:var(--text-dim);font-family:var(--sans);font-size:11px" value="${c.sub}">
+      </div>
+      <span style="font-size:9px;font-weight:700;color:${dimColors[c.dim]};width:16px;text-align:center">${c.dim}</span>
+    </div>`).join('');
+}
+
+function saveCheckinConfig() { showToast('✓ 報到設定已套用'); }
+
+function getEnabledTools() {
+  return [...document.querySelectorAll('#toolChips .tool-chip.on')]
+    .map(el => el.dataset.tool).filter(Boolean);
+}
+
+function updateKeyStatus(provider, status) {
+  const el = document.getElementById(provider + 'Status');
+  if(!el) return;
+  const statusMap = {
+    saved:   { color: 'var(--text-mid)',  text: '已儲存' },
+    ok:      { color: 'var(--green)',     text: '✓ 連線正常' },
+    error:   { color: 'var(--red)',       text: '✗ 無效' },
+    testing: { color: 'var(--amber)',     text: '測試中...' },
+  };
+  const s = statusMap[status] || statusMap.saved;
+  el.querySelector('div:last-child').style.color = s.color;
+  el.querySelector('div:last-child').textContent = s.text;
+  el.style.borderColor = s.color === 'var(--text-mid)' ? 'var(--border)' : s.color;
+}
+
+function updateProxyUrl() {
+  const url = document.getElementById('sbUrl')?.value.trim() || S.supabaseUrl;
+  const display = document.getElementById('proxyUrlDisplay');
+  if(!display) return;
+  if(url) {
+    const proxy = `${url}/functions/v1/ai-proxy`;
+    display.textContent = proxy;
+    display.style.color = 'var(--green)';
+  } else {
+    display.textContent = '尚未設定 Supabase URL';
+    display.style.color = 'var(--text-dim)';
+  }
+}
+
+async function testClaudeKey() {
+  const key = document.getElementById('claudeKey').value.trim();
+  if(!key) { showToast('請先輸入 Claude Key'); return; }
+  updateKeyStatus('claude', 'testing');
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'x-api-key':key, 'anthropic-version':'2023-06-01' },
+      body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:10, messages:[{role:'user',content:'hi'}] })
+    });
+    const data = await res.json();
+    if(data.content || data.id) {
+      updateKeyStatus('claude', 'ok');
+      showToast('✓ Claude Key 有效');
+    } else {
+      updateKeyStatus('claude', 'error');
+      showToast('✗ Claude Key 無效：' + (data.error?.message || '未知錯誤'));
+    }
+  } catch(e) {
+    updateKeyStatus('claude', 'error');
+    showToast('✗ 測試失敗：' + e.message);
+  }
+}
+
+async function testGeminiKey() {
+  const key = document.getElementById('geminiKey').value.trim();
+  if(!key) { showToast('請先輸入 Gemini Key'); return; }
+  updateKeyStatus('gemini', 'testing');
+  try {
+    const model = document.getElementById('geminiModel')?.value || 'gemini-2.5-flash-image';
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: '測試連線，請回應 OK' }] }],
+          generationConfig: { responseModalities: ['TEXT'] }
+        })
+      }
+    );
+    const data = await res.json();
+    if(data.candidates?.length > 0) {
+      updateKeyStatus('gemini', 'ok');
+      showToast('✓ Gemini Key 有效，圖片生成已就緒');
+    } else if(data.error) {
+      updateKeyStatus('gemini', 'error');
+      showToast('✗ Gemini Key 錯誤：' + data.error.message);
+    }
+  } catch(e) {
+    updateKeyStatus('gemini', 'error');
+    showToast('✗ 測試失敗：' + e.message);
+  }
+}
+
+function saveAgentConfig() {
+  const ck = document.getElementById('claudeKey').value.trim();
+  const gk = document.getElementById('geminiKey').value.trim();
+
+  if(ck) {
+    S.claudeKey = ck;
+    localStorage.setItem('_ck', ck);
+    updateKeyStatus('claude', 'saved');
+  }
+  if(gk) {
+    S.geminiKey = gk;
+    localStorage.setItem('_gk', gk);
+    updateKeyStatus('gemini', 'saved');
+  }
+
+  // Update AI config
+  S.aiConfig = {
+    claudeModel:    document.getElementById('claudeModel')?.value || 'claude-sonnet-4-20250514',
+    geminiModel:    document.getElementById('geminiModel')?.value || 'gemini-2.5-flash-image',
+    globalPrompt:   document.getElementById('globalPrompt')?.value || '',
+    tools:          getEnabledTools(),
+    memoryStrategy: document.getElementById('memoryStrategy')?.value || 'session',
+  };
+
+  localStorage.setItem('_aiConfig', JSON.stringify(S.aiConfig));
+  addLog('config', `AI 設定已儲存 · 模型: ${S.aiConfig.claudeModel}`, 'instructor');
+  showToast('✓ AI 設定已儲存（Key 僅存於本地）');
+}
+
+function saveSessionConfig() {
+  const url = document.getElementById('sbUrl')?.value.trim() || '';
+  const key = document.getElementById('sbKey')?.value.trim() || '';
+
+  S.supabaseUrl = url;
+  S.supabaseKey = key;
+
+  if(url) { localStorage.setItem('_sbUrl', url); updateProxyUrl(); }
+  if(key) { localStorage.setItem('_sbKey', key); }
+
+  addLog('config', `Supabase 設定已儲存 · ${url || '(未設定)'}`, 'instructor');
+  showToast('✓ 設定已儲存');
+}
+
+async function checkEdgeFunction() {
+  const url = S.supabaseUrl || document.getElementById('sbUrl')?.value.trim();
+  if(!url) { showToast('請先填寫 Supabase URL'); return; }
+
+  const statusEl = document.getElementById('edgeFnStatus');
+  if(statusEl) statusEl.textContent = '檢查中...';
+
+  try {
+    const res = await fetch(`${url}/functions/v1/ai-proxy`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'ping' })
+    });
+    const data = await res.json();
+    if(data.ok || data.pong) {
+      if(statusEl) { statusEl.textContent = '✓ Edge Function 運作正常'; statusEl.style.color = 'var(--green)'; }
+      showToast('✓ Proxy 連線正常');
+    } else {
+      throw new Error(JSON.stringify(data));
+    }
+  } catch(e) {
+    if(statusEl) {
+      statusEl.innerHTML = `✗ 尚未部署或連線失敗<br>
+        <span style="font-size:10px;color:var(--text-dim)">請參考 README 部署 Supabase Edge Function</span>`;
+      statusEl.style.color = 'var(--amber)';
+    }
+  }
+}
+
+function showAIConfig() { switchSidebarTab('agent'); }
+
+// ══════════════════════════════════════════
+// LOG
+// ══════════════════════════════════════════
+function addLog(type, message, actor='system') {
+  const log = { type, message, actor, time: new Date().toLocaleTimeString('zh-TW') };
+  S.logs.push(log);
+  const el = document.getElementById('logList');
+  const colors = { system:'var(--text-dim)', instructor:'var(--blue)', participant:'var(--green)', error:'var(--red)' };
+  const div = document.createElement('div');
+  div.style.cssText = `display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);color:${colors[actor]||'var(--text-dim)'}`;
+  div.innerHTML = `<span style="color:var(--text-dim);flex-shrink:0">${log.time}</span><span style="flex-shrink:0;text-transform:uppercase;font-size:10px;width:70px">[${type}]</span><span style="flex:1">${message}</span>`;
+  el.appendChild(div);
+}
+
+// ══════════════════════════════════════════
+// TOOLS
+// ══════════════════════════════════════════
+function toggleTool(el) { el.classList.toggle('on'); }
+
+function exportSession() {
+  const data = { session: S.sessionId, participants: S.participants, logs: S.logs, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `workshop-${S.joinCode}-${Date.now()}.json`; a.click();
+}
+
+function copyCode() {
+  navigator.clipboard.writeText(S.joinCode).then(()=>showToast('✓ 代碼已複製'));
+}
+
+// ══════════════════════════════════════════
+// DEMO DATA
+// ══════════════════════════════════════════
+function loadDemoParticipants() {
+  const demo = [
+    { id:'p1', name:'陳佳慧', picks:['🔭 觀望中','📄 文件海'], mood:'💡 好奇', joinedAt:'09:03', isActive:true,
+      messages:[{role:'user',content:'我選了觀望中是因為我還不確定 AI 對 HR 工作的影響到底有多大'},{role:'assistant',content:'你說「還不確定」這個詞很有意思——是什麼讓你覺得現在下判斷太早？'}],
+      memory:{conversation_summary:'陳佳慧對 AI 轉型持觀望態度，文件處理是主要痛點，對不確定性有明顯的謹慎心態。',key_insights:['擔心 AI 判斷出錯誰負責','文件自動化是最想解決的痛點'],unresolved_questions:['AI 出錯的責任歸屬']}},
+    { id:'p2', name:'林志遠', picks:['⚡ 已在用了','🔓 解放重複'], mood:'🔥 滿血', joinedAt:'09:05', isActive:true,
+      messages:[{role:'user',content:'我已經在用 ChatGPT 寫工作說明書了，省了我好多時間'},{role:'assistant',content:'很好！你已經走在前面了。我想問你：你的同事知道你在用嗎？他們的反應是什麼？'}],
+      memory:{conversation_summary:'林志遠是早採用者，已在使用 AI 工具，最關心的是如何說服同事跟上。',key_insights:['已使用ChatGPT提升效率','想幫助同事也採用AI'],unresolved_questions:[]}},
+    { id:'p3', name:'王雅婷', picks:['🍚 飯碗問題','⚖️ 半信半疑'], mood:'😬 緊張期待', joinedAt:'09:07', isActive:false,
+      messages:[{role:'user',content:'說實話我有點擔心如果 AI 把我的工作都做了...'}],
+      memory:{conversation_summary:'王雅婷對 AI 取代工作有明顯焦慮，尚未充分表達內心真實感受。',key_insights:['擔心被AI取代'],unresolved_questions:['AI會不會讓我失業']}},
+    { id:'p4', name:'張明德', picks:['🏛️ 規則叢林','❓ 誰來負責'], mood:'🤔 思考中', joinedAt:'09:09', isActive:true,
+      messages:[],
+      memory:{conversation_summary:'',key_insights:[],unresolved_questions:[]}},
+    { id:'p5', name:'李淑芬', picks:['💬 人心難測','✨ 品質提升'], mood:'💡 好奇', joinedAt:'09:11', isActive:true,
+      messages:[{role:'user',content:'我最想知道 AI 怎麼幫助員工關係處理'},{role:'assistant',content:'員工關係裡最難的往往是「說什麼」而不是「知道什麼」。你有沒有遇過一個你知道對方可能是錯的，但又很難直接說的情況？'}],
+      memory:{conversation_summary:'李淑芬關注AI在員工溝通和關係管理上的應用，對情感智慧和AI的結合有獨特見解。',key_insights:['重視溝通品質','想用AI提升HR諮詢能力'],unresolved_questions:[]}},
+  ];
+  S.participants = demo;
+  renderParticipants(S.participants);
+  syncProjection();
+  demo.forEach(p => addLog('checkin', `${p.name} 已完成報到（${p.picks.join('、')}）`, 'participant'));
+}
+
+// ══════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+// Auto-refresh projection every 5s
+setInterval(() => {
+  if(document.getElementById('projectionView').style.display !== 'none') syncProjection();
+}, 5000);
+</script>
+</body>
+</html>
