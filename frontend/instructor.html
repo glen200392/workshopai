@@ -507,6 +507,70 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 </head>
 <body>
 
+<!-- ── 密碼保護 Overlay ── -->
+<div id="authOverlay" style="
+  display:none;
+  position:fixed;inset:0;z-index:9999;
+  background:#0d0f12;
+  align-items:center;justify-content:center;
+  flex-direction:column;
+">
+  <div style="
+    background:#141720;
+    border:1px solid #2a2f45;
+    border-radius:16px;
+    padding:40px 36px;
+    width:320px;
+    text-align:center;
+  ">
+    <div style="font-size:28px;margin-bottom:12px">🔐</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;
+      color:#00e676;letter-spacing:0.06em;margin-bottom:4px">WorkshopAI</div>
+    <div style="font-size:11px;color:#4a5070;margin-bottom:28px;letter-spacing:0.08em">
+      INSTRUCTOR ACCESS
+    </div>
+    <input
+      id="authInput"
+      type="password"
+      placeholder="密碼"
+      autocomplete="current-password"
+      onkeydown="if(event.key==='Enter') checkAuth()"
+      style="
+        width:100%;
+        background:#0d0f12;
+        border:1px solid #2a2f45;
+        border-radius:8px;
+        padding:12px 16px;
+        color:#e8eaf2;
+        font-size:15px;
+        font-family:'IBM Plex Mono',monospace;
+        outline:none;
+        margin-bottom:12px;
+        transition:border-color 0.2s;
+        text-align:center;
+        letter-spacing:0.15em;
+      "
+    >
+    <div id="authError" style="font-size:11px;color:#ff4757;margin-bottom:12px;min-height:16px"></div>
+    <button onclick="checkAuth()" style="
+      width:100%;
+      background:#00e676;
+      color:#0d0f12;
+      border:none;
+      border-radius:8px;
+      padding:12px;
+      font-size:14px;
+      font-weight:700;
+      font-family:'IBM Plex Mono',monospace;
+      cursor:pointer;
+      letter-spacing:0.06em;
+      transition:opacity 0.15s;
+    " onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+      進入後台 →
+    </button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- MODULE MODAL -->
@@ -935,9 +999,48 @@ const S = {
 };
 
 // ══════════════════════════════════════════
+// AUTH — 密碼保護（SHA-256，不儲存明文）
+// ══════════════════════════════════════════
+let _AUTH_HASH = '';
+
+async function _computeHash(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function initAuth() {
+  _AUTH_HASH = await _computeHash('Glen');
+  const stored = sessionStorage.getItem('_wai_auth');
+  if(stored === _AUTH_HASH) return; // 本 session 已驗證
+  const overlay = document.getElementById('authOverlay');
+  overlay.style.display = 'flex';
+  setTimeout(() => document.getElementById('authInput')?.focus(), 100);
+}
+
+async function checkAuth() {
+  const input = document.getElementById('authInput');
+  const errEl = document.getElementById('authError');
+  const val = input.value;
+  if(!val) { errEl.textContent = '請輸入密碼'; return; }
+  const hash = await _computeHash(val);
+  if(hash === _AUTH_HASH) {
+    sessionStorage.setItem('_wai_auth', _AUTH_HASH);
+    document.getElementById('authOverlay').style.display = 'none';
+    errEl.textContent = '';
+  } else {
+    errEl.textContent = '密碼錯誤';
+    input.value = '';
+    input.style.borderColor = '#ff4757';
+    setTimeout(() => { input.style.borderColor = '#2a2f45'; }, 1200);
+    input.focus();
+  }
+}
+
+// ══════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
+  initAuth();
   S.joinCode = generateCode();
   document.getElementById('joinCodeBadge').textContent = S.joinCode;
   renderModules();
