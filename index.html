@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WorkshopAI</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    min-height: 100vh;
+    background: #0d0f12;
+    color: #e8eaf2;
+    font-family: 'IBM Plex Mono', 'Courier New', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+  }
+  .logo {
+    font-size: 22px;
+    font-weight: 700;
+    color: #00e676;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .tagline {
+    font-size: 11px;
+    color: #4a5070;
+    letter-spacing: 0.12em;
+    margin-bottom: 48px;
+    text-transform: uppercase;
+  }
+  .cards {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    max-width: 360px;
+  }
+  .card {
+    display: block;
+    text-decoration: none;
+    background: #141720;
+    border: 1px solid #2a2f45;
+    border-radius: 12px;
+    padding: 24px 28px;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+  }
+  .card:hover {
+    border-color: #00e676;
+    background: #1a2030;
+  }
+  .card-icon { font-size: 28px; margin-bottom: 10px; }
+  .card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #e8eaf2;
+    margin-bottom: 4px;
+    letter-spacing: 0.04em;
+  }
+  .card-sub {
+    font-size: 11px;
+    color: #4a5070;
+    line-height: 1.5;
+  }
+  .card-badge {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.08em;
+  }
+  .badge-student  { background: rgba(0,230,118,0.1); color: #00e676; border: 1px solid rgba(0,230,118,0.3); }
+  .badge-instructor { background: rgba(77,159,255,0.1); color: #4d9fff; border: 1px solid rgba(77,159,255,0.3); }
+  .footer {
+    margin-top: 48px;
+    font-size: 10px;
+    color: #2a2f45;
+    letter-spacing: 0.08em;
+    text-align: center;
+    line-height: 1.8;
+  }
+</style>
+</head>
+<body>
+
+<div class="logo">WorkshopAI</div>
+<div class="tagline">企業 AI 工作坊協作平台</div>
+
+<div class="cards">
+
+  <a class="card" href="frontend/student.html">
+    <div class="card-icon">📱</div>
+    <div class="card-title">學員端</div>
+    <div class="card-sub">輸入課程代碼加入工作坊<br>AI 夥伴全程個人化陪伴</div>
+    <div class="card-badge badge-student">手機開啟</div>
+  </a>
+
+  <a class="card" href="frontend/instructor.html">
+    <div class="card-icon">🖥</div>
+    <div class="card-title">講師後台</div>
+    <div class="card-sub">管理場次、監控學員、推送模組<br>即時看到所有學員對話狀態</div>
+    <div class="card-badge badge-instructor">桌機開啟</div>
+  </a>
+
+</div>
+
+<div class="footer">
+  WorkshopAI v0.5 · Primax Group<br>
+  Powered by Supabase · Claude · Gemini
+</div>
+
+</body>
+</html>
