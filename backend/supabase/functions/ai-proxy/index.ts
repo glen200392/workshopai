@@ -126,6 +126,18 @@ serve(async (req: Request) => {
   const globalPrompt = (aiConfig.globalPrompt as string) || ''
   const provider     = (aiConfig.provider as string)     || 'anthropic'
 
+  // ── 功能模組開關（伺服器端強制執行，預設 true 以維持向後相容）──
+  const features      = aiConfig.features as Record<string, boolean> || {}
+  const aiEnabled     = features.ai_enabled     !== false
+  const visualEnabled = features.visual_enabled !== false
+
+  if(type === 'chat' && !aiEnabled) {
+    return err('AI chat is not enabled for this session', 403)
+  }
+  if(type === 'visual' && !visualEnabled) {
+    return err('Visual generation is not enabled for this session', 403)
+  }
+
   // ════════════════════════════════
   // TYPE: chat（多 provider 路由）
   // ════════════════════════════════

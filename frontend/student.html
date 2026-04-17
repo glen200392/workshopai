@@ -988,10 +988,10 @@ body {
 
   <div class="chat-area" id="chatArea"></div>
 
-  <div class="input-bar">
+  <div class="input-bar" id="inputBar">
     <div class="input-actions" id="inputActions">
       <div class="action-chip" onclick="triggerAction('discuss')">💬 討論</div>
-      <div class="action-chip" onclick="triggerAction('visualize')">🎨 視覺化</div>
+      <div class="action-chip" onclick="triggerAction('visualize')" data-feature="visual">🎨 視覺化</div>
       <div class="action-chip" onclick="triggerAction('challenge')">⚡ 挑戰我</div>
       <div class="action-chip" onclick="triggerAction('summarize')">📋 幫我整理</div>
       <div class="action-chip" onclick="triggerAction('reflect')">🔍 深度反思</div>
@@ -1003,6 +1003,21 @@ body {
         onkeydown="handleKey(event)"
         oninput="autoResize(this)"></textarea>
       <button class="send-btn" onclick="sendMessage()" id="sendBtn">↑</button>
+    </div>
+  </div>
+
+  <!-- 記錄模式 note bar（AI 功能關閉時顯示） -->
+  <div class="input-bar" id="noteBar" style="display:none">
+    <div style="padding:6px 14px 2px;font-size:11px;color:var(--ai-dim);letter-spacing:0.02em">
+      📝 記錄模式 — 輸入想法，直接儲存記錄
+    </div>
+    <div class="input-row">
+      <textarea class="chat-textarea" id="noteInput"
+        placeholder="輸入你的學習筆記或想法..."
+        rows="1"
+        onkeydown="handleNoteKey(event)"
+        oninput="autoResize(this)"></textarea>
+      <button class="send-btn" onclick="saveNote()">↑</button>
     </div>
   </div>
 </div>
@@ -1043,6 +1058,7 @@ const S = {
   activeModule:  null,
   isThinking:    false,
   sessionConfig: {},      // 由講師端 session 注入：ai_config, cards, welcome...
+  features: { ai_enabled: true, visual_enabled: true }, // 從 sessionConfig.ai_config.features 讀入
   cards: [
     { emoji:'🔭', word:'觀望中',   sub:'先看看再說',        dim:'A', hint:'催促轉型的主管' },
     { emoji:'⚡', word:'已在用了', sub:'走在大家前面',       dim:'A', hint:'質疑效果的同事' },
@@ -1294,27 +1310,65 @@ async function completeCheckin() {
 // ══════════════════════════════════════════
 // SESSION — AI 助理
 // ══════════════════════════════════════════
-function initSession() {
-  document.getElementById('companionName').textContent = `${S.name} 的 AI 夥伴`;
-  document.getElementById('companionState').textContent = '已連線';
+function applyFeatureFlags() {
+  const { ai_enabled, visual_enabled } = S.features;
 
-  // Show tutorial on first visit
-  if(localStorage.getItem('_tutorialSeen')) {
+  // 主要輸入區切換：AI 對話 vs 記錄模式
+  document.getElementById('inputBar').style.display = ai_enabled ? '' : 'none';
+  document.getElementById('noteBar').style.display  = ai_enabled ? 'none' : '';
+
+  // 視覺化 chip（AI 開啟 + visual 開啟才顯示）
+  document.querySelectorAll('[data-feature="visual"]').forEach(el => {
+    el.style.display = (ai_enabled && visual_enabled) ? '' : 'none';
+  });
+
+  // Tutorial：AI 關閉時不顯示
+  if(!ai_enabled) {
+    document.getElementById('tutorialOverlay').style.display = 'none';
+    document.getElementById('tutorialFab').style.display     = 'none';
+  }
+
+  // companion 標題與狀態
+  document.getElementById('companionName').textContent =
+    ai_enabled ? `${S.name} 的 AI 夥伴` : `${S.name} 的學習記錄`;
+  document.getElementById('companionState').textContent =
+    ai_enabled ? '已連線' : '記錄模式';
+}
+
+function initSession() {
+  // 讀取並套用 feature flags（demoMode 時全開以利測試）
+  const f = S.sessionConfig?.ai_config?.features;
+  S.features = {
+    ai_enabled:     CONFIG.demoMode ? true : (f?.ai_enabled     ?? true),
+    visual_enabled: CONFIG.demoMode ? true : (f?.visual_enabled ?? true),
+  };
+  applyFeatureFlags();
+
+  // Show tutorial on first visit（AI 開啟時才顯示）
+  if(S.features.ai_enabled && localStorage.getItem('_tutorialSeen')) {
     document.getElementById('tutorialOverlay').style.display = 'none';
     document.getElementById('tutorialFab').classList.add('visible');
   }
 
   // Personalised opening message
   const pickStr = S.picks.join('、');
-  const openMsg =
-    `嗨 ${S.name}！很高興成為你今天的學習夥伴 ✨\n\n` +
-    `我看到你選了「${pickStr}」，能量狀態是「${S.mood}」——` +
-    `這讓我對你今天的狀態有了初步的了解。\n\n` +
-    `今天的工作坊我會一直陪著你：` +
-    `幫你**發散想法**、**整理思路**、**練習對話**，或者把討論**視覺化**。\n\n` +
-    `隨時可以開口，你想從哪裡開始？`;
+  const openMsg = S.features.ai_enabled
+    ? `嗨 ${S.name}！很高興成為你今天的學習夥伴 ✨\n\n` +
+      `我看到你選了「${pickStr}」，能量狀態是「${S.mood}」——` +
+      `這讓我對你今天的狀態有了初步的了解。\n\n` +
+      `今天的工作坊我會一直陪著你：`
+    : `嗨 ${S.name}！今天的工作坊使用**記錄模式**。\n\n` +
+      `你可以在下方輸入想法和筆記，所有內容都會儲存下來。\n\n` +
+      `有任何想法隨時寫下來！`;
 
-  addMessage('ai', openMsg);
+  // 以下開場訊息的組合邏輯（AI 模式下才有額外說明）
+  const fullOpenMsg = S.features.ai_enabled
+    ? openMsg +
+      `幫你**發散想法**、**整理思路**、**練習對話**，或者把討論**視覺化**。\n\n` +
+      `隨時可以開口，你想從哪裡開始？`
+    : openMsg;
+
+  addMessage('ai', fullOpenMsg);
 
   // 訂閱 Realtime（有 Supabase 時才啟用）
   subscribeToSession();
@@ -1409,6 +1463,10 @@ function triggerAction(type) {
 
 // ── SEND MESSAGE ──
 async function sendMessage() {
+  if(!S.features?.ai_enabled) {
+    showToast('此工作坊尚未開啟 AI 對話功能');
+    return;
+  }
   const input = document.getElementById('chatInput');
   const text = input.value.trim();
   if(!text || S.isThinking) return;
@@ -1463,6 +1521,21 @@ function showThinking() {
 // 學員端所有 AI 呼叫都走這裡
 // 後端（Supabase Edge Function）持有 key，學員只送 sessionId
 // ══════════════════════════════════════════
+
+// ── 記錄模式 note 輸入 ──
+function handleNoteKey(e) {
+  if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveNote(); }
+}
+
+async function saveNote() {
+  const input = document.getElementById('noteInput');
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+  autoResize(input);
+  addMessage('user', text);
+  if(CONFIG.supabaseUrl && !CONFIG.demoMode) logConversation('user', text);
+}
 
 async function callProxy(type, payload) {
   // Demo mode：無後端時使用預設回應
@@ -1519,6 +1592,11 @@ async function chatWithAI(userText, thinkingEl) {
 // 後端 proxy 決定用 Gemini（真實圖片）還是 Claude SVG（fallback）
 // 學員端完全不知道用哪個模型，不需要任何 key
 async function generateVisual(userPrompt, thinkingEl) {
+  if(!S.features?.visual_enabled) {
+    thinkingEl.remove();
+    addMessage('ai', '視覺化功能在此工作坊尚未開啟。');
+    return;
+  }
   const placeholderId = 'artifact-' + Date.now();
   thinkingEl.remove();
 

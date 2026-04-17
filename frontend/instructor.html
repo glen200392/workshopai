@@ -670,6 +670,31 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
       </div>
 
       <div class="field-group">
+        <label class="field-label">功能模組開關</label>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">
+
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+            <input type="checkbox" id="featureAI" checked onchange="onFeatureToggle()"
+              style="margin-top:3px;accent-color:var(--green);width:14px;height:14px">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">💬 AI 對話</div>
+              <div style="font-size:10px;color:var(--text-dim);margin-top:2px">學員可與 AI 夥伴即時對話（需設定 API Key）</div>
+            </div>
+          </label>
+
+          <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin-left:22px" id="featureVisualRow">
+            <input type="checkbox" id="featureVisual" checked onchange="onFeatureToggle()"
+              style="margin-top:3px;accent-color:var(--green);width:14px;height:14px">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">🎨 視覺化生成</div>
+              <div style="font-size:10px;color:var(--text-dim);margin-top:2px">學員可請 AI 生成概念圖（需 Gemini Key 或 SVG fallback）</div>
+            </div>
+          </label>
+
+        </div>
+      </div>
+
+      <div class="field-group">
         <label class="field-label">啟用工具</label>
         <div class="tool-chip-row" id="toolChips">
           <button class="tool-chip on" onclick="toggleTool(this)" data-tool="image">🍌 圖片生成</button>
@@ -940,6 +965,13 @@ function restoreSettings() {
     updateProxyUrl();
   }
   if(sbKey) document.getElementById('sbKey').value = sbKey;
+
+  // Restore feature toggle state
+  const fai  = localStorage.getItem('_featureAI');
+  const fvis = localStorage.getItem('_featureVisual');
+  if(fai  !== null) document.getElementById('featureAI').checked    = fai  === '1';
+  if(fvis !== null) document.getElementById('featureVisual').checked = fvis === '1';
+  onFeatureToggle();
 }
 
 function generateCode() {
@@ -950,8 +982,9 @@ function generateCode() {
 // SESSION CONTROL
 // ══════════════════════════════════════════
 async function startSession() {
-  if(!S.claudeKey) {
-    showToast('⚠ 請先設定 Anthropic API Key');
+  const featureAI = document.getElementById('featureAI')?.checked ?? true;
+  if(featureAI && !S.claudeKey) {
+    showToast('⚠ 已啟用 AI 對話功能，請先設定 API Key（或關閉 AI 功能）');
     switchSidebarTab('agent');
     return;
   }
@@ -990,6 +1023,10 @@ async function writeSessionToSupabase() {
         // Key 不寫在這裡 — 由 Edge Function 從 Supabase Secrets 讀取
         provider: S.llmProvider || 'anthropic',
         proxyUrl: `${S.supabaseUrl}/functions/v1/ai-proxy`,
+        features: {
+          ai_enabled:     document.getElementById('featureAI')?.checked    ?? true,
+          visual_enabled: document.getElementById('featureVisual')?.checked ?? true,
+        },
       },
       modules: S.modules,
     };
@@ -1737,6 +1774,19 @@ function onProviderChange() {
   localStorage.setItem('_llmProvider', provider);
 }
 
+function onFeatureToggle() {
+  const aiOn      = document.getElementById('featureAI').checked;
+  const visualRow = document.getElementById('featureVisualRow');
+  if(!aiOn) {
+    document.getElementById('featureVisual').checked = false;
+    visualRow.style.opacity = '0.4';
+    visualRow.style.pointerEvents = 'none';
+  } else {
+    visualRow.style.opacity = '';
+    visualRow.style.pointerEvents = '';
+  }
+}
+
 async function testClaudeKey() {
   const key = document.getElementById('claudeKey').value.trim();
   const provider = document.getElementById('llmProvider').value;
@@ -1848,10 +1898,16 @@ function saveAgentConfig() {
     globalPrompt:   document.getElementById('globalPrompt')?.value || '',
     tools:          getEnabledTools(),
     memoryStrategy: document.getElementById('memoryStrategy')?.value || 'session',
+    features: {
+      ai_enabled:     document.getElementById('featureAI')?.checked    ?? true,
+      visual_enabled: document.getElementById('featureVisual')?.checked ?? true,
+    },
   };
 
+  localStorage.setItem('_featureAI',     document.getElementById('featureAI').checked     ? '1' : '0');
+  localStorage.setItem('_featureVisual', document.getElementById('featureVisual').checked ? '1' : '0');
   localStorage.setItem('_aiConfig', JSON.stringify(S.aiConfig));
-  addLog('config', `AI 設定已儲存 · 模型: ${S.aiConfig.claudeModel}`, 'instructor');
+  addLog('config', `AI 設定已儲存 · 模型: ${S.aiConfig.claudeModel} · AI對話: ${S.aiConfig.features.ai_enabled ? '開' : '關'} · 視覺化: ${S.aiConfig.features.visual_enabled ? '開' : '關'}`, 'instructor');
   showToast('✓ AI 設定已儲存（Key 僅存於本地）');
 }
 
