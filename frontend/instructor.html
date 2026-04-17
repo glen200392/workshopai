@@ -333,6 +333,174 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 }
 .p-status.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
 
+/* ── ACTIVITY HEAT BAR ── */
+.p-activity-bar {
+  height: 3px;
+  border-radius: 0 0 var(--radius) var(--radius);
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: var(--border);
+  overflow: hidden;
+}
+.p-activity-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.34,1.2,0.64,1), background 0.6s;
+}
+/* heat levels: fresh=green, warm=amber, cold=red, silent=dim */
+.p-activity-fill[data-heat="hot"]  { background: var(--green); }
+.p-activity-fill[data-heat="warm"] { background: var(--amber); }
+.p-activity-fill[data-heat="cold"] { background: var(--red); }
+.p-activity-fill[data-heat="none"] { background: var(--border2); }
+
+/* ── REALTIME TOPBAR BADGE ── */
+.rt-badge {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: var(--radius);
+  border: 1px solid var(--border);
+  font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  background: var(--surface2);
+  transition: all 0.3s;
+}
+.rt-badge[data-status="live"] {
+  border-color: rgba(0,230,118,0.4);
+  color: var(--green);
+  background: var(--green-dim);
+}
+.rt-badge[data-status="error"] {
+  border-color: rgba(255,71,87,0.4);
+  color: var(--red);
+  background: var(--red-dim);
+}
+.rt-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.rt-badge[data-status="live"] .rt-dot { animation: blink 1.8s infinite; }
+
+/* ── LOG SEVERITY LEVELS ── */
+.log-row-error  { border-left: 2px solid var(--red) !important; }
+.log-row-warn   { border-left: 2px solid var(--amber) !important; }
+.log-row-info   { border-left: 2px solid var(--blue) !important; }
+.log-row-ok     { border-left: 2px solid var(--green) !important; }
+
+/* ── INSIGHT PROGRESS ── */
+.insight-progress {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-top: 8px;
+  font-size: 12px; color: var(--text-mid);
+  font-family: var(--mono);
+}
+.insight-spinner {
+  width: 14px; height: 14px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--purple);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── KEY STATUS ENHANCED ── */
+#claudeStatus[data-status="ok"]   { border-color: var(--green) !important; }
+#claudeStatus[data-status="error"]{ border-color: var(--red) !important; }
+#geminiStatus[data-status="ok"]   { border-color: var(--green) !important; }
+#geminiStatus[data-status="error"]{ border-color: var(--red) !important; }
+
+/* ── PUSH CONFIRM TOAST ── */
+.push-confirm {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--green);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  display: flex; align-items: center; gap: 12px;
+  font-size: 13px; color: var(--text);
+  z-index: 500;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  animation: slideUp 0.2s ease both;
+  white-space: nowrap;
+}
+@keyframes slideUp { from{transform:translateX(-50%) translateY(12px);opacity:0} to{transform:translateX(-50%) translateY(0);opacity:1} }
+.push-confirm-yes {
+  background: var(--green); color: var(--bg);
+  border: none; border-radius: 4px;
+  padding: 4px 12px; font-family: var(--mono); font-size: 11px; font-weight: 700;
+  cursor: pointer; transition: opacity 0.15s;
+}
+.push-confirm-no {
+  background: transparent; color: var(--text-dim);
+  border: 1px solid var(--border); border-radius: 4px;
+  padding: 4px 12px; font-family: var(--mono); font-size: 11px;
+  cursor: pointer; transition: all 0.15s;
+}
+.push-confirm-no:hover { border-color: var(--red); color: var(--red); }
+
+/* ── INSIGHT SECURITY WARNING ── */
+.insight-warning {
+  font-size: 10px; color: var(--amber);
+  background: var(--amber-dim);
+  border: 1px solid rgba(255,184,48,0.2);
+  border-radius: 4px;
+  padding: 5px 8px;
+  margin-bottom: 8px;
+  font-family: var(--mono);
+  line-height: 1.5;
+}
+
+/* ── RESPONSIVE: 1280px breakpoint ── */
+@media (max-width: 1280px) {
+  :root {
+    --sidebar-w: 240px;
+    --panel-w: 300px;
+  }
+}
+@media (max-width: 1024px) {
+  :root {
+    --sidebar-w: 0px;
+    --panel-w: 280px;
+  }
+  .sidebar {
+    position: fixed; left: 0; top: var(--topbar); bottom: 0;
+    width: 260px; z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.4);
+  }
+  .sidebar.open { transform: translateX(0); }
+  .app {
+    grid-template-columns: 0 1fr var(--panel-w);
+  }
+  .sidebar-toggle-btn {
+    display: flex !important;
+  }
+}
+.sidebar-toggle-btn {
+  display: none;
+  width: 32px; height: 32px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-mid);
+  font-size: 14px;
+  cursor: pointer;
+  align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.sidebar-backdrop {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 199;
+}
+.sidebar-backdrop.visible { display: block; }
+
 .p-card-actions { display: flex; gap: 4px; margin-top: 8px; }
 .pca {
   flex: 1; padding: 4px 0; border-radius: 4px;
@@ -571,6 +739,8 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   </div>
 </div>
 
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+
 <div class="toast" id="toast"></div>
 
 <!-- MODULE MODAL -->
@@ -612,11 +782,17 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
   <!-- TOPBAR -->
   <header class="topbar">
+    <button class="sidebar-toggle-btn" id="sidebarToggleBtn" onclick="toggleSidebar()" title="模組設計器">☰</button>
     <div class="logo">WorkshopAI<span>講師後台</span></div>
 
     <div class="session-status">
       <div class="status-dot" id="statusDot"></div>
       <span class="status-text" id="statusText">未開始</span>
+    </div>
+
+    <div class="rt-badge" id="rtBadge" data-status="offline">
+      <div class="rt-dot"></div>
+      <span id="rtBadgeText">Realtime</span>
     </div>
 
     <div class="join-code-badge" id="joinCodeBadge" onclick="copyCode()" title="點擊複製">
@@ -894,6 +1070,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
     <!-- Insight tab -->
     <div class="right-body" id="rtabInsight-body" style="display:none">
       <div class="insight-body">
+        <div class="insight-warning" id="insightWarning">
+          ⚠ 洞察分析直接從前端呼叫 Claude API（使用講師 Key）<br>
+          生產環境建議改由 Edge Function 代持（見 CLAUDE.md §七）
+        </div>
         <div class="field-group">
           <label class="field-label">分析指令</label>
           <textarea class="insight-ai-textarea" id="insightPrompt" placeholder="例：分析所有學員的字卡選擇，找出今天群體最大的集體焦慮..."></textarea>
@@ -1216,34 +1396,61 @@ function renderModules() {
 }
 
 async function pushModule(id) {
-  S.modules.forEach(m => m.isActive = (m.id === id));
   const m = S.modules.find(m => m.id === id);
-  renderModules();
-  document.getElementById('statActive').textContent = 1;
-  addLog('module', `已推送模組：${m.name}`, 'system');
-  showToast(`▶ 已推送：${m.name}`);
+  if(!m) return;
 
-  // 寫入 Supabase → 觸發 Realtime → 學員端自動切換模組
-  if(S.supabaseUrl && S.supabaseKey && S.sessionId) {
-    try {
-      const res = await fetch(
-        `${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': S.supabaseKey,
-            'Authorization': `Bearer ${S.supabaseKey}`,
-          },
-          body: JSON.stringify({ active_module_id: id })
-        }
-      );
-      if(!res.ok) throw new Error(await res.text());
-      addLog('module', `Supabase 已更新 active_module_id → 學員端 Realtime 觸發`, 'system');
-    } catch(e) {
-      addLog('module', `⚠ Supabase 推送失敗：${e.message}`, 'error');
+  // Confirmation toast instead of blocking the UI
+  await _confirmPush(m.name, async () => {
+    S.modules.forEach(mo => mo.isActive = (mo.id === id));
+    renderModules();
+    document.getElementById('statActive').textContent = 1;
+    addLog('module', `已推送模組：${m.name}`, 'system');
+    showToast(`▶ 已推送：${m.name}`);
+
+    // 寫入 Supabase → 觸發 Realtime → 學員端自動切換模組
+    if(S.supabaseUrl && S.supabaseKey && S.sessionId) {
+      try {
+        const res = await fetch(
+          `${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': S.supabaseKey,
+              'Authorization': `Bearer ${S.supabaseKey}`,
+            },
+            body: JSON.stringify({ active_module_id: id })
+          }
+        );
+        if(!res.ok) throw new Error(await res.text());
+        addLog('module', `Supabase 已更新 active_module_id → 學員端 Realtime 觸發`, 'system');
+      } catch(e) {
+        addLog('module', `⚠ Supabase 推送失敗：${e.message}`, 'error');
+      }
     }
-  }
+  });
+}
+
+function _confirmPush(moduleName, onConfirm) {
+  return new Promise(resolve => {
+    // Remove any existing confirm
+    document.getElementById('pushConfirmEl')?.remove();
+
+    const el = document.createElement('div');
+    el.className = 'push-confirm';
+    el.id = 'pushConfirmEl';
+    el.innerHTML = `
+      <span>推送「<strong>${moduleName}</strong>」給所有學員？</span>
+      <button class="push-confirm-yes" id="pushYes">確認推送</button>
+      <button class="push-confirm-no" id="pushNo">取消</button>`;
+    document.body.appendChild(el);
+
+    const cleanup = () => { el.remove(); resolve(); };
+    document.getElementById('pushYes').onclick = () => { cleanup(); onConfirm(); };
+    document.getElementById('pushNo').onclick  = cleanup;
+    // Auto-dismiss after 8s
+    setTimeout(cleanup, 8000);
+  });
 }
 
 function openModal() { document.getElementById('moduleModal').classList.add('open'); }
@@ -1280,6 +1487,16 @@ function editModule(id) {
 // ══════════════════════════════════════════
 const colors = ['#00e676','#4d9fff','#ffb830','#ff4757','#9c6bff','#00ccff','#ff6b9d'];
 
+function _getHeat(p) {
+  if(!p.lastActive) return p.messages?.length > 0 ? 'warm' : 'none';
+  const now = Date.now();
+  const last = p._lastActiveMs || 0;
+  const diff = (now - last) / 1000 / 60; // minutes
+  if(diff < 1) return 'hot';
+  if(diff < 5) return 'warm';
+  return 'cold';
+}
+
 function renderParticipants(list) {
   const grid = document.getElementById('participantGrid');
   if(list.length === 0) {
@@ -1289,6 +1506,8 @@ function renderParticipants(list) {
   grid.innerHTML = list.map((p,i) => {
     const col = colors[i % colors.length];
     const lastMsg = p.messages?.at(-1)?.content || '尚未開始對話';
+    const heat = _getHeat(p);
+    const heatWidth = heat === 'hot' ? 100 : heat === 'warm' ? 65 : heat === 'cold' ? 30 : 8;
     return `<div class="p-card ${p.id === S.selectedParticipant?.id ? 'selected':''}" onclick="selectParticipant('${p.id}')">
       <div style="position:absolute;top:0;left:0;width:3px;height:100%;background:${col};border-radius:4px 0 0 4px"></div>
       <div class="p-card-top">
@@ -1310,6 +1529,9 @@ function renderParticipants(list) {
         <button class="pca" onclick="pushToUser(event,'${p.id}')">推送</button>
         <button class="pca warn" onclick="resetMemory(event,'${p.id}')">重置</button>
         <button class="pca danger" onclick="removeUser(event,'${p.id}')">移除</button>
+      </div>
+      <div class="p-activity-bar">
+        <div class="p-activity-fill" data-heat="${heat}" style="width:${heatWidth}%"></div>
       </div>
     </div>`;
   }).join('');
@@ -1605,10 +1827,11 @@ async function runInsight() {
   if(!prompt) { showToast('請輸入分析指令'); return; }
 
   const results = document.getElementById('insightResults');
-  results.innerHTML = `<div class="insight-card" style="margin-top:8px">
-    <div class="insight-card-label">分析中...</div>
-    <div class="insight-card-text">AI 正在分析群體資料...</div>
-  </div>`;
+  results.innerHTML = `
+    <div class="insight-progress">
+      <div class="insight-spinner"></div>
+      <span>AI 正在分析 ${S.participants.length} 位學員的群體動態...</span>
+    </div>`;
 
   const context = `工作坊共 ${S.participants.length} 位學員。
 字卡分佈：${JSON.stringify(S.participants.reduce((acc,p)=>{ (p.picks||[]).forEach(pk=>{acc[pk]=(acc[pk]||0)+1;}); return acc; }, {}))}
@@ -1618,16 +1841,18 @@ async function runInsight() {
   if(!S.claudeKey) {
     setTimeout(() => {
       results.innerHTML = `<div class="insight-card" style="margin-top:8px">
-        <div class="insight-card-label">⚡ 群體洞察</div>
-        <div class="insight-card-text">【示範模式】今天的群體整體呈現「觀望 → 好奇」的轉換動態。主要張力：效率期待 vs 責任歸屬的不確定。建議：在收斂環節直接點名「誰來負責」這個問題，讓它成為全場討論焦點。</div>
+        <div class="insight-card-label">⚡ 群體洞察（示範）</div>
+        <div class="insight-card-text">今天的群體整體呈現「觀望 → 好奇」的轉換動態。主要張力：效率期待 vs 責任歸屬的不確定。建議：在收斂環節直接點名「誰來負責」這個問題，讓它成為全場討論焦點。</div>
         <div class="tension-row" style="margin-top:8px">
           <span class="tension-tag">⚡ 效率 vs 責任</span>
           <span class="tension-tag">⚡ 期待 vs 恐懼</span>
         </div>
       </div>`;
-    }, 1200);
+    }, 1400);
     return;
   }
+
+  const startTime = Date.now();
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -1646,12 +1871,15 @@ async function runInsight() {
     });
     const data = await res.json();
     const text = data.content?.[0]?.text || '分析失敗';
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     results.innerHTML = `<div class="insight-card" style="margin-top:8px">
-      <div class="insight-card-label">⚡ AI 洞察</div>
+      <div class="insight-card-label">⚡ AI 洞察 <span style="font-size:9px;color:var(--text-dim);font-weight:400">${elapsed}s</span></div>
       <div class="insight-card-text">${text.replace(/\n/g,'<br>')}</div>
     </div>`;
+    addLog('insight', `群體洞察完成（${elapsed}s）`, 'instructor');
   } catch(e) {
-    results.innerHTML = `<div class="insight-card" style="margin-top:8px"><div class="insight-card-text">分析失敗：${e.message}</div></div>`;
+    results.innerHTML = `<div class="insight-card" style="margin-top:8px"><div class="insight-card-text" style="color:var(--red)">分析失敗：${e.message}</div></div>`;
+    addLog('insight', `⚠ 洞察失敗：${e.message}`, 'error');
   }
 }
 
@@ -1723,6 +1951,14 @@ function subscribeToRealtime() {
   document.head.appendChild(script);
 }
 
+function _updateRtBadge(status, text) {
+  const badge = document.getElementById('rtBadge');
+  const label = document.getElementById('rtBadgeText');
+  if(!badge) return;
+  badge.dataset.status = status;
+  if(label) label.textContent = text || (status === 'live' ? '即時同步' : status === 'error' ? '連線失敗' : 'Realtime');
+}
+
 function _doInstructorSubscribe(sb) {
   // ① 新學員報到
   sb.channel('instructor-participants:' + S.sessionId)
@@ -1741,6 +1977,7 @@ function _doInstructorSubscribe(sb) {
         isActive:  true,
         messages:  [],
         memory:    p.memory || {},
+        _lastActiveMs: Date.now(),
       };
       // 避免重複
       if(!S.participants.find(x => x.id === p.id)) {
@@ -1751,7 +1988,11 @@ function _doInstructorSubscribe(sb) {
       }
     })
     .subscribe(status => {
-      if(status === 'CHANNEL_ERROR') addLog('realtime', '學員報到訂閱失敗，請重新整理頁面', 'error');
+      if(status === 'SUBSCRIBED') _updateRtBadge('live', '即時同步');
+      if(status === 'CHANNEL_ERROR') {
+        _updateRtBadge('error');
+        addLog('realtime', '學員報到訂閱失敗，請重新整理頁面', 'error');
+      }
     });
 
   // ② 學員新訊息
@@ -1766,6 +2007,7 @@ function _doInstructorSubscribe(sb) {
       if(p) {
         p.messages.push({ role: c.role, content: c.content });
         p.lastActive = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'});
+        p._lastActiveMs = Date.now(); // for heat bar calculation
         renderParticipants(S.participants);
         updateTopStats();
         // 如果目前右欄正在查看這位學員，即時更新
@@ -2059,18 +2301,46 @@ async function checkEdgeFunction() {
 
 function showAIConfig() { switchSidebarTab('agent'); }
 
+// ── RESPONSIVE SIDEBAR TOGGLE ──
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  const isOpen = sidebar.classList.contains('open');
+  sidebar.classList.toggle('open', !isOpen);
+  backdrop.classList.toggle('visible', !isOpen);
+}
+
 // ══════════════════════════════════════════
-// LOG
+// LOG — severity-aware
 // ══════════════════════════════════════════
 function addLog(type, message, actor='system') {
   const log = { type, message, actor, time: new Date().toLocaleTimeString('zh-TW') };
   S.logs.push(log);
   const el = document.getElementById('logList');
-  const colors = { system:'var(--text-dim)', instructor:'var(--blue)', participant:'var(--green)', error:'var(--red)' };
+  const textColors = { system:'var(--text-dim)', instructor:'var(--blue)', participant:'var(--green)', error:'var(--red)' };
+
+  // Determine severity class from actor and message content
+  let severityClass = '';
+  if(actor === 'error' || message.startsWith('⚠') || message.startsWith('✗')) {
+    severityClass = 'log-row-error';
+  } else if(actor === 'instructor') {
+    severityClass = 'log-row-info';
+  } else if(actor === 'participant') {
+    severityClass = 'log-row-ok';
+  } else if(message.startsWith('✓')) {
+    severityClass = 'log-row-ok';
+  }
+
   const div = document.createElement('div');
-  div.style.cssText = `display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);color:${colors[actor]||'var(--text-dim)'}`;
+  div.style.cssText = `display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);color:${textColors[actor]||'var(--text-dim)'}`;
+  div.className = severityClass;
   div.innerHTML = `<span style="color:var(--text-dim);flex-shrink:0">${log.time}</span><span style="flex-shrink:0;text-transform:uppercase;font-size:10px;width:70px">[${type}]</span><span style="flex:1">${message}</span>`;
   el.appendChild(div);
+  // Auto-scroll log view if visible
+  const logView = document.getElementById('logView');
+  if(logView && logView.style.display !== 'none') {
+    logView.scrollTop = logView.scrollHeight;
+  }
 }
 
 // ══════════════════════════════════════════
@@ -2094,19 +2364,19 @@ function copyCode() {
 // ══════════════════════════════════════════
 function loadDemoParticipants() {
   const demo = [
-    { id:'p1', name:'陳佳慧', picks:['🔭 觀望中','📄 文件海'], mood:'💡 好奇', joinedAt:'09:03', isActive:true,
+    { id:'p1', name:'陳佳慧', picks:['🔭 觀望中','📄 文件海'], mood:'💡 好奇', joinedAt:'09:03', isActive:true, _lastActiveMs: Date.now() - 45000,
       messages:[{role:'user',content:'我選了觀望中是因為我還不確定 AI 對 HR 工作的影響到底有多大'},{role:'assistant',content:'你說「還不確定」這個詞很有意思——是什麼讓你覺得現在下判斷太早？'}],
       memory:{conversation_summary:'陳佳慧對 AI 轉型持觀望態度，文件處理是主要痛點，對不確定性有明顯的謹慎心態。',key_insights:['擔心 AI 判斷出錯誰負責','文件自動化是最想解決的痛點'],unresolved_questions:['AI 出錯的責任歸屬']}},
-    { id:'p2', name:'林志遠', picks:['⚡ 已在用了','🔓 解放重複'], mood:'🔥 滿血', joinedAt:'09:05', isActive:true,
+    { id:'p2', name:'林志遠', picks:['⚡ 已在用了','🔓 解放重複'], mood:'🔥 滿血', joinedAt:'09:05', isActive:true, _lastActiveMs: Date.now() - 20000,
       messages:[{role:'user',content:'我已經在用 ChatGPT 寫工作說明書了，省了我好多時間'},{role:'assistant',content:'很好！你已經走在前面了。我想問你：你的同事知道你在用嗎？他們的反應是什麼？'}],
       memory:{conversation_summary:'林志遠是早採用者，已在使用 AI 工具，最關心的是如何說服同事跟上。',key_insights:['已使用ChatGPT提升效率','想幫助同事也採用AI'],unresolved_questions:[]}},
-    { id:'p3', name:'王雅婷', picks:['🍚 飯碗問題','⚖️ 半信半疑'], mood:'😬 緊張期待', joinedAt:'09:07', isActive:false,
+    { id:'p3', name:'王雅婷', picks:['🍚 飯碗問題','⚖️ 半信半疑'], mood:'😬 緊張期待', joinedAt:'09:07', isActive:false, _lastActiveMs: Date.now() - 360000,
       messages:[{role:'user',content:'說實話我有點擔心如果 AI 把我的工作都做了...'}],
       memory:{conversation_summary:'王雅婷對 AI 取代工作有明顯焦慮，尚未充分表達內心真實感受。',key_insights:['擔心被AI取代'],unresolved_questions:['AI會不會讓我失業']}},
-    { id:'p4', name:'張明德', picks:['🏛️ 規則叢林','❓ 誰來負責'], mood:'🤔 思考中', joinedAt:'09:09', isActive:true,
+    { id:'p4', name:'張明德', picks:['🏛️ 規則叢林','❓ 誰來負責'], mood:'🤔 思考中', joinedAt:'09:09', isActive:true, _lastActiveMs: null,
       messages:[],
       memory:{conversation_summary:'',key_insights:[],unresolved_questions:[]}},
-    { id:'p5', name:'李淑芬', picks:['💬 人心難測','✨ 品質提升'], mood:'💡 好奇', joinedAt:'09:11', isActive:true,
+    { id:'p5', name:'李淑芬', picks:['💬 人心難測','✨ 品質提升'], mood:'💡 好奇', joinedAt:'09:11', isActive:true, _lastActiveMs: Date.now() - 90000,
       messages:[{role:'user',content:'我最想知道 AI 怎麼幫助員工關係處理'},{role:'assistant',content:'員工關係裡最難的往往是「說什麼」而不是「知道什麼」。你有沒有遇過一個你知道對方可能是錯的，但又很難直接說的情況？'}],
       memory:{conversation_summary:'李淑芬關注AI在員工溝通和關係管理上的應用，對情感智慧和AI的結合有獨特見解。',key_insights:['重視溝通品質','想用AI提升HR諮詢能力'],unresolved_questions:[]}},
   ];

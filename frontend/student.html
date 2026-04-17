@@ -614,6 +614,110 @@ body {
   40% { opacity:1; transform:scale(1); }
 }
 
+/* ── STREAMING CURSOR ── */
+.streaming-cursor::after {
+  content: '▍';
+  display: inline-block;
+  animation: cursor-blink 0.6s step-end infinite;
+  color: var(--ai-accent);
+  margin-left: 1px;
+  font-size: 0.85em;
+  vertical-align: text-bottom;
+}
+@keyframes cursor-blink {
+  0%,100% { opacity:1; }
+  50% { opacity:0; }
+}
+
+/* ── ENHANCED CARD SELECTION ── */
+.word-card.selected {
+  border-color: var(--accent) !important;
+  background: rgba(45,90,61,0.12) !important;
+  transform: scale(1.04);
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+              border-color 0.15s ease,
+              background 0.15s ease !important;
+}
+.word-card.selecting {
+  transform: scale(0.93);
+}
+
+/* ── STEP DOTS INDICATOR ── */
+.step-dots {
+  display: flex; align-items: center; gap: 8px;
+}
+.step-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: all 0.3s cubic-bezier(0.34,1.2,0.64,1);
+}
+.step-dot.active {
+  background: var(--accent);
+  width: 22px;
+  border-radius: 4px;
+}
+.step-dot.done {
+  background: var(--accent);
+  opacity: 0.45;
+}
+
+/* ── REALTIME BADGE (in session bar) ── */
+.realtime-badge {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10px;
+  font-family: var(--sans);
+  color: var(--ai-dim);
+  padding: 3px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  transition: all 0.3s;
+}
+.realtime-badge[data-status="live"] {
+  color: var(--ai-accent);
+  border-color: rgba(90,173,120,0.3);
+  background: rgba(90,173,120,0.08);
+}
+.realtime-badge[data-status="error"] {
+  color: #ff6b6b;
+  border-color: rgba(255,107,107,0.3);
+}
+.realtime-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.realtime-badge[data-status="live"] .realtime-dot {
+  animation: status-pulse 2s infinite;
+}
+
+/* ── SEND LOCK (prevent double-send) ── */
+.send-btn.locked {
+  background: var(--ai-surface);
+  color: var(--ai-dim);
+  cursor: not-allowed;
+}
+
+/* ── MOOD BTN enhanced ── */
+.mood-btn {
+  touch-action: manipulation;
+}
+.mood-btn.selected {
+  border-color: var(--amber) !important;
+  background: rgba(193,127,36,0.12) !important;
+  transform: scale(1.06);
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+/* ── ERROR STATE ── */
+.msg-bubble.error {
+  background: rgba(139,58,42,0.15);
+  border: 1px solid rgba(139,58,42,0.3);
+  color: #e8a07a;
+}
+
 /* Input bar */
 .input-bar {
   flex-shrink: 0;
@@ -889,7 +993,12 @@ body {
 <div class="screen hidden" id="screen-checkin">
   <div class="checkin-topbar">
     <span style="font-family:var(--serif);font-size:18px;color:var(--text)">報到</span>
-    <div style="display:flex;align-items:center;gap:6px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="step-dots" id="stepDots">
+        <div class="step-dot active" data-step="1"></div>
+        <div class="step-dot" data-step="2"></div>
+        <div class="step-dot" data-step="3"></div>
+      </div>
       <span id="stepLabel" style="font-size:12px;color:var(--text-dim)">步驟 1／3</span>
     </div>
   </div>
@@ -982,6 +1091,10 @@ body {
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
+      <div class="realtime-badge" id="realtimeBadge" data-status="demo">
+        <div class="realtime-dot"></div>
+        <span id="realtimeBadgeText">示範</span>
+      </div>
       <div class="session-module-badge" id="moduleBadge">報到完成</div>
     </div>
   </div>
@@ -1184,6 +1297,15 @@ function renderCheckinStep(step) {
   S.checkinStep = step;
   document.getElementById('stepLabel').textContent = `步驟 ${step}／3`;
   document.getElementById('progressFill').style.width = `${(step/3)*100}%`;
+
+  // Update step dots
+  document.querySelectorAll('.step-dot').forEach((dot, i) => {
+    const dotStep = i + 1;
+    dot.classList.remove('active', 'done');
+    if(dotStep === step) dot.classList.add('active');
+    else if(dotStep < step) dot.classList.add('done');
+  });
+
   document.getElementById('navBack').style.visibility = step > 1 ? 'visible' : 'hidden';
 
   const body = document.getElementById('checkinBody');
@@ -1253,12 +1375,18 @@ function renderCheckinStep(step) {
 }
 
 function toggleCard(el, word) {
+  // Touch feedback: brief scale-down then spring
+  el.classList.add('selecting');
+  setTimeout(() => el.classList.remove('selecting'), 120);
+
   if(el.classList.contains('selected')) {
     el.classList.remove('selected');
     S.picks = S.picks.filter(p => p !== word);
   } else {
     if(S.picks.length >= 2) {
-      document.querySelector('.word-card.selected')?.classList.remove('selected');
+      // Deselect oldest pick
+      const oldWord = S.picks[0];
+      document.querySelector(`.word-card[data-word="${oldWord}"]`)?.classList.remove('selected');
       S.picks.shift();
     }
     el.classList.add('selected');
@@ -1344,6 +1472,9 @@ function initSession() {
   };
   applyFeatureFlags();
 
+  // Set realtime badge status
+  _updateRealtimeBadge(CONFIG.demoMode ? 'demo' : 'connecting');
+
   // Show tutorial on first visit（AI 開啟時才顯示）
   if(S.features.ai_enabled && localStorage.getItem('_tutorialSeen')) {
     document.getElementById('tutorialOverlay').style.display = 'none';
@@ -1361,17 +1492,62 @@ function initSession() {
       `你可以在下方輸入想法和筆記，所有內容都會儲存下來。\n\n` +
       `有任何想法隨時寫下來！`;
 
-  // 以下開場訊息的組合邏輯（AI 模式下才有額外說明）
   const fullOpenMsg = S.features.ai_enabled
     ? openMsg +
       `幫你**發散想法**、**整理思路**、**練習對話**，或者把討論**視覺化**。\n\n` +
       `隨時可以開口，你想從哪裡開始？`
     : openMsg;
 
-  addMessage('ai', fullOpenMsg);
+  // 用打字機效果顯示開場訊息（強化「AI正在理解你的選擇」感知）
+  addMessageTypewriter('ai', fullOpenMsg);
 
   // 訂閱 Realtime（有 Supabase 時才啟用）
   subscribeToSession();
+}
+
+// 打字機效果：逐字顯示 AI 訊息
+function addMessageTypewriter(role, content) {
+  const msg = { role, content: '', type: 'text', id: Date.now() };
+  S.messages.push(msg);
+
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = `msg-row ${role}`;
+  div.id = `msg-${msg.id}`;
+
+  const avatarContent = role === 'ai' ? '🤖' : (S.name ? S.name[0] : 'U');
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble streaming-cursor';
+  bubble.style.maxWidth = '78%';
+
+  div.innerHTML = `<div class="msg-avatar">${avatarContent}</div>`;
+  div.appendChild(Object.assign(document.createElement('div'), {
+    style: 'flex:1;min-width:0'
+  }));
+  div.lastChild.appendChild(bubble);
+  area.appendChild(div);
+
+  const fullText = content;
+  // Parse text so we render incrementally but typewrite on plain text
+  let i = 0;
+  const speed = 12; // ms per character
+
+  function tick() {
+    if(i >= fullText.length) {
+      bubble.classList.remove('streaming-cursor');
+      // Final render with markdown
+      bubble.innerHTML = formatMarkdown(fullText);
+      msg.content = fullText;
+      return;
+    }
+    i += Math.ceil(Math.random() * 3 + 1); // vary speed slightly for natural feel
+    i = Math.min(i, fullText.length);
+    msg.content = fullText.slice(0, i);
+    bubble.textContent = msg.content;
+    scrollChat();
+    setTimeout(tick, speed);
+  }
+  tick();
 }
 
 function addMessage(role, content, type='text', url=null) {
@@ -1471,15 +1647,19 @@ async function sendMessage() {
   const text = input.value.trim();
   if(!text || S.isThinking) return;
 
+  // Send lock — prevent double send
+  S.isThinking = true;
+  const sendBtn = document.getElementById('sendBtn');
+  sendBtn.disabled = true;
+  sendBtn.classList.add('locked');
   input.value = '';
   autoResize(input);
+
   addMessage('user', text);
 
   // Log to Supabase
   if(CONFIG.supabaseUrl) logConversation('user', text);
 
-  S.isThinking = true;
-  document.getElementById('sendBtn').disabled = true;
   document.getElementById('companionState').textContent = '思考中...';
 
   const thinkingEl = showThinking();
@@ -1494,7 +1674,8 @@ async function sendMessage() {
   }
 
   S.isThinking = false;
-  document.getElementById('sendBtn').disabled = false;
+  sendBtn.disabled = false;
+  sendBtn.classList.remove('locked');
   document.getElementById('companionState').textContent = '已連線';
 }
 
@@ -1546,14 +1727,82 @@ async function callProxy(type, payload) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      type,                   // 'chat' | 'image' | 'svg'
+      type,
       sessionId: S.sessionId,
       participantId: S.participantId,
+      stream: type === 'chat', // request streaming for chat
       ...payload
     })
   });
   if(!res.ok) throw new Error(`Proxy error ${res.status}: ${await res.text()}`);
+
+  // Handle SSE streaming response
+  const contentType = res.headers.get('content-type') || '';
+  if(contentType.includes('text/event-stream')) {
+    return _readStream(res);
+  }
   return res.json();
+}
+
+// Read a streaming SSE response and return accumulated text
+async function _readStream(res) {
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let accumulated = '';
+  let buffer = '';
+
+  // Find or create the streaming bubble in chat
+  const area = document.getElementById('chatArea');
+  let streamDiv = document.getElementById('stream-bubble');
+  if(!streamDiv) {
+    streamDiv = document.createElement('div');
+    streamDiv.className = 'msg-row ai';
+    streamDiv.id = 'stream-bubble';
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble streaming-cursor';
+    bubble.id = 'stream-text';
+    streamDiv.innerHTML = `<div class="msg-avatar">🤖</div>`;
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'flex:1;min-width:0';
+    wrapper.appendChild(bubble);
+    streamDiv.appendChild(wrapper);
+    area.appendChild(streamDiv);
+    scrollChat();
+  }
+  const bubbleEl = document.getElementById('stream-text');
+
+  try {
+    while(true) {
+      const { done, value } = await reader.read();
+      if(done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for(const line of lines) {
+        if(!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if(data === '[DONE]') break;
+        try {
+          const parsed = JSON.parse(data);
+          const chunk = parsed.delta?.text || parsed.choices?.[0]?.delta?.content || '';
+          if(chunk) {
+            accumulated += chunk;
+            bubbleEl.textContent = accumulated;
+            scrollChat();
+          }
+        } catch { /* ignore parse errors */ }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  // Finalize: remove cursor, render markdown, remove stream id
+  bubbleEl.classList.remove('streaming-cursor');
+  bubbleEl.innerHTML = formatMarkdown(accumulated);
+  streamDiv.removeAttribute('id');
+
+  return { text: accumulated, streamed: true };
 }
 
 async function chatWithAI(userText, thinkingEl) {
@@ -1570,20 +1819,33 @@ async function chatWithAI(userText, thinkingEl) {
 
     let reply;
     if(result.demo) {
-      // Demo mode：預設回應
-      await new Promise(r => setTimeout(r, 900 + Math.random() * 600));
+      // Demo mode：預設回應（加打字機效果）
+      await new Promise(r => setTimeout(r, 600 + Math.random() * 400));
       reply = getDemoResponse(userText);
+      addMessageTypewriter('ai', reply);
+    } else if(result.streamed) {
+      // Streaming: bubble already rendered in _readStream, just record to history
+      reply = result.text;
+      S.messages.push({ role: 'ai', content: reply, type: 'text', id: Date.now() });
     } else {
       reply = result.text;
+      addMessage('ai', reply);
     }
 
-    addMessage('ai', reply);
     updateMemory('ai', reply);
     if(CONFIG.supabaseUrl) logConversation('assistant', reply);
 
   } catch(e) {
     thinkingEl.remove();
-    addMessage('ai', '連線出現問題，請稍後再試。');
+    // Graceful error with retry hint
+    const errMsg = e.message?.includes('503')
+      ? 'AI 服務暫時忙碌，請稍等 10 秒後再試。'
+      : '連線出現問題，請重新整理後再試。';
+    const errDiv = document.createElement('div');
+    errDiv.className = 'msg-row ai';
+    errDiv.innerHTML = `<div class="msg-avatar">🤖</div><div style="flex:1;min-width:0"><div class="msg-bubble error">${errMsg}</div></div>`;
+    document.getElementById('chatArea').appendChild(errDiv);
+    scrollChat();
     console.error('chatWithAI error:', e);
   }
 }
@@ -1830,6 +2092,15 @@ function subscribeToSession() {
   document.head.appendChild(script);
 }
 
+function _updateRealtimeBadge(status) {
+  const badge = document.getElementById('realtimeBadge');
+  const text = document.getElementById('realtimeBadgeText');
+  if(!badge || !text) return;
+  badge.dataset.status = status;
+  const labels = { live: '即時', connecting: '連線中', error: '離線', demo: '示範' };
+  text.textContent = labels[status] || status;
+}
+
 function _doSubscribe(sb) {
   sb.channel('session:' + S.sessionId)
     .on('postgres_changes', {
@@ -1841,9 +2112,22 @@ function _doSubscribe(sb) {
         S.activeModule = newModuleId;
         _handleModuleChange(newModuleId);
       }
+      // Handle broadcast message
+      const broadcast = payload.new?.config?.broadcast;
+      if(broadcast?.sent_at && broadcast.sent_at !== S._lastBroadcast) {
+        S._lastBroadcast = broadcast.sent_at;
+        addMessage('ai', `📢 **講師廣播**：${broadcast.message}`);
+      }
     })
     .subscribe(status => {
-      if(status === 'CHANNEL_ERROR') console.error('Realtime 訂閱失敗，模組推送將無法即時接收');
+      if(status === 'SUBSCRIBED') {
+        _updateRealtimeBadge('live');
+      } else if(status === 'CHANNEL_ERROR') {
+        _updateRealtimeBadge('error');
+        console.error('Realtime 訂閱失敗，模組推送將無法即時接收');
+      } else if(status === 'CLOSED') {
+        _updateRealtimeBadge('error');
+      }
     });
 }
 

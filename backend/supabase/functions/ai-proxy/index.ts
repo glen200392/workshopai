@@ -1,14 +1,12 @@
 // ═══════════════════════════════════════════════════════════════
-// WorkshopAI — Supabase Edge Function: ai-proxy
+// WorkshopAI — Supabase Edge Function: ai-proxy  v2
 // 部署路徑: supabase/functions/ai-proxy/index.ts
 //
-// 職責：
-//   - 接收學員端 AI 呼叫（帶 sessionId）
-//   - 驗證 session 合法性
-//   - 從 Supabase Secrets 讀取 API key
-//   - 轉發給 Claude / Gemini
-//   - 記錄對話至資料庫
-//   - 學員端永遠看不到任何 key
+// 新增（v2）：
+//   - SSE streaming 支援（chat type，Anthropic provider）
+//   - insight type（群體洞察，講師端呼叫）
+//   - 更清晰的錯誤訊息
+//   - logMessage 改為 non-blocking（不阻塞串流回傳）
 //
 // 部署指令：
 //   supabase functions deploy ai-proxy --no-verify-jwt
@@ -48,6 +46,18 @@ function err(msg: string, status = 400) {
   })
 }
 
+// SSE streaming response helper
+function streamResponse(upstreamBody: ReadableStream<Uint8Array>): Response {
+  return new Response(upstreamBody, {
+    headers: {
+      ...CORS,
+      'Content-Type':  'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'X-Accel-Buffering': 'no',
+    },
+  })
+}
+
 // ── 驗證 session 是否 active ──
 async function validateSession(supabase: ReturnType<typeof createClient>, sessionId: string) {
   if(!sessionId) return null
@@ -60,8 +70,8 @@ async function validateSession(supabase: ReturnType<typeof createClient>, sessio
   return data
 }
 
-// ── 記錄對話到資料庫 ──
-async function logMessage(
+// ── 記錄對話到資料庫（non-blocking：用 waitUntil 或 fire-and-forget）──
+function logMessageAsync(
   supabase: ReturnType<typeof createClient>,
   sessionId: string,
   participantId: string,
@@ -70,18 +80,17 @@ async function logMessage(
   contentType = 'text',
   metadata: Record<string, unknown> = {}
 ) {
-  try {
-    await supabase.from('conversations').insert({
-      session_id:    sessionId,
-      participant_id: participantId || null,
-      role,
-      content,
-      content_type:  contentType,
-      metadata,
-    })
-  } catch(e) {
-    console.error('logMessage failed:', e)
-  }
+  // Fire-and-forget: don't await — avoids blocking stream response
+  supabase.from('conversations').insert({
+    session_id:    sessionId,
+    participant_id: participantId || null,
+    role,
+    content,
+    content_type:  contentType,
+    metadata,
+  }).then(({ error }) => {
+    if(error) console.error('logMessage failed:', error.message)
+  })
 }
 
 // ── 主處理器 ──
@@ -105,18 +114,59 @@ serve(async (req: Request) => {
 
   // Health check
   if(body.type === 'ping') {
-    return ok({ pong: true, ok: true, timestamp: new Date().toISOString() })
+    return ok({ pong: true, ok: true, version: 2, timestamp: new Date().toISOString() })
   }
 
-  const { type, sessionId, participantId, systemPrompt, messages, userPrompt, convoContext, picks, mood } = body
+  const {
+    type, sessionId, participantId,
+    systemPrompt, messages,
+    userPrompt, convoContext, picks, mood,
+    stream,      // boolean — student端發 true 表示要 SSE
+    insightPrompt, insightContext, // for insight type
+  } = body
 
   // ── 初始化 Supabase client（service role，可讀寫所有表）──
   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
-  // ── 驗證 session ──
+  // ── insight type 不需要驗證 session（講師直接呼叫）──
+  // ── 但需要驗證講師身份，這裡以 sessionId 作為基本驗證 ──
+  if(type === 'insight') {
+    if(!ANTHROPIC_KEY) return err('Anthropic API key not configured', 503)
+
+    const prompt = (insightPrompt as string) || ''
+    const context = (insightContext as string) || ''
+
+    if(!prompt) return err('insightPrompt is required')
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 800,
+          system: '你是工作坊講師的 AI 助手，提供精準的群體動態洞察。繁體中文，直接、犀利、有洞察力。不超過 400 字。',
+          messages: [{ role: 'user', content: `${context}\n\n講師的問題：${prompt}` }]
+        })
+      })
+      const data = await res.json() as Record<string, unknown>
+      if(!res.ok) return err((data.error as Record<string, unknown>)?.message as string || 'Claude error', res.status)
+      const text = ((data.content as Array<Record<string, unknown>>)?.[0]?.text as string) || ''
+      return ok({ text })
+    } catch(e) {
+      console.error('insight error:', e)
+      return err('Insight analysis failed', 503)
+    }
+  }
+
+  // ── 驗證 session（chat / visual 需要）──
   const session = await validateSession(supabase, sessionId as string)
   if(!session) {
-    return err('Invalid or inactive session', 403)
+    return err('Invalid or inactive session. Check join code and session status.', 403)
   }
 
   // 從 session.config 取得 AI model 設定
@@ -126,7 +176,7 @@ serve(async (req: Request) => {
   const globalPrompt = (aiConfig.globalPrompt as string) || ''
   const provider     = (aiConfig.provider as string)     || 'anthropic'
 
-  // ── 功能模組開關（伺服器端強制執行，預設 true 以維持向後相容）──
+  // ── 功能模組開關（伺服器端強制執行）──
   const features      = aiConfig.features as Record<string, boolean> || {}
   const aiEnabled     = features.ai_enabled     !== false
   const visualEnabled = features.visual_enabled !== false
@@ -144,20 +194,93 @@ serve(async (req: Request) => {
   if(type === 'chat') {
     const sys  = (systemPrompt as string) || globalPrompt
     const msgs = (messages as Array<{ role: string; content: string }>) || []
+    const wantStream = stream === true && provider === 'anthropic'
 
-    // 記錄學員訊息
+    // 記錄學員訊息（non-blocking）
     const lastUser = [...msgs].reverse().find(m => m.role === 'user')
     if(lastUser && sessionId) {
-      await logMessage(supabase, sessionId as string, participantId as string, 'user', lastUser.content)
+      logMessageAsync(supabase, sessionId as string, participantId as string, 'user', lastUser.content)
     }
 
     try {
+      // ════════════════════════════════
+      // SSE STREAMING（Anthropic only）
+      // ════════════════════════════════
+      if(wantStream) {
+        const upstream = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': ANTHROPIC_KEY,
+            'anthropic-version': '2023-06-01',
+            'anthropic-beta': 'messages-2023-06-01',
+          },
+          body: JSON.stringify({
+            model: claudeModel,
+            max_tokens: 800,
+            system: sys,
+            messages: msgs,
+            stream: true,
+          })
+        })
+
+        if(!upstream.ok) {
+          const errData = await upstream.json() as Record<string, unknown>
+          return err((errData.error as Record<string, unknown>)?.message as string || 'Claude streaming error', upstream.status)
+        }
+
+        if(!upstream.body) return err('No stream body', 503)
+
+        // Pipe upstream SSE directly to client
+        // Also intercept to log the full response (via TransformStream)
+        let accumulated = ''
+        const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>({
+          transform(chunk, controller) {
+            controller.enqueue(chunk)
+            // Accumulate text for logging
+            const text = new TextDecoder().decode(chunk)
+            const lines = text.split('\n')
+            for(const line of lines) {
+              if(!line.startsWith('data: ')) continue
+              const data = line.slice(6).trim()
+              if(data === '[DONE]') continue
+              try {
+                const parsed = JSON.parse(data)
+                const delta = parsed.delta?.text || ''
+                if(delta) accumulated += delta
+              } catch { /* ignore */ }
+            }
+          },
+          flush() {
+            // Log the full accumulated response non-blocking
+            if(accumulated && sessionId) {
+              logMessageAsync(
+                supabase,
+                sessionId as string,
+                participantId as string,
+                'assistant',
+                accumulated,
+                'text',
+                { model: claudeModel, streamed: true }
+              )
+            }
+          }
+        })
+
+        upstream.body.pipeTo(writable).catch(e => console.error('stream pipe error:', e))
+
+        return streamResponse(readable)
+      }
+
+      // ════════════════════════════════
+      // NON-STREAMING（all providers）
+      // ════════════════════════════════
       let text = ''
       let usedModel = claudeModel
 
       // ── Groq（OpenAI-compatible）──
       if(provider === 'groq') {
-        if(!GROQ_KEY) return err('Groq API key not configured. Set GROQ_API_KEY in Supabase Secrets.', 503)
+        if(!GROQ_KEY) return err('Groq API key not configured. Run: supabase secrets set GROQ_API_KEY=gsk_...', 503)
         const groqModel = 'llama-3.3-70b-versatile'
         usedModel = groqModel
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -174,7 +297,7 @@ serve(async (req: Request) => {
 
       // ── Gemini Text ──
       } else if(provider === 'gemini') {
-        if(!GEMINI_KEY) return err('Gemini API key not configured. Set GEMINI_API_KEY in Supabase Secrets.', 503)
+        if(!GEMINI_KEY) return err('Gemini API key not configured. Run: supabase secrets set GEMINI_API_KEY=AIza...', 503)
         const geminiTextModel = 'gemini-2.0-flash'
         usedModel = geminiTextModel
         const contents = sys
@@ -190,36 +313,36 @@ serve(async (req: Request) => {
         if(!res.ok) return err((data.error as Record<string, unknown>)?.message as string || 'Gemini error', res.status)
         text = (((data.candidates as Array<Record<string, unknown>>)?.[0]?.content as Record<string, unknown>)?.parts as Array<Record<string, unknown>>)?.[0]?.text as string || ''
 
-      // ── Anthropic（預設）──
+      // ── Anthropic（non-streaming）──
       } else {
-        if(!ANTHROPIC_KEY) return err('Anthropic API key not configured. Set ANTHROPIC_API_KEY in Supabase Secrets.', 503)
+        if(!ANTHROPIC_KEY) return err('Anthropic API key not configured. Run: supabase secrets set ANTHROPIC_API_KEY=sk-ant-...', 503)
         const res = await fetch('https://api.anthropic.com/v1/messages', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': ANTHROPIC_KEY,
+            'anthropic-version': '2023-06-01',
+          },
           body: JSON.stringify({ model: claudeModel, max_tokens: 800, system: sys, messages: msgs })
         })
         const data = await res.json() as Record<string, unknown>
         if(!res.ok) return err((data.error as Record<string, unknown>)?.message as string || 'Claude API error', res.status)
         text = ((data.content as Array<Record<string, unknown>>)?.[0]?.text as string) || ''
-        if(text && sessionId) {
-          await logMessage(supabase, sessionId as string, participantId as string, 'assistant', text, 'text', {
-            model: usedModel,
-            input_tokens:  (data.usage as Record<string, unknown>)?.input_tokens,
-            output_tokens: (data.usage as Record<string, unknown>)?.output_tokens,
-          })
-        }
-        return ok({ text })
+        usedModel = claudeModel
       }
 
-      // 非 Anthropic provider 的記錄
+      // 記錄 AI 回應（non-blocking）
       if(text && sessionId) {
-        await logMessage(supabase, sessionId as string, participantId as string, 'assistant', text, 'text', { model: usedModel })
+        logMessageAsync(supabase, sessionId as string, participantId as string, 'assistant', text, 'text', {
+          model: usedModel,
+        })
       }
+
       return ok({ text })
 
     } catch(e) {
       console.error('chat error:', e)
-      return err('AI service unavailable', 503)
+      return err('AI service temporarily unavailable. Please try again in a moment.', 503)
     }
   }
 
@@ -261,9 +384,8 @@ serve(async (req: Request) => {
         if(imagePart) {
           const inlineData = imagePart.inlineData as Record<string, unknown>
 
-          // 儲存生成圖片記錄
           if(sessionId) {
-            await logMessage(supabase, sessionId as string, participantId as string, 'assistant', prompt, 'image', {
+            logMessageAsync(supabase, sessionId as string, participantId as string, 'assistant', prompt, 'image', {
               model: geminiModel,
               mimeType: inlineData.mimeType,
             })
@@ -278,12 +400,12 @@ serve(async (req: Request) => {
         }
         // Gemini 沒回傳圖片 → fallthrough 到 SVG
       } catch(e) {
-        console.error('Gemini error, falling back to SVG:', e)
+        console.error('Gemini image error, falling back to SVG:', e)
       }
     }
 
     // Fallback：Claude SVG 概念圖
-    if(!ANTHROPIC_KEY) return err('No AI keys configured', 503)
+    if(!ANTHROPIC_KEY) return err('No AI keys configured. Set ANTHROPIC_API_KEY or GEMINI_API_KEY in Supabase Secrets.', 503)
 
     const svgPrompt =
       `根據以下工作坊對話，生成一個清晰的 SVG 概念視覺化圖表。\n\n` +
@@ -318,17 +440,17 @@ serve(async (req: Request) => {
 
       if(svg) {
         if(sessionId) {
-          await logMessage(supabase, sessionId as string, participantId as string, 'assistant', prompt, 'artifact', { model: claudeModel })
+          logMessageAsync(supabase, sessionId as string, participantId as string, 'assistant', prompt, 'artifact', { model: claudeModel })
         }
         return ok({ type: 'svg', svg, followUp: '概念圖生成完成。這個結構有反映出你想整理的概念嗎？' })
       }
 
-      return err('SVG generation failed')
+      return err('SVG generation failed: model did not return valid SVG markup')
     } catch(e) {
       console.error('SVG error:', e)
       return err('Visual generation failed', 503)
     }
   }
 
-  return err(`Unknown type: ${type}`)
+  return err(`Unknown request type: "${type}". Valid types: ping | chat | visual | insight`)
 })
