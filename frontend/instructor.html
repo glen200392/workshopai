@@ -99,6 +99,31 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 }
 .join-code-badge:hover { border-color: var(--green); color: var(--green); }
 
+.active-module-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(77,159,255,0.1);
+  border: 1px solid rgba(77,159,255,0.35);
+  color: var(--blue);
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-family: var(--sans);
+  max-width: 280px;
+  white-space: nowrap; overflow: hidden;
+}
+.active-module-label { font-size: 10px; color: var(--text-mid); letter-spacing: 0.06em; text-transform: uppercase; }
+.active-module-name { font-weight: 600; color: var(--blue); overflow: hidden; text-overflow: ellipsis; }
+.active-module-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--blue);
+  box-shadow: 0 0 8px var(--blue);
+  animation: module-pulse 1.8s ease-in-out infinite;
+}
+@keyframes module-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.3); }
+}
+
 .topbar-spacer { flex: 1; }
 
 .top-stat {
@@ -913,7 +938,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
   <!-- TOPBAR -->
   <header class="topbar">
-    <button class="sidebar-toggle-btn" id="sidebarToggleBtn" onclick="toggleSidebar()" title="模組設計器">☰</button>
+    <button class="sidebar-toggle-btn" id="sidebarToggleBtn" onclick="toggleSidebar()" title="模組設計器" aria-label="切換工作坊流程側欄">☰</button>
     <div class="logo">WorkshopAI<span>講師後台</span></div>
 
     <div class="session-status">
@@ -921,13 +946,19 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
       <span class="status-text" id="statusText">未開始</span>
     </div>
 
-    <div class="rt-badge" id="rtBadge" data-status="offline">
+    <div class="rt-badge" id="rtBadge" data-status="offline" title="與 Supabase 的即時連線狀態">
       <div class="rt-dot"></div>
-      <span id="rtBadgeText">Realtime</span>
+      <span id="rtBadgeText">即時</span>
     </div>
 
     <div class="join-code-badge" id="joinCodeBadge" onclick="copyCode()" title="點擊複製">
       ——————
+    </div>
+
+    <div class="active-module-pill" id="activeModulePill" style="display:none" title="當前推送給學員的模組">
+      <span class="active-module-dot"></span>
+      <span class="active-module-label">模組：</span>
+      <span class="active-module-name" id="activeModuleName">—</span>
     </div>
 
     <div class="topbar-spacer"></div>
@@ -1484,6 +1515,7 @@ async function endSession() {
   document.getElementById('statusText').textContent = '已結束';
   document.getElementById('startBtn').style.display = '';
   document.getElementById('endBtn').style.display = 'none';
+  _updateActiveModulePill(null);
 
   // 更新 Supabase session 狀態
   if(S.supabaseUrl && S.supabaseKey && S.sessionId) {
@@ -1527,6 +1559,19 @@ function renderModules() {
     </div>`).join('');
 }
 
+function _updateActiveModulePill(name) {
+  const pill = document.getElementById('activeModulePill');
+  const label = document.getElementById('activeModuleName');
+  if(!pill || !label) return;
+  if(name) {
+    label.textContent = name;
+    pill.style.display = 'inline-flex';
+    pill.title = `當前推送給學員的模組：${name}`;
+  } else {
+    pill.style.display = 'none';
+  }
+}
+
 async function pushModule(id) {
   const m = S.modules.find(m => m.id === id);
   if(!m) return;
@@ -1536,8 +1581,9 @@ async function pushModule(id) {
     S.modules.forEach(mo => mo.isActive = (mo.id === id));
     renderModules();
     document.getElementById('statActive').textContent = 1;
+    _updateActiveModulePill(m.name);
     addLog('module', `已推送模組：${m.name}`, 'system');
-    showToast(`▶ 已推送：${m.name}`);
+    showToast(`▶ 已推送：${m.name}`, 'success');
 
     // 寫入 Supabase → 觸發 Realtime → 學員端自動切換模組
     if(S.supabaseUrl && S.supabaseKey && S.sessionId) {
@@ -1585,8 +1631,23 @@ function _confirmPush(moduleName, onConfirm) {
   });
 }
 
-function openModal() { document.getElementById('moduleModal').classList.add('open'); }
+function openModal() {
+  const el = document.getElementById('moduleModal');
+  el.classList.add('open');
+  setTimeout(() => document.getElementById('newModuleName')?.focus(), 50);
+}
 function closeModal() { document.getElementById('moduleModal').classList.remove('open'); }
+
+// Global modal Esc/backdrop handling — applies to moduleModal and any future overlay
+document.addEventListener('keydown', (e) => {
+  if(e.key !== 'Escape') return;
+  const modal = document.getElementById('moduleModal');
+  if(modal?.classList.contains('open')) { e.preventDefault(); closeModal(); }
+});
+document.addEventListener('click', (e) => {
+  const modal = document.getElementById('moduleModal');
+  if(modal?.classList.contains('open') && e.target === modal) closeModal();
+});
 
 function addModule() {
   const type = document.getElementById('newModuleType').value;
@@ -2234,7 +2295,7 @@ function _updateRtBadge(status, text) {
   const label = document.getElementById('rtBadgeText');
   if(!badge) return;
   badge.dataset.status = status;
-  if(label) label.textContent = text || (status === 'live' ? '即時同步' : status === 'error' ? '連線失敗' : 'Realtime');
+  if(label) label.textContent = text || (status === 'live' ? '即時同步' : status === 'error' ? '連線失敗' : '即時');
 }
 
 function _doInstructorSubscribe(sb) {

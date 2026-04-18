@@ -1054,6 +1054,32 @@ body {
 .toast.warn    { background: #3a2d14; border-color: rgba(232,168,58,0.35); }
 .toast.error   { background: #3a1e18; border-color: rgba(232,120,100,0.35); }
 
+/* ── CONNECTION BANNER (realtime drop / session ended) ── */
+.connection-banner {
+  position: fixed;
+  left: 50%;
+  top: calc(var(--sat, 0px) + 48px);
+  transform: translate(-50%, -12px);
+  background: rgba(60,40,10,0.96);
+  color: #f3d99a;
+  border: 1px solid rgba(232,168,58,0.35);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9997;
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width: calc(100vw - 32px);
+  text-align: center;
+}
+.connection-banner.show { opacity: 1; transform: translate(-50%, 0); }
+.connection-banner[data-tone="info"] { background: rgba(30,50,40,0.96); color: #bde5c8; border-color: rgba(122,200,148,0.35); }
+.connection-banner[data-tone="error"] { background: rgba(60,25,20,0.96); color: #f3b0a0; border-color: rgba(232,120,100,0.4); }
+
 /* ── DEMO BADGE (persistent indicator for demoMode) ── */
 .demo-badge {
   position: fixed;
@@ -1152,7 +1178,7 @@ body {
   </div>
 
   <div class="step-nav">
-    <button class="nav-back" id="navBack" onclick="prevStep()">←</button>
+    <button class="nav-back" id="navBack" onclick="prevStep()" aria-label="回到上一步">←</button>
     <button class="nav-next" id="navNext" onclick="nextStep()">繼續</button>
   </div>
 </div>
@@ -1258,7 +1284,7 @@ body {
         rows="1"
         onkeydown="handleKey(event)"
         oninput="autoResize(this)"></textarea>
-      <button class="send-btn" onclick="sendMessage()" id="sendBtn">↑</button>
+      <button class="send-btn" onclick="sendMessage()" id="sendBtn" aria-label="送出訊息" title="送出（Enter）">↑</button>
     </div>
   </div>
 
@@ -1273,7 +1299,7 @@ body {
         rows="1"
         onkeydown="handleNoteKey(event)"
         oninput="autoResize(this)"></textarea>
-      <button class="send-btn" onclick="saveNote()">↑</button>
+      <button class="send-btn" onclick="saveNote()" aria-label="儲存筆記" title="儲存（Enter）">↑</button>
     </div>
   </div>
 </div>
@@ -1476,12 +1502,12 @@ function renderCheckinStep(step) {
     body.innerHTML = `
       <div class="step-tag">第一步</div>
       <div class="step-question">你叫什麼名字？</div>
-      <input class="name-field" id="nameField" maxlength="12"
+      <input class="name-field" id="nameField" maxlength="20"
         placeholder="輸入名字或暱稱"
         value="${S.name}"
         oninput="S.name=this.value.trim()"
         autocomplete="off">
-      <p style="font-size:12px;color:var(--text-dim);text-align:center;margin-top:-8px">最多 12 字，會顯示在大螢幕</p>`;
+      <p style="font-size:12px;color:var(--text-dim);text-align:center;margin-top:-8px">最多 20 字，會顯示在大螢幕</p>`;
     setTimeout(() => document.getElementById('nameField')?.focus(), 100);
   }
 
@@ -1929,6 +1955,34 @@ function showThinking() {
 // ── 記錄模式 note 輸入 ──
 function handleNoteKey(e) {
   if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveNote(); }
+}
+
+// Chat textarea: Enter submits, Shift+Enter inserts newline
+function handleKey(e) {
+  if(e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function dismissTutorial() {
+  const overlay = document.getElementById('tutorialOverlay');
+  const fab = document.getElementById('tutorialFab');
+  if(overlay) overlay.style.display = 'none';
+  if(fab) fab.classList.add('visible');
+  try { localStorage.setItem('_tutorialSeen', '1'); } catch(_) {}
+}
+
+function reopenTutorial() {
+  const overlay = document.getElementById('tutorialOverlay');
+  const fab = document.getElementById('tutorialFab');
+  if(overlay) overlay.style.display = '';
+  if(fab) fab.classList.remove('visible');
 }
 
 async function saveNote() {
@@ -2389,6 +2443,12 @@ function _doSubscribe(sb) {
       event: 'UPDATE', schema: 'public', table: 'sessions',
       filter: `id=eq.${S.sessionId}`
     }, payload => {
+      // Session ended — stop accepting input and tell the learner
+      if(payload.new?.status === 'ended' && !S._sessionEnded) {
+        S._sessionEnded = true;
+        _handleSessionEnded();
+        return;
+      }
       const newModuleId = payload.new?.active_module_id;
       if(newModuleId && newModuleId !== S.activeModule) {
         S.activeModule = newModuleId;
@@ -2404,13 +2464,45 @@ function _doSubscribe(sb) {
     .subscribe(status => {
       if(status === 'SUBSCRIBED') {
         _updateRealtimeBadge('live');
+        _hideConnectionBanner();
       } else if(status === 'CHANNEL_ERROR') {
         _updateRealtimeBadge('error');
-        console.error('Realtime 訂閱失敗，模組推送將無法即時接收');
+        _showConnectionBanner('連線中斷，正在嘗試重新連線...');
       } else if(status === 'CLOSED') {
         _updateRealtimeBadge('error');
+        _showConnectionBanner('連線中斷，正在嘗試重新連線...');
       }
     });
+}
+
+function _handleSessionEnded() {
+  // Lock input, notify learner with a sticky banner
+  const input = document.getElementById('chatInput');
+  const sendBtn = document.getElementById('sendBtn');
+  if(input) { input.disabled = true; input.placeholder = '工作坊已結束'; }
+  if(sendBtn) sendBtn.disabled = true;
+  document.getElementById('companionState').textContent = '工作坊已結束';
+  _showConnectionBanner('✨ 工作坊已結束，感謝你的參與。對話已保留。', { persistent: true, tone: 'info' });
+  addMessage('ai', '講師已結束這場工作坊，我們的對話到此告一段落。✨ 你今天的分享已被記錄下來，謝謝你的投入。');
+}
+
+function _showConnectionBanner(msg, opts = {}) {
+  let el = document.getElementById('connectionBanner');
+  if(!el) {
+    el = document.createElement('div');
+    el.id = 'connectionBanner';
+    el.className = 'connection-banner';
+    document.body.appendChild(el);
+  }
+  el.dataset.tone = opts.tone || 'warn';
+  el.textContent = msg;
+  el.classList.add('show');
+  if(opts.persistent) el.dataset.persistent = '1';
+}
+function _hideConnectionBanner() {
+  const el = document.getElementById('connectionBanner');
+  if(!el || el.dataset.persistent) return;
+  el.classList.remove('show');
 }
 
 function _handleModuleChange(moduleId) {
