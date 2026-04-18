@@ -254,6 +254,53 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   border-bottom: 1px solid var(--border);
 }
 
+/* ── Check-in step editor ── */
+.ck-step-row {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  background: var(--bg);
+  transition: border-color 0.15s, opacity 0.15s;
+}
+.ck-step-row.disabled { opacity: 0.55; }
+.ck-step-row.disabled .ck-prompt-input,
+.ck-step-row.disabled .ck-extra { pointer-events: none; }
+.ck-step-head {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+}
+.ck-step-name { font-weight: 600; font-size: 12px; flex: 1; }
+.ck-toggle {
+  width: 34px; height: 18px;
+  background: var(--border); border-radius: 999px;
+  position: relative; cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.ck-toggle::after {
+  content: '';
+  position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--text-dim);
+  transition: transform 0.18s, background 0.15s;
+}
+.ck-toggle.on { background: var(--green-dim); }
+.ck-toggle.on::after { transform: translateX(16px); background: var(--green); }
+.ck-prompt-input {
+  width: 100%; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text);
+  padding: 5px 8px; font-size: 12px; font-family: var(--sans);
+  transition: border-color 0.15s;
+}
+.ck-prompt-input:focus { outline: none; border-color: var(--green); }
+.ck-extra { display: flex; gap: 8px; margin-top: 5px; }
+.ck-num-input {
+  width: 56px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text); padding: 4px 6px; font-size: 11px;
+  font-family: var(--mono); text-align: center;
+}
+.ck-num-label { font-size: 11px; color: var(--text-dim); line-height: 24px; }
+
 /* ── Card editor ── */
 .card-dim-block { margin-bottom: 14px; }
 .card-dim-head {
@@ -1235,6 +1282,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
         <div class="field-hint">填寫後會顯示在學員的 AI 夥伴標題後</div>
       </div>
 
+      <!-- ─── 📝 報到步驟 ─── -->
+      <div class="section-header" style="margin-top:16px">📝 報到步驟</div>
+      <div class="checkin-steps-editor" id="checkinStepsEditor"></div>
+
       <!-- ─── 歡迎訊息 ─── -->
       <div class="section-header" style="margin-top:16px">📢 歡迎訊息</div>
       <div class="field-group">
@@ -1243,8 +1294,8 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
         <div class="field-hint">會以廣播方式推送給所有學員</div>
       </div>
 
-      <!-- ─── 字卡（下一輪擴充編輯 UI） ─── -->
-      <div class="section-header" style="margin-top:16px">🃏 字卡</div>
+      <!-- ─── 字卡編輯器 ─── -->
+      <div class="section-header" style="margin-top:16px">🃏 字卡庫</div>
       <div class="field-group">
         <div id="cardConfigList"></div>
       </div>
@@ -1509,6 +1560,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('joinCodeBadge').textContent = S.joinCode;
   renderModules();
   renderCardConfig();
+  renderCheckinStepsEditor();
   restoreSettings();
   restoreBranding();
   renderEmptyInvite();
@@ -1585,6 +1637,7 @@ async function writeSessionToSupabase() {
       join_code: S.joinCode,
       branding: collectBranding(),
       cards: _getCardsDraft(),
+      checkin: _getCheckinDraft(),
       ai_config: {
         claudeModel: S.aiConfig.claudeModel,
         geminiModel: S.aiConfig.geminiModel,
@@ -2560,6 +2613,126 @@ const DEFAULT_CARDS = [
 ];
 // Old alias kept so nothing else in this file breaks.
 const defaultCards = DEFAULT_CARDS;
+
+// ══════════════════════════════════════════
+// CHECK-IN STEP EDITOR
+// ══════════════════════════════════════════
+const DEFAULT_CHECKIN_CFG = {
+  name:  { enabled:true, prompt:'你叫什麼名字？',       max:20 },
+  cards: { enabled:true, prompt:'選出最像你現在的字卡', min:1, max:2 },
+  mood:  { enabled:true, prompt:'今天帶著什麼能量來？' },
+};
+
+function _getCheckinDraft() {
+  if(S.checkinCfg) return S.checkinCfg;
+  const stored = safeStorage.get('_checkinDraft');
+  if(stored) { try { S.checkinCfg = JSON.parse(stored); return S.checkinCfg; } catch(_) {} }
+  S.checkinCfg = JSON.parse(JSON.stringify(DEFAULT_CHECKIN_CFG));
+  return S.checkinCfg;
+}
+
+function _persistCheckinDraft() {
+  safeStorage.set('_checkinDraft', JSON.stringify(S.checkinCfg));
+  if(S.isLive && S.supabaseUrl && S.sessionId) _pushCheckinUpdate(S.checkinCfg);
+}
+
+async function _pushCheckinUpdate(checkin) {
+  clearTimeout(_pushCheckinUpdate._t);
+  _pushCheckinUpdate._t = setTimeout(async () => {
+    try {
+      const res = await fetch(`${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}&select=config`, {
+        headers: { 'apikey': S.supabaseKey, 'Authorization': `Bearer ${S.supabaseKey}` }
+      });
+      const data = await res.json();
+      const cfg = data?.[0]?.config || {};
+      cfg.checkin = checkin;
+      await fetch(`${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': S.supabaseKey,
+          'Authorization': `Bearer ${S.supabaseKey}`,
+        },
+        body: JSON.stringify({ config: cfg })
+      });
+      addLog('checkin', '報到步驟設定已同步', 'system');
+    } catch(e) {
+      addLog('checkin', `⚠ 報到設定同步失敗：${e.message}`, 'error');
+    }
+  }, 800);
+}
+
+function renderCheckinStepsEditor() {
+  const el = document.getElementById('checkinStepsEditor');
+  if(!el) return;
+  const cfg = _getCheckinDraft();
+
+  const row = (key, label, body) => {
+    const s = cfg[key];
+    return `
+      <div class="ck-step-row ${s.enabled ? '' : 'disabled'}" data-key="${key}">
+        <div class="ck-step-head">
+          <span class="ck-step-name">${label}</span>
+          <div class="ck-toggle ${s.enabled ? 'on' : ''}" role="switch" aria-checked="${s.enabled}"
+            onclick="onCheckinToggle('${key}')" tabindex="0"></div>
+        </div>
+        <input class="ck-prompt-input" value="${_esc(s.prompt)}" placeholder="輸入提問文字"
+          oninput="onCheckinPromptChange('${key}', this.value)">
+        ${body}
+      </div>`;
+  };
+
+  el.innerHTML =
+    row('name', '① 輸入名字', `
+      <div class="ck-extra">
+        <span class="ck-num-label">最多</span>
+        <input class="ck-num-input" type="number" min="4" max="40" value="${cfg.name.max}"
+          oninput="onCheckinNumChange('name','max',this.value)">
+        <span class="ck-num-label">字</span>
+      </div>`) +
+    row('cards', '② 選字卡', `
+      <div class="ck-extra">
+        <span class="ck-num-label">至少</span>
+        <input class="ck-num-input" type="number" min="0" max="4" value="${cfg.cards.min}"
+          oninput="onCheckinNumChange('cards','min',this.value)">
+        <span class="ck-num-label">最多</span>
+        <input class="ck-num-input" type="number" min="1" max="4" value="${cfg.cards.max}"
+          oninput="onCheckinNumChange('cards','max',this.value)">
+        <span class="ck-num-label">張</span>
+      </div>`) +
+    row('mood', '③ 能量狀態', '');
+}
+
+window.onCheckinToggle = function(key) {
+  const cfg = _getCheckinDraft();
+  const enabledCount = ['name','cards','mood'].filter(k => cfg[k].enabled).length;
+  if(cfg[key].enabled && enabledCount <= 1) {
+    showToast('⚠ 至少保留一個報到步驟', 'warn');
+    return;
+  }
+  cfg[key].enabled = !cfg[key].enabled;
+  _persistCheckinDraft();
+  renderCheckinStepsEditor();
+};
+
+window.onCheckinPromptChange = function(key, val) {
+  const cfg = _getCheckinDraft();
+  cfg[key].prompt = val;
+  _persistCheckinDraft();
+};
+
+window.onCheckinNumChange = function(key, field, val) {
+  const cfg = _getCheckinDraft();
+  const n = parseInt(val, 10);
+  if(!Number.isFinite(n)) return;
+  cfg[key][field] = n;
+  // cards: keep min ≤ max
+  if(key === 'cards') {
+    if(field === 'min' && cfg.cards.min > cfg.cards.max) cfg.cards.max = cfg.cards.min;
+    if(field === 'max' && cfg.cards.max < cfg.cards.min) cfg.cards.min = cfg.cards.max;
+  }
+  _persistCheckinDraft();
+};
 
 // Lazy-init cards state from localStorage or defaults.
 function _getCardsDraft() {
