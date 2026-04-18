@@ -281,6 +281,91 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .participant-grid::-webkit-scrollbar { width: 4px; }
 .participant-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
+/* ── EMPTY STATE — share join code prominently ── */
+.empty-invite {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 40px 20px;
+  text-align: center;
+}
+.empty-invite-title {
+  font-family: var(--mono);
+  color: var(--text-mid);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.empty-invite-code {
+  font-family: var(--mono);
+  font-size: clamp(56px, 10vw, 96px);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--green);
+  line-height: 1;
+  padding: 16px 32px;
+  border: 2px dashed rgba(0,230,118,0.3);
+  border-radius: 16px;
+  background: rgba(0,230,118,0.04);
+  cursor: pointer;
+  user-select: all;
+  transition: all 0.2s;
+}
+.empty-invite-code:hover {
+  background: rgba(0,230,118,0.08);
+  border-color: var(--green);
+  transform: scale(1.02);
+}
+.empty-invite-hint {
+  font-size: 13px;
+  color: var(--text-mid);
+  max-width: 420px;
+  line-height: 1.6;
+}
+.empty-invite-actions {
+  display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+}
+.empty-invite-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--sans);
+}
+.empty-invite-btn:hover { border-color: var(--green); color: var(--green); }
+.empty-invite-btn.primary { background: var(--green); color: #0d0f12; border-color: var(--green); font-weight: 700; }
+.empty-invite-btn.primary:hover { background: #00ff88; }
+.empty-invite-qr {
+  background: #fff;
+  padding: 12px;
+  border-radius: 12px;
+  width: 180px; height: 180px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.empty-invite-qr img { width: 100%; height: 100%; display: block; }
+.empty-invite-qr-fallback {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 12px;
+}
+.empty-invite-link {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-mid);
+  word-break: break-all;
+  max-width: 360px;
+}
+
 /* Participant card */
 .p-card {
   background: var(--surface);
@@ -1004,10 +1089,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
     <!-- Grid view -->
     <div class="participant-grid" id="participantGrid">
-      <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-dim);font-family:var(--mono);font-size:13px">
-        ── 等待學員報到中 ──<br>
-        <span style="font-size:11px;margin-top:8px;display:block">分享代碼給學員後，將在這裡看到所有人的狀態</span>
-      </div>
+      <!-- Empty state injected by renderEmptyInvite() on init -->
     </div>
 
     <!-- Projection view (hidden initially) -->
@@ -1226,6 +1308,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderModules();
   renderCardConfig();
   restoreSettings();
+  renderEmptyInvite();
   setTimeout(loadDemoParticipants, 1500);
 });
 
@@ -1497,10 +1580,72 @@ function _getHeat(p) {
   return 'cold';
 }
 
+function renderEmptyInvite() {
+  const grid = document.getElementById('participantGrid');
+  if(!grid) return;
+  const code = S.joinCode || '——————';
+  const hasCode = !!S.joinCode;
+  // Build shareable link from current origin → student.html
+  const origin = location.origin && !location.origin.startsWith('null') ? location.origin : '';
+  const base = origin
+    ? origin + location.pathname.replace(/instructor\.html.*$/, 'student.html')
+    : 'student.html';
+  const shareUrl = hasCode ? `${base}?code=${code}` : '';
+  const qrSrc = hasCode
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=0&data=${encodeURIComponent(shareUrl)}`
+    : '';
+
+  grid.innerHTML = `
+    <div class="empty-invite">
+      <div class="empty-invite-title">▸ 分享代碼讓學員加入</div>
+      <div class="empty-invite-code" onclick="copyCode()" title="點擊複製">${code}</div>
+      ${hasCode ? `
+        <div class="empty-invite-qr" title="用手機掃描直接加入">
+          <img src="${qrSrc}" alt="QR code" onerror="this.style.display='none';this.parentElement.classList.add('empty-invite-qr-fallback');this.parentElement.textContent='QR 無法載入，請用代碼手動加入';">
+        </div>
+        <div class="empty-invite-link">${shareUrl}</div>
+        <div class="empty-invite-actions">
+          <button class="empty-invite-btn primary" onclick="copyCode()">複製代碼</button>
+          <button class="empty-invite-btn" onclick="copyJoinLink()">複製連結</button>
+          <button class="empty-invite-btn" onclick="shareJoinLink()">分享…</button>
+        </div>
+        <div class="empty-invite-hint">學員打開網址或掃描 QR，輸入代碼 <strong style="color:var(--green)">${code}</strong> 即可加入。報到完成後會出現在這裡。</div>
+      ` : `
+        <div class="empty-invite-hint">按下右上角「▶ 開始工作坊」產生代碼，學員才能加入。</div>
+      `}
+    </div>`;
+}
+
+function copyJoinLink() {
+  const origin = location.origin && !location.origin.startsWith('null') ? location.origin : '';
+  const base = origin
+    ? origin + location.pathname.replace(/instructor\.html.*$/, 'student.html')
+    : 'student.html';
+  const url = `${base}?code=${S.joinCode}`;
+  navigator.clipboard?.writeText(url).then(
+    () => showToast('✓ 加入連結已複製'),
+    () => showToast('⚠ 複製失敗，請手動選取')
+  );
+}
+
+function shareJoinLink() {
+  const origin = location.origin && !location.origin.startsWith('null') ? location.origin : '';
+  const base = origin
+    ? origin + location.pathname.replace(/instructor\.html.*$/, 'student.html')
+    : 'student.html';
+  const url = `${base}?code=${S.joinCode}`;
+  if(navigator.share) {
+    navigator.share({ title: 'WorkshopAI 加入工作坊', text: `代碼：${S.joinCode}`, url })
+      .catch(() => {});
+  } else {
+    copyJoinLink();
+  }
+}
+
 function renderParticipants(list) {
   const grid = document.getElementById('participantGrid');
   if(list.length === 0) {
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-dim);font-family:var(--mono);font-size:13px">── 等待學員報到中 ──</div>`;
+    renderEmptyInvite();
     return;
   }
   grid.innerHTML = list.map((p,i) => {

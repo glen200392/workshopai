@@ -959,11 +959,86 @@ body {
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + var(--sab));
+  transform: translate(-50%, 20px);
+  background: rgba(20,30,24,0.96);
+  color: #f2f2ef;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  max-width: calc(100vw - 32px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.08);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-align: center;
+  line-height: 1.45;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.success { background: #1f3a2a; border-color: rgba(122,200,148,0.3); }
+.toast.warn    { background: #3a2d14; border-color: rgba(232,168,58,0.35); }
+.toast.error   { background: #3a1e18; border-color: rgba(232,120,100,0.35); }
+
+/* ── DEMO BADGE (persistent indicator for demoMode) ── */
+.demo-badge {
+  position: fixed;
+  top: calc(10px + var(--sat, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #c17f24, #e8a83a);
+  color: #1a1410;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  box-shadow: 0 4px 14px rgba(193,127,36,0.35);
+  z-index: 9998;
+  display: none;
+  cursor: help;
+  user-select: none;
+}
+.demo-badge.show { display: inline-block; }
+
+/* ── MESSAGE RETRY ── */
+.msg-row.user { position: relative; }
+.msg-row.pending .msg-bubble { opacity: 0.55; }
+.msg-send-status {
+  font-size: 11px;
+  color: var(--ai-dim);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.msg-send-status.failed { color: #e88270; }
+.retry-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(232,130,112,0.4);
+  color: #e88270;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.retry-btn:hover, .retry-btn:active { background: rgba(232,130,112,0.15); }
 </style>
 </head>
 <body>
 
 <div class="toast" id="toast"></div>
+<div class="demo-badge" id="demoBadge" title="目前使用本機示範資料，不會連線後端">🎮 示範模式</div>
 
 <!-- ═══════════════════════════════
      SCREEN 1: JOIN
@@ -1226,6 +1301,8 @@ async function joinSession() {
     S.joinCode = code;
     S.sessionId = 'demo-' + code;
     if(savedParticipant) S.participantId = savedParticipant;
+    CONFIG.demoMode = true;
+    setDemoBadge(true);
     btn.disabled = false;
     btn.textContent = '進入工作坊';
     renderCheckinStep(1);
@@ -1234,20 +1311,29 @@ async function joinSession() {
   }
 
   try {
+    // 先查任何狀態的 session，再依 status 分類錯誤
     const res = await fetch(
-      `${CONFIG.supabaseUrl}/rest/v1/sessions?join_code=eq.${code}&status=in.(active,waiting)&select=id,config`,
+      `${CONFIG.supabaseUrl}/rest/v1/sessions?join_code=eq.${code}&select=id,config,status`,
       { headers: { 'apikey': CONFIG.supabaseKey, 'Authorization': `Bearer ${CONFIG.supabaseKey}` }}
     );
+    if(!res.ok) throw new Error(`HTTP_${res.status}`);
     const data = await res.json();
 
     if(!Array.isArray(data) || !data.length) {
-      showToast('找不到此代碼，請確認後再試');
+      showToast('❌ 找不到此代碼，請確認是否輸入正確', 'error', 3200);
       btn.disabled = false;
       btn.textContent = '進入工作坊';
       return;
     }
 
     const session = data[0];
+    if(session.status && !['active','waiting'].includes(session.status)) {
+      showToast('⚠ 此工作坊已結束，請聯絡講師', 'warn', 3200);
+      btn.disabled = false;
+      btn.textContent = '進入工作坊';
+      return;
+    }
+
     S.sessionId    = session.id;
     S.joinCode     = code;
     S.sessionConfig = session.config || {};
@@ -1257,6 +1343,7 @@ async function joinSession() {
     if(proxyUrl) {
       CONFIG.proxyUrl  = proxyUrl;
       CONFIG.demoMode  = false;
+      setDemoBadge(false);
     }
 
     // 若已有上次的 participantId，嘗試恢復（避免重複報到）
@@ -1271,10 +1358,13 @@ async function joinSession() {
     showScreen('screen-checkin');
 
   } catch(e) {
-    showToast('連線失敗，進入示範模式');
+    // 網路或 API 失敗：明確告知並詢問是否使用示範模式
+    console.warn('joinSession error:', e);
+    showToast('⚠ 連線失敗，已切換為示範模式（講師端未連線）', 'warn', 3500);
     S.joinCode = code;
     S.sessionId = 'demo-' + code;
     CONFIG.demoMode = true;
+    setDemoBadge(true);
     renderCheckinStep(1);
     showScreen('screen-checkin');
   } finally {
@@ -1286,6 +1376,8 @@ async function joinSession() {
 function joinDemo() {
   S.joinCode = 'DEMO01';
   S.sessionId = 'demo-session';
+  CONFIG.demoMode = true;
+  setDemoBadge(true);
   renderCheckinStep(1);
   showScreen('screen-checkin');
 }
@@ -1433,6 +1525,13 @@ async function completeCheckin() {
 
   initSession();
   showScreen('screen-session');
+
+  // 進入 session 後提示目前模式
+  if(CONFIG.demoMode) {
+    setTimeout(() => showToast('🎮 示範模式：所有對話僅存於本機', 'warn', 3200), 400);
+  } else {
+    setTimeout(() => showToast('✓ 已連線，AI 夥伴準備好了', 'success', 2000), 400);
+  }
 }
 
 // ══════════════════════════════════════════
@@ -1640,44 +1739,90 @@ function triggerAction(type) {
 // ── SEND MESSAGE ──
 async function sendMessage() {
   if(!S.features?.ai_enabled) {
-    showToast('此工作坊尚未開啟 AI 對話功能');
+    showToast('此工作坊尚未開啟 AI 對話功能', 'warn');
     return;
   }
   const input = document.getElementById('chatInput');
   const text = input.value.trim();
   if(!text || S.isThinking) return;
 
-  // Send lock — prevent double send
+  input.value = '';
+  autoResize(input);
+  addMessage('user', text);
+  const userMsgId = S.messages[S.messages.length - 1]?.id;
+
+  await _runSend(text, userMsgId);
+}
+
+// Separate runner so retry can reuse without re-adding the user bubble.
+async function _runSend(text, userMsgId) {
   S.isThinking = true;
   const sendBtn = document.getElementById('sendBtn');
   sendBtn.disabled = true;
   sendBtn.classList.add('locked');
-  input.value = '';
-  autoResize(input);
 
-  addMessage('user', text);
-
-  // Log to Supabase
-  if(CONFIG.supabaseUrl) logConversation('user', text);
-
-  document.getElementById('companionState').textContent = '思考中...';
-
-  const thinkingEl = showThinking();
-
-  // Detect if user wants visualisation
-  const wantsVisual = /視覺化|畫出|圖片|圖像|mind.*map|心智圖|示意圖|概念圖|幫我畫|畫一個/.test(text);
-
-  if(wantsVisual) {
-    await generateVisual(text, thinkingEl);
-  } else {
-    await chatWithAI(text, thinkingEl);
+  // Mark user bubble as pending (dims it until reply arrives or fails)
+  const userRow = userMsgId ? document.getElementById(`msg-${userMsgId}`) : null;
+  if(userRow) {
+    userRow.classList.add('pending');
+    userRow.classList.remove('failed');
+    const oldStatus = userRow.querySelector('.msg-send-status');
+    if(oldStatus) oldStatus.remove();
   }
 
-  S.isThinking = false;
-  sendBtn.disabled = false;
-  sendBtn.classList.remove('locked');
-  document.getElementById('companionState').textContent = '已連線';
+  // Log user message to Supabase (once, on first attempt)
+  if(CONFIG.supabaseUrl && !userRow?.dataset.logged) {
+    logConversation('user', text);
+    if(userRow) userRow.dataset.logged = '1';
+  }
+
+  document.getElementById('companionState').textContent = '思考中...';
+  const thinkingEl = showThinking();
+
+  const wantsVisual = /視覺化|畫出|圖片|圖像|mind.*map|心智圖|示意圖|概念圖|幫我畫|畫一個/.test(text);
+
+  let failed = false;
+  try {
+    if(wantsVisual) {
+      failed = await generateVisual(text, thinkingEl) === false;
+    } else {
+      failed = await chatWithAI(text, thinkingEl) === false;
+    }
+  } finally {
+    S.isThinking = false;
+    sendBtn.disabled = false;
+    sendBtn.classList.remove('locked');
+    document.getElementById('companionState').textContent = '已連線';
+
+    if(userRow) {
+      userRow.classList.remove('pending');
+      if(failed) {
+        userRow.classList.add('failed');
+        _showRetryAffordance(userRow, text, userMsgId);
+      }
+    }
+  }
 }
+
+function _showRetryAffordance(userRow, text, userMsgId) {
+  const bubbleWrap = userRow.querySelector('div:last-child') || userRow;
+  const status = document.createElement('div');
+  status.className = 'msg-send-status failed';
+  status.innerHTML = `<span>⚠ 送出失敗</span>
+    <button class="retry-btn" onclick="_retrySend('${userMsgId}', this)">重新送出</button>`;
+  bubbleWrap.appendChild(status);
+}
+
+window._retrySend = function(id, btn) {
+  const row = document.getElementById(`msg-${id}`);
+  if(!row) return;
+  const msg = S.messages.find(m => String(m.id) === String(id));
+  if(!msg) return;
+  const status = row.querySelector('.msg-send-status');
+  if(status) status.remove();
+  row.classList.remove('failed');
+  _runSend(msg.content, msg.id);
+};
 
 function showThinking() {
   const area = document.getElementById('chatArea');
@@ -1834,19 +1979,22 @@ async function chatWithAI(userText, thinkingEl) {
 
     updateMemory('ai', reply);
     if(CONFIG.supabaseUrl) logConversation('assistant', reply);
+    return true;
 
   } catch(e) {
     thinkingEl.remove();
-    // Graceful error with retry hint
-    const errMsg = e.message?.includes('503')
-      ? 'AI 服務暫時忙碌，請稍等 10 秒後再試。'
-      : '連線出現問題，請重新整理後再試。';
+    // Remove any partial streaming bubble left behind
+    document.getElementById('stream-bubble')?.remove();
+    const hint = e.message?.includes('503')
+      ? 'AI 服務暫時忙碌，10 秒後可重新送出。'
+      : '連線出現問題，可點「重新送出」再試一次。';
     const errDiv = document.createElement('div');
     errDiv.className = 'msg-row ai';
-    errDiv.innerHTML = `<div class="msg-avatar">🤖</div><div style="flex:1;min-width:0"><div class="msg-bubble error">${errMsg}</div></div>`;
+    errDiv.innerHTML = `<div class="msg-avatar">🤖</div><div style="flex:1;min-width:0"><div class="msg-bubble error">${hint}</div></div>`;
     document.getElementById('chatArea').appendChild(errDiv);
     scrollChat();
     console.error('chatWithAI error:', e);
+    return false;
   }
 }
 
@@ -1936,11 +2084,13 @@ async function generateVisual(userPrompt, thinkingEl) {
 
     scrollChat();
     addMessage('ai', result.followUp || '這是根據我們討論生成的視覺化。你覺得有抓到你想整理的概念嗎？');
+    return true;
 
   } catch(e) {
     if(existing) existing.innerHTML = '';
-    addMessage('ai', '視覺化暫時無法使用，請繼續文字討論，稍後再試。');
+    addMessage('ai', '視覺化暫時無法使用，可點下方「重新送出」再試一次。');
     console.error('generateVisual error:', e);
+    return false;
   }
 }
 
@@ -2143,11 +2293,20 @@ function _handleModuleChange(moduleId) {
 }
 
 // ── UTILS ──
-function showToast(msg) {
+function showToast(msg, type = '', duration = 2500) {
   const t = document.getElementById('toast');
   t.textContent = msg;
+  t.classList.remove('success', 'warn', 'error');
+  if(type) t.classList.add(type);
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function setDemoBadge(on) {
+  const el = document.getElementById('demoBadge');
+  if(!el) return;
+  el.classList.toggle('show', !!on);
 }
 
 // ── VIEWPORT ──
