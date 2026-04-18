@@ -1302,6 +1302,17 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
 <script>
 // ══════════════════════════════════════════
+// SAFE STORAGE — Safari private mode, sandboxed iframes, data: URIs,
+// cookie-disabled browsers all throw on localStorage access. Wrap it so
+// nothing crashes at module load.
+// ══════════════════════════════════════════
+const safeStorage = {
+  get(k) { try { return safeStorage.get(k); } catch(_) { return null; } },
+  set(k, v) { try { safeStorage.set(k, v); return true; } catch(_) { return false; } },
+  remove(k) { try { safeStorage.remove(k); } catch(_) {} },
+};
+
+// ══════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════
 const S = {
@@ -1310,13 +1321,13 @@ const S = {
   isLive: false,
 
   // ── 後端連線（講師端持有，不傳給學員）──
-  supabaseUrl: localStorage.getItem('_sbUrl') || '',
-  supabaseKey: localStorage.getItem('_sbKey') || '',
+  supabaseUrl: safeStorage.get('_sbUrl') || '',
+  supabaseKey: safeStorage.get('_sbKey') || '',
 
   // ── AI Key（只在講師端 localStorage，開始工作坊時寫入 Supabase Secrets）──
-  claudeKey:   localStorage.getItem('_ck') || '',
-  geminiKey:   localStorage.getItem('_gk') || '',
-  llmProvider: localStorage.getItem('_llmProvider') || 'anthropic',
+  claudeKey:   safeStorage.get('_ck') || '',
+  geminiKey:   safeStorage.get('_gk') || '',
+  llmProvider: safeStorage.get('_llmProvider') || 'anthropic',
 
   // ── AI Config（開始工作坊時寫入 sessions.config，供 Edge Function 讀取）──
   aiConfig: {
@@ -1394,10 +1405,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function restoreSettings() {
   // Restore saved keys (obfuscated display only)
-  const ck = localStorage.getItem('_ck') || '';
-  const gk = localStorage.getItem('_gk') || '';
-  const sbUrl = localStorage.getItem('_sbUrl') || '';
-  const sbKey = localStorage.getItem('_sbKey') || '';
+  const ck = safeStorage.get('_ck') || '';
+  const gk = safeStorage.get('_gk') || '';
+  const sbUrl = safeStorage.get('_sbUrl') || '';
+  const sbKey = safeStorage.get('_sbKey') || '';
 
   S.claudeKey = ck;
   S.geminiKey = gk;
@@ -1413,8 +1424,8 @@ function restoreSettings() {
   if(sbKey) document.getElementById('sbKey').value = sbKey;
 
   // Restore feature toggle state
-  const fai  = localStorage.getItem('_featureAI');
-  const fvis = localStorage.getItem('_featureVisual');
+  const fai  = safeStorage.get('_featureAI');
+  const fvis = safeStorage.get('_featureVisual');
   if(fai  !== null) document.getElementById('featureAI').checked    = fai  === '1';
   if(fvis !== null) document.getElementById('featureVisual').checked = fvis === '1';
   onFeatureToggle();
@@ -2084,12 +2095,13 @@ async function resetAllMemory() {
 S._filterQuery = '';
 S._sortBy = 'joined';
 
-let _filterDebounce;
+// Debounce handle is stored on the function itself so we don't depend on
+// any top-level `let`/`const` being initialised before an oninput fires
+// (would otherwise throw a TDZ error in some script-load orderings).
 function filterParticipants(q) {
-  // Debounce so each keystroke doesn't re-render the grid
-  clearTimeout(_filterDebounce);
+  clearTimeout(filterParticipants._timer);
   const raw = (q || '').trim();
-  _filterDebounce = setTimeout(() => {
+  filterParticipants._timer = setTimeout(() => {
     S._filterQuery = raw;
     _applyFilterSort();
   }, 120);
@@ -2498,7 +2510,7 @@ function onProviderChange() {
   };
   input.placeholder = placeholders[provider] || 'API Key...';
   hint.textContent = hints[provider] || '';
-  localStorage.setItem('_llmProvider', provider);
+  safeStorage.set('_llmProvider', provider);
 }
 
 function onFeatureToggle() {
@@ -2605,16 +2617,16 @@ function saveAgentConfig() {
 
   if(provider) {
     S.llmProvider = provider;
-    localStorage.setItem('_llmProvider', provider);
+    safeStorage.set('_llmProvider', provider);
   }
   if(ck) {
     S.claudeKey = ck;
-    localStorage.setItem('_ck', ck);
+    safeStorage.set('_ck', ck);
     updateKeyStatus('claude', 'saved');
   }
   if(gk) {
     S.geminiKey = gk;
-    localStorage.setItem('_gk', gk);
+    safeStorage.set('_gk', gk);
     updateKeyStatus('gemini', 'saved');
   }
 
@@ -2631,9 +2643,9 @@ function saveAgentConfig() {
     },
   };
 
-  localStorage.setItem('_featureAI',     document.getElementById('featureAI').checked     ? '1' : '0');
-  localStorage.setItem('_featureVisual', document.getElementById('featureVisual').checked ? '1' : '0');
-  localStorage.setItem('_aiConfig', JSON.stringify(S.aiConfig));
+  safeStorage.set('_featureAI',     document.getElementById('featureAI').checked     ? '1' : '0');
+  safeStorage.set('_featureVisual', document.getElementById('featureVisual').checked ? '1' : '0');
+  safeStorage.set('_aiConfig', JSON.stringify(S.aiConfig));
   addLog('config', `AI 設定已儲存 · 模型: ${S.aiConfig.claudeModel} · AI對話: ${S.aiConfig.features.ai_enabled ? '開' : '關'} · 視覺化: ${S.aiConfig.features.visual_enabled ? '開' : '關'}`, 'instructor');
   showToast('✓ AI 設定已儲存（Key 僅存於本地）');
 }
@@ -2645,8 +2657,8 @@ function saveSessionConfig() {
   S.supabaseUrl = url;
   S.supabaseKey = key;
 
-  if(url) { localStorage.setItem('_sbUrl', url); updateProxyUrl(); }
-  if(key) { localStorage.setItem('_sbKey', key); }
+  if(url) { safeStorage.set('_sbUrl', url); updateProxyUrl(); }
+  if(key) { safeStorage.set('_sbKey', key); }
 
   addLog('config', `Supabase 設定已儲存 · ${url || '(未設定)'}`, 'instructor');
   showToast('✓ 設定已儲存');
