@@ -1064,6 +1064,100 @@ body {
 .toast.warn    { background: #3a2d14; border-color: rgba(232,168,58,0.35); }
 .toast.error   { background: #3a1e18; border-color: rgba(232,120,100,0.35); }
 
+/* ── SURVEY CARD (student-side) ── */
+.survey-card {
+  background: var(--ai-surface, rgba(255,255,255,0.04));
+  border: 1px solid rgba(90,173,120,0.25);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin: 4px 0;
+}
+.survey-card-head {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+}
+.survey-card-label {
+  font-family: var(--mono, monospace); font-size: 10px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ai-accent, #5aad78);
+}
+.survey-card-title {
+  font-family: var(--serif, serif); font-size: 16px;
+  color: var(--ai-text, #eae4cd); font-weight: 600;
+}
+.survey-card-desc {
+  font-size: 13px; color: var(--ai-dim);
+  padding: 8px 10px; background: rgba(255,255,255,0.04);
+  border-radius: 6px; margin-bottom: 12px; line-height: 1.5;
+}
+.survey-q-list { display: flex; flex-direction: column; gap: 16px; }
+.sv-q-prompt {
+  font-size: 14px; color: var(--ai-text); margin-bottom: 8px; line-height: 1.5;
+}
+.sv-opt {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; margin-bottom: 4px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; cursor: pointer;
+  transition: all 0.15s;
+  font-size: 14px;
+}
+.sv-opt:has(input:checked) {
+  background: rgba(90,173,120,0.1);
+  border-color: rgba(90,173,120,0.4);
+}
+.sv-opt input { flex-shrink: 0; accent-color: var(--ai-accent, #5aad78); }
+.sv-scale-row {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px;
+}
+.sv-scale-step {
+  flex: 1; min-width: 32px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 8px 4px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px; cursor: pointer;
+  transition: all 0.15s;
+  font-size: 13px;
+}
+.sv-scale-step:has(input:checked) {
+  background: rgba(90,173,120,0.15);
+  border-color: rgba(90,173,120,0.5);
+  color: var(--ai-accent, #5aad78); font-weight: 700;
+}
+.sv-scale-step input { display: none; }
+.sv-scale-labels {
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: var(--ai-dim);
+  padding: 0 4px;
+}
+.sv-textarea {
+  width: 100%; box-sizing: border-box;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--ai-text); font-family: var(--sans);
+  font-size: 14px; resize: vertical; min-height: 60px;
+}
+.sv-textarea:focus { outline: none; border-color: rgba(90,173,120,0.5); }
+.survey-submit-btn {
+  width: 100%; margin-top: 12px;
+  padding: 12px; border-radius: 10px;
+  background: var(--accent, #2d5a3d); color: #fff;
+  border: none; cursor: pointer;
+  font-size: 14px; font-weight: 600;
+  transition: transform 0.1s, background 0.15s;
+}
+.survey-submit-btn:hover { background: #3a7050; }
+.survey-submit-btn:active { transform: scale(0.98); }
+.survey-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.survey-done-msg {
+  text-align: center; padding: 10px;
+  color: var(--ai-accent, #5aad78);
+  font-size: 13px; font-weight: 600;
+}
+
 /* ── CONNECTION BANNER (realtime drop / session ended) ── */
 .connection-banner {
   position: fixed;
@@ -2704,12 +2798,157 @@ function _handleModuleChange(moduleId) {
   const module = (S.sessionConfig?.modules || []).find(m => m.id === moduleId);
   if(!module) return;
   document.getElementById('moduleBadge').textContent = module.name || '新活動';
+
+  // Survey module gets its own card renderer
+  if(module.type === 'survey' && module.questions?.length) {
+    renderSurveyCard(module);
+    return;
+  }
+
   const taskMsg = { role:'task', content: { title: module.name, desc: module.prompt || '' }, type:'task', id: Date.now() };
   S.messages.push(taskMsg);
   renderMessage(taskMsg);
   scrollChat();
   addMessage('ai', `講師推送了新活動「${module.name}」。${module.prompt || ''}`);
 }
+
+// ══════════════════════════════════════════
+// SURVEY (student-side renderer)
+// ══════════════════════════════════════════
+function renderSurveyCard(module) {
+  const area = document.getElementById('chatArea');
+  // Avoid duplicate render if same module is pushed again
+  const existing = document.getElementById('survey-' + module.id);
+  if(existing) return;
+
+  const qsHtml = (module.questions || []).map((q, i) => {
+    let body = '';
+    if(q.type === 'single') {
+      body = (q.options || []).map((o, oi) => `
+        <label class="sv-opt">
+          <input type="radio" name="sv-${module.id}-${i}" value="${oi}" data-answer>
+          <span>${_escHtml(o)}</span>
+        </label>`).join('');
+    } else if(q.type === 'scale') {
+      const min = q.scale?.min ?? 1;
+      const max = q.scale?.max ?? 10;
+      const steps = [];
+      for(let n = min; n <= max; n++) {
+        steps.push(`<label class="sv-scale-step"><input type="radio" name="sv-${module.id}-${i}" value="${n}" data-answer><span>${n}</span></label>`);
+      }
+      body = `
+        <div class="sv-scale-row">${steps.join('')}</div>
+        ${(q.scale?.minLabel || q.scale?.maxLabel) ? `<div class="sv-scale-labels">
+          <span>${_escHtml(q.scale?.minLabel || '')}</span>
+          <span>${_escHtml(q.scale?.maxLabel || '')}</span>
+        </div>` : ''}`;
+    } else if(q.type === 'text') {
+      body = `<textarea class="sv-textarea" rows="2" placeholder="在此作答..." data-answer></textarea>`;
+    }
+    return `
+      <div class="sv-q" data-qid="${q.id}" data-qtype="${q.type}">
+        <div class="sv-q-prompt"><strong>Q${i+1}.</strong> ${_escHtml(q.prompt)}</div>
+        <div class="sv-q-body">${body}</div>
+      </div>`;
+  }).join('');
+
+  const card = document.createElement('div');
+  card.className = 'msg-row ai';
+  card.id = 'survey-' + module.id;
+  card.innerHTML = `
+    <div class="msg-avatar">📊</div>
+    <div style="flex:1; min-width:0">
+      <div class="survey-card">
+        <div class="survey-card-head">
+          <div class="survey-card-label">▶ 問卷</div>
+          <div class="survey-card-title">${_escHtml(module.name)}</div>
+        </div>
+        ${module.surveyDesc ? `<div class="survey-card-desc">${_escHtml(module.surveyDesc)}</div>` : ''}
+        <div class="survey-q-list">${qsHtml}</div>
+        <button class="survey-submit-btn" onclick="submitSurvey('${module.id}')">送出回答</button>
+        <div class="survey-done-msg" id="survey-done-${module.id}" style="display:none">✓ 已送出，感謝你的回應</div>
+      </div>
+    </div>`;
+  area.appendChild(card);
+  scrollChat();
+}
+
+function _escHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+window.submitSurvey = async function(moduleId) {
+  const card = document.getElementById('survey-' + moduleId);
+  if(!card) return;
+  const module = (S.sessionConfig?.modules || []).find(m => m.id === moduleId);
+  if(!module) return;
+
+  // Collect answers
+  const answers = [];
+  for(const q of (module.questions || [])) {
+    const qEl = card.querySelector(`[data-qid="${q.id}"]`);
+    if(!qEl) continue;
+    let value = null;
+    if(q.type === 'single' || q.type === 'scale') {
+      const checked = qEl.querySelector('input[type="radio"]:checked');
+      if(checked) value = checked.value;
+    } else if(q.type === 'text') {
+      value = qEl.querySelector('textarea')?.value.trim() || '';
+    }
+    if(value === null || value === '') {
+      showToast(`⚠ 請回答：${q.prompt.slice(0,14)}...`, 'warn', 3000);
+      qEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    answers.push({ qid: q.id, qtype: q.type, answer: value });
+  }
+
+  // Disable form
+  card.querySelectorAll('input, textarea, button').forEach(el => el.disabled = true);
+
+  // Persist to Supabase (via conversations table with content_type='survey_response')
+  const payload = {
+    module_id: moduleId,
+    module_name: module.name,
+    answers,
+    submitted_at: new Date().toISOString(),
+  };
+
+  if(CONFIG.supabaseUrl && !CONFIG.demoMode && S.participantId) {
+    try {
+      const res = await fetch(`${CONFIG.supabaseUrl}/rest/v1/conversations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': CONFIG.supabaseKey,
+          'Authorization': `Bearer ${CONFIG.supabaseKey}`,
+        },
+        body: JSON.stringify({
+          session_id:     S.sessionId,
+          participant_id: S.participantId,
+          role:           'user',
+          content:        JSON.stringify(payload),
+          content_type:   'survey_response',
+          metadata:       { module_id: moduleId },
+        })
+      });
+      if(!res.ok) throw new Error(await res.text());
+      showToast('✓ 回答已送出', 'success');
+    } catch(e) {
+      showToast('⚠ 送出失敗，請重試', 'error');
+      card.querySelectorAll('input, textarea, button').forEach(el => el.disabled = false);
+      console.error('submitSurvey failed:', e);
+      return;
+    }
+  } else {
+    // Demo mode — just acknowledge locally
+    showToast('✓ 回答已記錄（示範模式）', 'success');
+  }
+
+  // Show "done" state
+  document.getElementById('survey-done-' + moduleId).style.display = 'block';
+  card.querySelector('.survey-submit-btn').style.display = 'none';
+};
 
 // ── UTILS ──
 function showToast(msg, type = '', duration = 2500) {

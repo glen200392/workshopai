@@ -254,6 +254,113 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   border-bottom: 1px solid var(--border);
 }
 
+/* ── Survey designer ── */
+.sq-row {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: var(--surface);
+  position: relative;
+}
+.sq-head {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+}
+.sq-type-badge {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
+  padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--border2); color: var(--text-mid);
+  flex-shrink: 0;
+}
+.sq-type-badge.single { color: var(--blue);   border-color: var(--blue); }
+.sq-type-badge.scale  { color: var(--amber);  border-color: var(--amber); }
+.sq-type-badge.text   { color: var(--purple); border-color: var(--purple); }
+.sq-num { font-family: var(--mono); font-size: 11px; color: var(--text-dim); flex-shrink: 0; }
+.sq-del {
+  margin-left: auto;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-dim); padding: 3px 8px; border-radius: 4px;
+  cursor: pointer; font-size: 11px;
+  transition: all 0.15s;
+}
+.sq-del:hover { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+.sq-prompt {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px; padding: 6px 10px; color: var(--text);
+  font-family: var(--sans); font-size: 13px; margin-bottom: 6px;
+}
+.sq-prompt:focus { outline: none; border-color: var(--green); }
+.sq-options { display: flex; flex-direction: column; gap: 4px; }
+.sq-opt {
+  display: flex; gap: 6px; align-items: center;
+}
+.sq-opt input {
+  flex: 1; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px; padding: 4px 8px; color: var(--text);
+  font-size: 12px;
+}
+.sq-opt-del {
+  width: 20px; height: 20px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-dim); border-radius: 3px; font-size: 10px;
+  cursor: pointer;
+}
+.sq-add-opt {
+  background: transparent; border: 1px dashed var(--border);
+  color: var(--text-dim); padding: 4px; border-radius: 4px;
+  font-size: 11px; cursor: pointer; margin-top: 4px;
+}
+.sq-add-opt:hover { border-color: var(--green); color: var(--green); }
+.sq-scale { display: flex; gap: 8px; align-items: center; font-size: 11px; color: var(--text-dim); }
+.sq-scale input[type="text"] {
+  flex: 1; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px; padding: 4px 8px; color: var(--text); font-size: 12px;
+}
+.sq-scale input[type="number"] {
+  width: 52px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px; padding: 4px; color: var(--text); font-size: 12px;
+  text-align: center; font-family: var(--mono);
+}
+
+/* Survey question button inside module list */
+.module-design-btn {
+  font-size: 10px !important;
+  background: var(--purple-dim) !important;
+  border-color: var(--purple) !important;
+  color: var(--purple) !important;
+}
+
+/* Live aggregate for survey responses */
+.survey-agg-root { padding: 12px; }
+.survey-agg-q { margin-bottom: 18px; }
+.survey-agg-prompt { font-weight: 600; margin-bottom: 6px; font-size: 13px; }
+.survey-agg-meta { font-size: 11px; color: var(--text-dim); margin-bottom: 8px; font-family: var(--mono); }
+.survey-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 12px; }
+.survey-bar-label { min-width: 80px; color: var(--text-mid); }
+.survey-bar-track {
+  flex: 1; height: 16px; background: var(--surface); border-radius: 3px;
+  position: relative; overflow: hidden;
+}
+.survey-bar-fill {
+  height: 100%; background: var(--blue);
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.survey-bar-count { min-width: 50px; text-align: right; font-family: var(--mono); font-size: 11px; color: var(--text-mid); }
+.survey-scale-stat {
+  font-family: var(--mono); font-size: 14px;
+  padding: 8px; background: var(--surface); border-radius: 4px;
+  text-align: center;
+}
+.survey-text-list {
+  background: var(--surface); border-radius: 4px; padding: 8px;
+  max-height: 200px; overflow-y: auto;
+}
+.survey-text-item {
+  padding: 6px 8px; border-bottom: 1px solid var(--border);
+  font-size: 12px; line-height: 1.5;
+}
+.survey-text-item:last-child { border-bottom: none; }
+
 /* ── Check-in step editor ── */
 .ck-step-row {
   border: 1px solid var(--border);
@@ -1026,6 +1133,27 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   </div>
 </div>
 
+<!-- SURVEY DESIGNER MODAL -->
+<div class="modal-overlay" id="surveyDesignerModal">
+  <div class="modal" style="width:min(640px, 92vw); max-height: 85vh; display:flex; flex-direction:column;">
+    <div class="modal-title" id="surveyDesignerTitle">📊 設計問卷</div>
+    <div class="field-group">
+      <label class="field-label">說明文字（選填，會顯示在問卷開頭）</label>
+      <textarea class="field-textarea" id="surveyDesc" rows="2" placeholder="例：請花 2 分鐘回答以下問題，協助我們了解你的觀點"></textarea>
+    </div>
+    <div id="surveyQuestionsList" style="overflow-y:auto; flex:1; min-height:100px; padding-right:4px; margin:8px 0"></div>
+    <div style="display:flex; gap:6px; flex-wrap:wrap">
+      <button class="top-btn btn-ghost" onclick="onSurveyAddQuestion('single')">+ 單選題</button>
+      <button class="top-btn btn-ghost" onclick="onSurveyAddQuestion('scale')">+ 量表題</button>
+      <button class="top-btn btn-ghost" onclick="onSurveyAddQuestion('text')">+ 開放文字</button>
+    </div>
+    <div class="modal-footer">
+      <button class="top-btn btn-ghost" onclick="closeSurveyDesigner(false)">取消</button>
+      <button class="top-btn btn-start" onclick="closeSurveyDesigner(true)">✓ 儲存問卷</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODULE MODAL -->
 <div class="modal-overlay" id="moduleModal">
   <div class="modal">
@@ -1309,6 +1437,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
     <div class="main-toolbar">
       <div class="view-toggle">
         <button class="vtab active" id="vtabGrid" onclick="switchView('grid')">格狀監控</button>
+        <button class="vtab" id="vtabSurvey" onclick="switchView('survey')">📊 問卷結果</button>
         <button class="vtab" id="vtabProjection" onclick="switchView('projection')">投影大螢幕</button>
         <button class="vtab" id="vtabLog" onclick="switchView('log')">事件 Log</button>
       </div>
@@ -1364,6 +1493,16 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
         <div class="proj-stat"><div class="proj-stat-num" id="pstatR" style="color:var(--blue)">0</div><div class="proj-stat-label">回應數</div></div>
         <div class="proj-stat"><div class="proj-stat-num" id="pstatW" style="color:var(--amber)">0</div><div class="proj-stat-label">關鍵詞</div></div>
         <div class="proj-stat"><div class="proj-stat-num" id="pstatT" style="color:var(--purple)">—</div><div class="proj-stat-label">張力點</div></div>
+      </div>
+    </div>
+
+    <!-- Survey aggregate view -->
+    <div style="display:none;flex:1;overflow-y:auto" id="surveyView">
+      <div class="survey-agg-root" id="surveyAggRoot">
+        <div style="color:var(--text-dim); padding:40px 20px; text-align:center; font-family:var(--mono); font-size:13px">
+          ── 尚無問卷回應 ──<br>
+          <span style="font-size:11px; margin-top:8px; display:block">推送一個「即時問卷」模組後，學員的答案會即時顯示在這裡</span>
+        </div>
       </div>
     </div>
 
@@ -1724,17 +1863,23 @@ async function endSession() {
 function renderModules() {
   const list = document.getElementById('moduleList');
   const typeColors = { checkin:'var(--green)', discussion:'var(--blue)', roleplay:'var(--amber)', convergence:'var(--purple)', reflection:'var(--red)', survey:'var(--text-mid)' };
-  list.innerHTML = S.modules.map(m => `
+  list.innerHTML = S.modules.map(m => {
+    const surveyBtn = m.type === 'survey'
+      ? `<button class="maction module-design-btn" onclick="openSurveyDesigner('${m.id}')">📊 設計問卷 (${m.questions?.length || 0})</button>`
+      : '';
+    return `
     <div class="module-item ${m.isActive?'active-module':''}" id="mod-${m.id}">
       <div class="module-seq">模組 ${m.seq} · ${m.duration}分</div>
       <div class="module-name">${m.name}</div>
       <div class="module-type-badge" style="border-color:${typeColors[m.type]||'var(--border)'};color:${typeColors[m.type]||'var(--text-dim)'}">${m.type}</div>
       <div class="module-actions">
         <button class="maction ${m.isActive?'push':''}" onclick="pushModule('${m.id}')">${m.isActive?'✓ 進行中':'▶ 推送'}</button>
+        ${surveyBtn}
         <button class="maction" onclick="editModule('${m.id}')">編輯</button>
         <button class="maction" onclick="deleteModule('${m.id}')">刪除</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function _updateActiveModulePill(name) {
@@ -1872,6 +2017,168 @@ function editModule(id) {
   document.getElementById('newModuleType').value = m.type;
   openModal();
 }
+
+// ══════════════════════════════════════════
+// SURVEY DESIGNER
+// ══════════════════════════════════════════
+// Draft state lives on the module object during editing; on save, flushed
+// to module.questions and (if live) pushed to Supabase sessionConfig.modules
+let _surveyDraft = null;  // { moduleId, questions: [...], desc }
+
+function openSurveyDesigner(moduleId) {
+  const m = S.modules.find(m => m.id === moduleId);
+  if(!m) return;
+  _surveyDraft = {
+    moduleId,
+    desc: m.surveyDesc || '',
+    questions: JSON.parse(JSON.stringify(m.questions || [])),
+  };
+  document.getElementById('surveyDesignerTitle').textContent = `📊 設計問卷：${m.name}`;
+  document.getElementById('surveyDesc').value = _surveyDraft.desc;
+  document.getElementById('surveyDesc').oninput = (e) => { _surveyDraft.desc = e.target.value; };
+  _renderSurveyDraft();
+  document.getElementById('surveyDesignerModal').classList.add('open');
+}
+
+function closeSurveyDesigner(save) {
+  const overlay = document.getElementById('surveyDesignerModal');
+  if(!save) {
+    _surveyDraft = null;
+    overlay.classList.remove('open');
+    return;
+  }
+  // Validate
+  if(!_surveyDraft) return;
+  for(const q of _surveyDraft.questions) {
+    if(!q.prompt?.trim()) {
+      showToast('⚠ 每個問題都要有題目', 'warn'); return;
+    }
+    if(q.type !== 'text' && q.type !== 'scale' && !(q.options?.length >= 2)) {
+      showToast(`⚠「${q.prompt.slice(0,10)}」至少要有 2 個選項`, 'warn'); return;
+    }
+  }
+  // Commit to module
+  const m = S.modules.find(m => m.id === _surveyDraft.moduleId);
+  if(m) {
+    m.questions = _surveyDraft.questions;
+    m.surveyDesc = _surveyDraft.desc;
+  }
+  _surveyDraft = null;
+  overlay.classList.remove('open');
+  renderModules();
+  showToast('✓ 問卷已儲存', 'success');
+  // Hot-push if live
+  if(S.isLive && S.supabaseUrl && S.sessionId) _pushModulesUpdate();
+}
+
+async function _pushModulesUpdate() {
+  clearTimeout(_pushModulesUpdate._t);
+  _pushModulesUpdate._t = setTimeout(async () => {
+    try {
+      const res = await fetch(`${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}&select=config`, {
+        headers: { 'apikey': S.supabaseKey, 'Authorization': `Bearer ${S.supabaseKey}` }
+      });
+      const data = await res.json();
+      const cfg = data?.[0]?.config || {};
+      cfg.modules = S.modules;
+      await fetch(`${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': S.supabaseKey,
+          'Authorization': `Bearer ${S.supabaseKey}`,
+        },
+        body: JSON.stringify({ config: cfg })
+      });
+      addLog('modules', '模組設定已同步', 'system');
+    } catch(e) {
+      addLog('modules', `⚠ 模組同步失敗：${e.message}`, 'error');
+    }
+  }, 600);
+}
+
+function _renderSurveyDraft() {
+  const el = document.getElementById('surveyQuestionsList');
+  if(!_surveyDraft || _surveyDraft.questions.length === 0) {
+    el.innerHTML = `<div style="color:var(--text-dim); font-size:13px; text-align:center; padding:24px">
+      尚未新增問題 — 點下方按鈕開始設計</div>`;
+    return;
+  }
+  el.innerHTML = _surveyDraft.questions.map((q, i) => {
+    let body = '';
+    if(q.type === 'single') {
+      body = `
+        <div class="sq-options">
+          ${(q.options || []).map((o, oi) => `
+            <div class="sq-opt">
+              <input value="${_esc(o)}" oninput="onSurveyOptChange(${i},${oi},this.value)" placeholder="選項 ${oi+1}">
+              <button class="sq-opt-del" onclick="onSurveyOptDel(${i},${oi})" title="刪除選項">✕</button>
+            </div>
+          `).join('')}
+        </div>
+        <button class="sq-add-opt" onclick="onSurveyOptAdd(${i})">+ 新增選項</button>
+      `;
+    } else if(q.type === 'scale') {
+      body = `
+        <div class="sq-scale">
+          從
+          <input type="number" value="${q.scale?.min ?? 1}" min="0" max="10" oninput="onSurveyScaleChange(${i},'min',this.value)">
+          到
+          <input type="number" value="${q.scale?.max ?? 10}" min="1" max="10" oninput="onSurveyScaleChange(${i},'max',this.value)">
+        </div>
+        <div class="sq-scale" style="margin-top:4px">
+          <input type="text" value="${_esc(q.scale?.minLabel || '')}" placeholder="最低分說明（選填）" oninput="onSurveyScaleChange(${i},'minLabel',this.value)">
+          <input type="text" value="${_esc(q.scale?.maxLabel || '')}" placeholder="最高分說明（選填）" oninput="onSurveyScaleChange(${i},'maxLabel',this.value)">
+        </div>
+      `;
+    } else if(q.type === 'text') {
+      body = `<div style="font-size:11px; color:var(--text-dim)">學員會看到一個開放文字框</div>`;
+    }
+    return `
+      <div class="sq-row">
+        <div class="sq-head">
+          <span class="sq-num">Q${i+1}</span>
+          <span class="sq-type-badge ${q.type}">${{single:'單選',scale:'量表',text:'文字'}[q.type]}</span>
+          <button class="sq-del" onclick="onSurveyQDel(${i})">刪除</button>
+        </div>
+        <input class="sq-prompt" value="${_esc(q.prompt || '')}" placeholder="題目內容" oninput="onSurveyPromptChange(${i},this.value)">
+        ${body}
+      </div>`;
+  }).join('');
+}
+
+window.onSurveyAddQuestion = function(type) {
+  if(!_surveyDraft) return;
+  const base = { id: 'q'+Date.now(), type, prompt: '' };
+  if(type === 'single') base.options = ['', ''];
+  if(type === 'scale')  base.scale = { min:1, max:10, minLabel:'', maxLabel:'' };
+  _surveyDraft.questions.push(base);
+  _renderSurveyDraft();
+};
+
+window.onSurveyQDel = function(i) {
+  _surveyDraft.questions.splice(i, 1);
+  _renderSurveyDraft();
+};
+
+window.onSurveyPromptChange = function(i, val) { _surveyDraft.questions[i].prompt = val; };
+window.onSurveyOptChange    = function(i, oi, val) { _surveyDraft.questions[i].options[oi] = val; };
+window.onSurveyOptAdd       = function(i) { _surveyDraft.questions[i].options.push(''); _renderSurveyDraft(); };
+window.onSurveyOptDel       = function(i, oi) {
+  const q = _surveyDraft.questions[i];
+  if(q.options.length <= 2) { showToast('⚠ 至少保留 2 個選項', 'warn'); return; }
+  q.options.splice(oi, 1);
+  _renderSurveyDraft();
+};
+window.onSurveyScaleChange = function(i, field, val) {
+  const n = parseInt(val, 10);
+  if(field === 'min' || field === 'max') {
+    if(!Number.isFinite(n)) return;
+    _surveyDraft.questions[i].scale[field] = n;
+  } else {
+    _surveyDraft.questions[i].scale[field] = val;
+  }
+};
 
 // ══════════════════════════════════════════
 // PARTICIPANT RENDERING
@@ -2059,10 +2366,133 @@ function switchSidebarTab(tab) {
 // ══════════════════════════════════════════
 function switchView(view) {
   document.getElementById('participantGrid').style.display = view==='grid'?'grid':'none';
-  document.getElementById('projectionView').style.display = view==='projection'?'flex':'none';
-  document.getElementById('logView').style.display = view==='log'?'flex':'none';
-  ['grid','projection','log'].forEach(v => document.getElementById('vtab'+v.charAt(0).toUpperCase()+v.slice(1))?.classList.toggle('active', v===view));
+  document.getElementById('surveyView').style.display      = view==='survey'?'block':'none';
+  document.getElementById('projectionView').style.display  = view==='projection'?'flex':'none';
+  document.getElementById('logView').style.display         = view==='log'?'flex':'none';
+  ['grid','survey','projection','log'].forEach(v =>
+    document.getElementById('vtab'+v.charAt(0).toUpperCase()+v.slice(1))?.classList.toggle('active', v===view));
   if(view==='projection') syncProjection();
+  if(view==='survey')     renderSurveyAggregate();
+}
+
+// ══════════════════════════════════════════
+// SURVEY AGGREGATE (instructor-side live view)
+// ══════════════════════════════════════════
+// Structure: S._surveyResponses[moduleId] = [{participantId, answers: [{qid, qtype, answer}]}, ...]
+S._surveyResponses = {};
+
+function recordSurveyResponse(participantId, payload) {
+  if(!payload?.module_id) return;
+  const m = payload.module_id;
+  if(!S._surveyResponses[m]) S._surveyResponses[m] = [];
+  // de-dupe by participant (latest wins)
+  S._surveyResponses[m] = S._surveyResponses[m].filter(r => r.participantId !== participantId);
+  S._surveyResponses[m].push({
+    participantId,
+    answers: payload.answers || [],
+    submittedAt: payload.submitted_at,
+  });
+  // Refresh if user is looking at the survey view
+  if(document.getElementById('surveyView')?.style.display === 'block') {
+    renderSurveyAggregate();
+  }
+}
+
+function renderSurveyAggregate() {
+  const root = document.getElementById('surveyAggRoot');
+  if(!root) return;
+  const surveyModules = (S.modules || []).filter(m => m.type === 'survey' && (m.questions?.length));
+  if(surveyModules.length === 0) {
+    root.innerHTML = `<div style="color:var(--text-dim); padding:40px 20px; text-align:center; font-family:var(--mono); font-size:13px">
+      ── 尚未設計任何問卷 ──<br>
+      <span style="font-size:11px; margin-top:8px; display:block">左側新增「即時問卷」模組，再點「📊 設計問卷」編輯題目</span>
+    </div>`;
+    return;
+  }
+
+  root.innerHTML = surveyModules.map(m => {
+    const responses = S._surveyResponses[m.id] || [];
+    const n = responses.length;
+    const isActive = m.isActive;
+    const header = `
+      <h3 style="margin:0; font-size:15px; display:flex; align-items:center; gap:8px">
+        <span>${_esc(m.name)}</span>
+        ${isActive ? '<span style="font-size:10px; color:var(--green); padding:2px 8px; border:1px solid var(--green); border-radius:999px">進行中</span>' : ''}
+      </h3>
+      <div class="survey-agg-meta">${n} 位回應 · ${m.questions.length} 題</div>
+    `;
+    const qBlocks = m.questions.map((q, qi) => _renderSurveyQAgg(q, qi, responses)).join('');
+    return `
+      <div style="margin-bottom:32px">
+        ${header}
+        ${n === 0 ? '<div style="color:var(--text-dim); font-size:12px; padding:12px 0">尚無回應</div>' : qBlocks}
+      </div>`;
+  }).join('');
+}
+
+function _renderSurveyQAgg(q, qi, responses) {
+  const values = responses
+    .map(r => r.answers.find(a => a.qid === q.id))
+    .filter(Boolean)
+    .map(a => a.answer);
+
+  if(q.type === 'single') {
+    const counts = {};
+    (q.options || []).forEach((o, oi) => { counts[oi] = 0; });
+    values.forEach(v => { if(counts[v] !== undefined) counts[v] += 1; });
+    const total = values.length || 1;
+    const bars = (q.options || []).map((o, oi) => {
+      const c = counts[oi];
+      const pct = (c / total) * 100;
+      return `
+        <div class="survey-bar-row">
+          <div class="survey-bar-label">${_esc(o)}</div>
+          <div class="survey-bar-track"><div class="survey-bar-fill" style="width:${pct}%"></div></div>
+          <div class="survey-bar-count">${c} · ${pct.toFixed(0)}%</div>
+        </div>`;
+    }).join('');
+    return `<div class="survey-agg-q">
+      <div class="survey-agg-prompt">Q${qi+1}. ${_esc(q.prompt)}</div>
+      ${bars}
+    </div>`;
+  }
+
+  if(q.type === 'scale') {
+    const nums = values.map(v => parseInt(v,10)).filter(Number.isFinite);
+    const avg = nums.length ? (nums.reduce((a,b)=>a+b,0) / nums.length) : 0;
+    const min = q.scale?.min ?? 1;
+    const max = q.scale?.max ?? 10;
+    // Bucket counts
+    const buckets = {};
+    for(let n = min; n <= max; n++) buckets[n] = 0;
+    nums.forEach(n => { if(buckets[n] !== undefined) buckets[n] += 1; });
+    const total = nums.length || 1;
+    const bars = Object.keys(buckets).map(n => {
+      const c = buckets[n];
+      const pct = (c / total) * 100;
+      return `
+        <div class="survey-bar-row">
+          <div class="survey-bar-label">${n}</div>
+          <div class="survey-bar-track"><div class="survey-bar-fill" style="width:${pct}%; background:var(--amber)"></div></div>
+          <div class="survey-bar-count">${c}</div>
+        </div>`;
+    }).join('');
+    return `<div class="survey-agg-q">
+      <div class="survey-agg-prompt">Q${qi+1}. ${_esc(q.prompt)}</div>
+      <div class="survey-scale-stat">平均：${avg.toFixed(1)} / ${max}</div>
+      <div style="margin-top:8px">${bars}</div>
+    </div>`;
+  }
+
+  if(q.type === 'text') {
+    const items = values.map(v => `<div class="survey-text-item">${_esc(v)}</div>`).join('') ||
+                  '<div style="padding:10px; color:var(--text-dim); font-size:12px; text-align:center">（無文字回應）</div>';
+    return `<div class="survey-agg-q">
+      <div class="survey-agg-prompt">Q${qi+1}. ${_esc(q.prompt)}</div>
+      <div class="survey-text-list">${items}</div>
+    </div>`;
+  }
+  return '';
 }
 
 function toggleProjection() {
@@ -2537,6 +2967,16 @@ function _doInstructorSubscribe(sb) {
       filter: `session_id=eq.${S.sessionId}`
     }, payload => {
       const c = payload.new;
+      // Survey responses: not a chat message — route to aggregate
+      if(c.content_type === 'survey_response') {
+        try {
+          const payload = JSON.parse(c.content);
+          recordSurveyResponse(c.participant_id, payload);
+        } catch(e) {
+          addLog('survey', `⚠ 問卷回應解析失敗：${e.message}`, 'error');
+        }
+        return;
+      }
       if(c.role === 'system') return;
       const p = S.participants.find(x => x.id === c.participant_id);
       if(p) {
