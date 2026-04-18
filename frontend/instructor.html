@@ -242,6 +242,17 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   letter-spacing: 0.12em; text-transform: uppercase;
   color: var(--text-dim); margin-bottom: 5px; display: block;
 }
+.field-hint {
+  font-size: 11px; color: var(--text-dim); margin-top: 4px; line-height: 1.4;
+}
+.section-header {
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--green);
+  padding: 6px 0;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
 .field-input, .field-select, .field-textarea {
   width: 100%; background: var(--bg);
   border: 1px solid var(--border); border-radius: var(--radius);
@@ -994,7 +1005,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
     <div class="sidebar-tabs">
       <button class="stab active" id="stabModules" onclick="switchSidebarTab('modules')">模組</button>
       <button class="stab" id="stabAgent" onclick="switchSidebarTab('agent')">AI 設定</button>
-      <button class="stab" id="stabCheckin" onclick="switchSidebarTab('checkin')">報到卡</button>
+      <button class="stab" id="stabCheckin" onclick="switchSidebarTab('checkin')">內容</button>
     </div>
 
     <!-- Modules tab -->
@@ -1133,14 +1144,42 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
     <!-- Check-in cards tab -->
     <div class="sidebar-body" id="tabCheckin" style="display:none">
+
+      <!-- ─── 🎨 品牌 ─── -->
+      <div class="section-header">🎨 品牌</div>
       <div class="field-group">
-        <label class="field-label">歡迎訊息</label>
-        <input class="field-input" id="welcomeMsg" value="歡迎參加 HR & 總務 AI 轉型思維工作坊">
+        <label class="field-label">工作坊標題</label>
+        <input class="field-input" id="brandingTitle" placeholder="WorkshopAI"
+          oninput="onBrandingChange()" maxlength="40">
+        <div class="field-hint">顯示在學員加入畫面（最多 40 字）</div>
       </div>
       <div class="field-group">
-        <label class="field-label">字卡內容（可編輯）</label>
+        <label class="field-label">副標</label>
+        <input class="field-input" id="brandingTagline" placeholder="你的 AI 學習夥伴，從今天開始"
+          oninput="onBrandingChange()" maxlength="60">
+        <div class="field-hint">加入畫面的副標文案</div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">主持人（選填）</label>
+        <input class="field-input" id="brandingHost" placeholder="例：Glen"
+          oninput="onBrandingChange()" maxlength="20">
+        <div class="field-hint">填寫後會顯示在學員的 AI 夥伴標題後</div>
+      </div>
+
+      <!-- ─── 歡迎訊息 ─── -->
+      <div class="section-header" style="margin-top:16px">📢 歡迎訊息</div>
+      <div class="field-group">
+        <label class="field-label">講師廣播（可選）</label>
+        <input class="field-input" id="welcomeMsg" value="歡迎參加 HR & 總務 AI 轉型思維工作坊">
+        <div class="field-hint">會以廣播方式推送給所有學員</div>
+      </div>
+
+      <!-- ─── 字卡（下一輪擴充編輯 UI） ─── -->
+      <div class="section-header" style="margin-top:16px">🃏 字卡</div>
+      <div class="field-group">
         <div id="cardConfigList"></div>
       </div>
+
       <button class="ai-run-btn" onclick="saveCheckinConfig()" style="margin-top:8px">▶ 套用並開放報到</button>
     </div>
   </aside>
@@ -1399,6 +1438,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderModules();
   renderCardConfig();
   restoreSettings();
+  restoreBranding();
   renderEmptyInvite();
   setTimeout(loadDemoParticipants, 1500);
 });
@@ -1471,6 +1511,7 @@ async function writeSessionToSupabase() {
     const sessionConfig = {
       workshop_title: document.getElementById('wsName')?.value || 'WorkshopAI',
       join_code: S.joinCode,
+      branding: collectBranding(),
       ai_config: {
         claudeModel: S.aiConfig.claudeModel,
         geminiModel: S.aiConfig.geminiModel,
@@ -2458,7 +2499,67 @@ function renderCardConfig() {
     </div>`).join('');
 }
 
-function saveCheckinConfig() { showToast('✓ 報到設定已套用'); }
+// ══════════════════════════════════════════
+// BRANDING — in-memory draft, written to sessionConfig on session start
+// ══════════════════════════════════════════
+function collectBranding() {
+  return {
+    title:   (document.getElementById('brandingTitle')?.value   || '').trim() || 'WorkshopAI',
+    tagline: (document.getElementById('brandingTagline')?.value || '').trim() || '你的 AI 學習夥伴，從今天開始',
+    host:    (document.getElementById('brandingHost')?.value    || '').trim(),
+  };
+}
+
+function onBrandingChange() {
+  // Persist to localStorage so refresh doesn't wipe instructor's work-in-progress
+  const b = collectBranding();
+  safeStorage.set('_branding', JSON.stringify(b));
+  S.branding = b;
+  // If session is already live, PATCH the config so learners pick up the change
+  if(S.isLive && S.supabaseUrl && S.sessionId) _pushBrandingUpdate(b);
+}
+
+async function _pushBrandingUpdate(branding) {
+  clearTimeout(_pushBrandingUpdate._t);
+  _pushBrandingUpdate._t = setTimeout(async () => {
+    try {
+      await fetch(`${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': S.supabaseKey,
+          'Authorization': `Bearer ${S.supabaseKey}`,
+        },
+        body: JSON.stringify({
+          config: { ...S._serverConfig, branding }
+        })
+      });
+      addLog('branding', '品牌設定已即時同步到學員端', 'system');
+    } catch(e) {
+      addLog('branding', `⚠ 品牌同步失敗：${e.message}`, 'error');
+    }
+  }, 800);
+}
+
+function restoreBranding() {
+  try {
+    const raw = safeStorage.get('_branding');
+    if(!raw) return;
+    const b = JSON.parse(raw);
+    const t = document.getElementById('brandingTitle');
+    const g = document.getElementById('brandingTagline');
+    const h = document.getElementById('brandingHost');
+    if(t && b.title)   t.value = b.title;
+    if(g && b.tagline) g.value = b.tagline;
+    if(h && b.host)    h.value = b.host;
+    S.branding = b;
+  } catch(_) {}
+}
+
+function saveCheckinConfig() {
+  onBrandingChange(); // capture + persist branding
+  showToast('✓ 內容設定已套用', 'success');
+}
 
 function getEnabledTools() {
   return [...document.querySelectorAll('#toolChips .tool-chip.on')]

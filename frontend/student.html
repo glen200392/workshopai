@@ -1152,8 +1152,8 @@ body {
     <div class="join-blob blob-3"></div>
   </div>
   <div class="join-content">
-    <div class="join-logo">Workshop<em>AI</em></div>
-    <div class="join-tagline">你的 AI 學習夥伴，從今天開始</div>
+    <div class="join-logo" id="joinLogo">Workshop<em>AI</em></div>
+    <div class="join-tagline" id="joinTagline">你的 AI 學習夥伴，從今天開始</div>
     <div class="join-label">輸入課程代碼</div>
     <input class="join-code-input" id="joinCode" maxlength="6"
       placeholder="ABC123" autocomplete="off" autocapitalize="characters"
@@ -1488,6 +1488,7 @@ async function joinSession() {
     S.sessionId    = session.id;
     S.joinCode     = code;
     S.sessionConfig = session.config || {};
+    applyBranding();
 
     // 從 session config 注入 proxy URL
     const proxyUrl = session.config?.ai_config?.proxyUrl || '';
@@ -1736,8 +1737,10 @@ function applyFeatureFlags() {
   }
 
   // companion 標題與狀態
+  const host = readConfig.branding().host;
+  const hostSuffix = host ? ` · ${host} 主持` : '';
   document.getElementById('companionName').textContent =
-    ai_enabled ? `${S.name} 的 AI 夥伴` : `${S.name} 的學習記錄`;
+    ai_enabled ? `${S.name} 的 AI 夥伴${hostSuffix}` : `${S.name} 的學習記錄${hostSuffix}`;
   document.getElementById('companionState').textContent =
     ai_enabled ? '已連線' : '記錄模式';
 }
@@ -2086,6 +2089,23 @@ function handleKey(e) {
 function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// Apply branding from sessionConfig to DOM. Safe to call repeatedly.
+function applyBranding() {
+  const b = readConfig.branding();
+  const logoEl = document.getElementById('joinLogo');
+  const tagEl  = document.getElementById('joinTagline');
+  if(logoEl)  logoEl.textContent = b.title;
+  if(tagEl)   tagEl.textContent  = b.tagline;
+  try { document.title = `${b.title} 學員`; } catch(_) {}
+  // Companion title is rendered when session starts; refresh if already on screen
+  const compEl = document.getElementById('companionName');
+  if(compEl && S.name) {
+    compEl.textContent = b.host
+      ? `${S.name} 的 AI 夥伴 · ${b.host} 主持`
+      : `${S.name} 的 AI 夥伴`;
+  }
 }
 
 function dismissTutorial() {
