@@ -256,12 +256,26 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .vtab.active { background: var(--surface2); color: var(--text); }
 
 .search-input {
-  flex: 1; max-width: 220px;
+  width: 100%;
   background: var(--bg); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 6px 12px;
   font-family: var(--sans); font-size: 12px; color: var(--text);
 }
 .search-input:focus { outline: none; border-color: var(--border2); }
+.search-wrap {
+  position: relative;
+  flex: 1; max-width: 240px;
+}
+.search-count {
+  position: absolute;
+  right: 8px; top: 50%; transform: translateY(-50%);
+  font-family: var(--mono); font-size: 10px;
+  color: var(--text-dim); pointer-events: none;
+  background: var(--surface); padding: 2px 6px; border-radius: 10px;
+  opacity: 0; transition: opacity 0.15s;
+}
+.search-count.show { opacity: 1; }
+.search-count.empty { color: var(--amber); border: 1px solid rgba(255,184,48,0.3); }
 
 .sort-select {
   background: var(--bg); border: 1px solid var(--border);
@@ -744,13 +758,24 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .toast {
   position: fixed; bottom: 20px; left: 50%;
   transform: translateX(-50%) translateY(20px);
-  background: var(--text); color: var(--bg);
+  background: var(--surface2); color: var(--text);
+  border: 1px solid var(--border2);
   padding: 10px 18px; border-radius: 20px;
   font-size: 13px; font-weight: 600;
   opacity: 0; transition: all 0.25s;
   pointer-events: none; z-index: 999; white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  max-width: calc(100vw - 32px);
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.success { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.toast.warn    { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+.toast.error   { background: var(--red-dim);   border-color: var(--red);   color: var(--red); }
+
+/* Inline spinner icon (use inside buttons) */
+.spin-icon { display: inline-block; transition: transform 0.2s; }
+.spin-icon.spinning { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -1097,7 +1122,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
         <button class="vtab" id="vtabProjection" onclick="switchView('projection')">投影大螢幕</button>
         <button class="vtab" id="vtabLog" onclick="switchView('log')">事件 Log</button>
       </div>
-      <input class="search-input" placeholder="搜尋學員..." oninput="filterParticipants(this.value)">
+      <div class="search-wrap">
+        <input class="search-input" id="searchInput" placeholder="搜尋學員或字卡..." oninput="filterParticipants(this.value)">
+        <span class="search-count" id="searchCount" aria-live="polite"></span>
+      </div>
       <select class="sort-select" onchange="sortParticipants(this.value)">
         <option value="joined">加入時間</option>
         <option value="active">最後活躍</option>
@@ -1223,8 +1251,8 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
           <div id="edgeFnStatus" style="font-size:12px;color:var(--text-dim);margin-bottom:8px">
             尚未連線，請先設定 Supabase URL
           </div>
-          <button class="top-btn btn-ghost" style="width:100%;font-size:11px"
-            onclick="checkEdgeFunction()">⟳ 檢查 Proxy 連線</button>
+          <button class="top-btn btn-ghost" id="checkEdgeBtn" style="width:100%;font-size:11px"
+            onclick="checkEdgeFunction()"><span class="spin-icon">⟳</span> 檢查 Proxy 連線</button>
         </div>
 
         <button class="ai-run-btn" onclick="saveSessionConfig()">✓ 儲存設定</button>
@@ -1975,9 +2003,15 @@ async function resetAllMemory() {
 S._filterQuery = '';
 S._sortBy = 'joined';
 
+let _filterDebounce;
 function filterParticipants(q) {
-  S._filterQuery = (q || '').trim();
-  _applyFilterSort();
+  // Debounce so each keystroke doesn't re-render the grid
+  clearTimeout(_filterDebounce);
+  const raw = (q || '').trim();
+  _filterDebounce = setTimeout(() => {
+    S._filterQuery = raw;
+    _applyFilterSort();
+  }, 120);
 }
 
 function sortParticipants(by) {
@@ -2001,7 +2035,21 @@ function _applyFilterSort() {
       default:         return (a._joinedMs||0) - (b._joinedMs||0);
     }
   });
+  _updateSearchCount(q, list.length);
   renderParticipants(list);
+}
+
+function _updateSearchCount(q, count) {
+  const el = document.getElementById('searchCount');
+  if(!el) return;
+  if(!q) {
+    el.classList.remove('show', 'empty');
+    el.textContent = '';
+    return;
+  }
+  el.classList.add('show');
+  el.classList.toggle('empty', count === 0);
+  el.textContent = count === 0 ? '無結果' : `找到 ${count}`;
 }
 
 // ══════════════════════════════════════════
@@ -2502,11 +2550,23 @@ function saveSessionConfig() {
 
 async function checkEdgeFunction() {
   const url = S.supabaseUrl || document.getElementById('sbUrl')?.value.trim();
-  if(!url) { showToast('請先填寫 Supabase URL'); return; }
+  if(!url) { showToast('⚠ 請先填寫 Supabase URL', 'warn'); return; }
 
   const statusEl = document.getElementById('edgeFnStatus');
-  if(statusEl) statusEl.textContent = '檢查中...';
+  const btn = document.getElementById('checkEdgeBtn');
 
+  if(btn) {
+    btn.disabled = true;
+    btn.classList.add('checking');
+    btn.dataset.origLabel = btn.dataset.origLabel || btn.innerHTML;
+    btn.innerHTML = `<span class="spin-icon spinning">⟳</span> 檢查中...`;
+  }
+  if(statusEl) {
+    statusEl.textContent = '正在連線 Edge Function...';
+    statusEl.style.color = 'var(--text-mid)';
+  }
+
+  const t0 = Date.now();
   try {
     const res = await fetch(`${url}/functions/v1/ai-proxy`, {
       method: 'POST',
@@ -2515,8 +2575,12 @@ async function checkEdgeFunction() {
     });
     const data = await res.json();
     if(data.ok || data.pong) {
-      if(statusEl) { statusEl.textContent = '✓ Edge Function 運作正常'; statusEl.style.color = 'var(--green)'; }
-      showToast('✓ Proxy 連線正常');
+      const ms = Date.now() - t0;
+      if(statusEl) {
+        statusEl.innerHTML = `✓ Edge Function 運作正常 <span style="color:var(--text-dim);font-size:10px">(${ms}ms)</span>`;
+        statusEl.style.color = 'var(--green)';
+      }
+      showToast('✓ Proxy 連線正常', 'success');
     } else {
       throw new Error(JSON.stringify(data));
     }
@@ -2525,6 +2589,13 @@ async function checkEdgeFunction() {
       statusEl.innerHTML = `✗ 尚未部署或連線失敗<br>
         <span style="font-size:10px;color:var(--text-dim)">請參考 README 部署 Supabase Edge Function</span>`;
       statusEl.style.color = 'var(--amber)';
+    }
+    showToast('✗ Proxy 連線失敗', 'error');
+  } finally {
+    if(btn) {
+      btn.disabled = false;
+      btn.classList.remove('checking');
+      if(btn.dataset.origLabel) btn.innerHTML = btn.dataset.origLabel;
     }
   }
 }
@@ -2619,11 +2690,21 @@ function loadDemoParticipants() {
 // ══════════════════════════════════════════
 // UTILS
 // ══════════════════════════════════════════
-function showToast(msg) {
+function showToast(msg, type = '', duration = 2500) {
   const t = document.getElementById('toast');
+  if(!t) return;
+  // Auto-detect type from leading symbol if caller didn't pass one
+  if(!type && typeof msg === 'string') {
+    if(/^✓|^✅/.test(msg))      type = 'success';
+    else if(/^⚠|^⚡/.test(msg)) type = 'warn';
+    else if(/^✗|^❌|^⛔/.test(msg)) type = 'error';
+  }
   t.textContent = msg;
+  t.classList.remove('success', 'warn', 'error');
+  if(type) t.classList.add(type);
   t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2500);
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(() => t.classList.remove('show'), duration);
 }
 
 // Auto-refresh projection every 5s

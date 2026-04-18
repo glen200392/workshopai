@@ -709,11 +709,7 @@ body {
 }
 
 /* ── SEND LOCK (prevent double-send) ── */
-.send-btn.locked {
-  background: var(--ai-surface);
-  color: var(--ai-dim);
-  cursor: not-allowed;
-}
+/* .send-btn.locked styles defined below alongside :disabled */
 
 /* ── MOOD BTN enhanced ── */
 .mood-btn {
@@ -804,7 +800,27 @@ body {
   flex-shrink: 0;
 }
 .send-btn:active { transform: scale(0.9); }
-.send-btn:disabled { opacity: 0.3; }
+.send-btn:disabled {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.45);
+  cursor: not-allowed;
+  opacity: 1;
+}
+.send-btn.locked {
+  background: rgba(45,90,61,0.55);
+  color: transparent;
+  cursor: progress;
+  position: relative;
+  opacity: 1;
+}
+.send-btn.locked::after {
+  content: '';
+  position: absolute; inset: 8px;
+  border: 2px solid rgba(255,255,255,0.25);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
 
 /* ── TUTORIAL OVERLAY ── */
 .tutorial-overlay {
@@ -928,22 +944,33 @@ body {
 .tutorial-fab {
   position: absolute;
   bottom: calc(var(--sab) + 140px);
-  right: 16px;
-  width: 40px; height: 40px;
-  border-radius: 50%;
-  background: rgba(90,173,120,0.2);
-  border: 1px solid rgba(90,173,120,0.4);
+  right: 14px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 18px;
+  background: rgba(90,173,120,0.18);
+  border: 1px solid rgba(90,173,120,0.45);
   color: var(--ai-accent);
-  font-size: 16px;
+  font-size: 13px;
+  font-weight: 600;
   display: none;
-  align-items: center; justify-content: center;
+  align-items: center; gap: 6px;
   cursor: pointer;
   z-index: 100;
   transition: all 0.2s;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  white-space: nowrap;
+  font-family: var(--sans, system-ui);
 }
-.tutorial-fab.visible { display: flex; }
-.tutorial-fab:active { transform: scale(0.9); }
+.tutorial-fab.visible { display: inline-flex; animation: tutorial-fab-attention 1.6s ease-out 1; }
+.tutorial-fab:active { transform: scale(0.94); }
+.tutorial-fab:hover  { background: rgba(90,173,120,0.28); }
+.tutorial-fab .fab-icon { font-size: 14px; }
+@keyframes tutorial-fab-attention {
+  0%   { transform: translateY(8px) scale(0.85); opacity: 0; }
+  60%  { transform: translateY(0) scale(1.06);   opacity: 1; box-shadow: 0 0 0 8px rgba(90,173,120,0.18); }
+  100% { transform: translateY(0) scale(1);      opacity: 1; box-shadow: 0 4px 14px rgba(0,0,0,0.35); }
+}
 
 /* ── SVG ARTIFACT ── */
 .artifact-svg-body {
@@ -1192,7 +1219,9 @@ body {
   </div>
 
   <!-- FAB: re-open tutorial -->
-  <div class="tutorial-fab" id="tutorialFab" onclick="reopenTutorial()" title="查看使用說明">?</div>
+  <div class="tutorial-fab" id="tutorialFab" onclick="reopenTutorial()" title="查看使用說明" role="button" aria-label="重新查看使用說明">
+    <span class="fab-icon">💡</span><span>使用說明</span>
+  </div>
 
   <div class="session-bar">
     <div class="session-companion">
