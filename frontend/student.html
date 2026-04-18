@@ -1347,6 +1347,64 @@ const safeStorage = {
 // ══════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════
+// ══════════════════════════════════════════
+// DEFAULTS — used when sessionConfig doesn't override.
+// Every reader in this file calls `readConfig.X()` which falls back here.
+// ══════════════════════════════════════════
+const DEFAULT_CARDS = [
+  { emoji:'🔭', word:'觀望中',   sub:'先看看再說',        dim:'A', hint:'催促轉型的主管' },
+  { emoji:'⚡', word:'已在用了', sub:'走在大家前面',       dim:'A', hint:'質疑效果的同事' },
+  { emoji:'⚖️', word:'半信半疑', sub:'需要更多說服',       dim:'A', hint:'過度樂觀的顧問' },
+  { emoji:'🌊', word:'被推著走', sub:'還沒準備好',         dim:'A', hint:'不情願的同事' },
+  { emoji:'📄', word:'文件海',   sub:'表單永遠填不完',     dim:'B', hint:'要求標準化的稽核' },
+  { emoji:'💬', word:'人心難測', sub:'溝通協調最燒腦',     dim:'B', hint:'情緒激動的員工' },
+  { emoji:'📊', word:'數字壓力', sub:'成本效益要說清楚',   dim:'B', hint:'質疑ROI的財務主管' },
+  { emoji:'🏛️', word:'規則叢林', sub:'合規讓我頭很大',     dim:'B', hint:'抗拒新系統的法務' },
+  { emoji:'🔓', word:'解放重複', sub:'把時間留給重要的事', dim:'C', hint:'害怕被取代的同事' },
+  { emoji:'🍚', word:'飯碗問題', sub:'說出口需要勇氣',     dim:'C', hint:'樂觀不切實際的主管' },
+  { emoji:'✨', word:'品質提升', sub:'做更好的決策',       dim:'C', hint:'習慣舊方法的前輩' },
+  { emoji:'❓', word:'誰來負責', sub:'AI出錯怎麼算',       dim:'C', hint:'強調風控的法遵主管' },
+];
+const DEFAULT_MOODS = [
+  { emoji:'🔥', label:'滿血' },
+  { emoji:'💡', label:'好奇' },
+  { emoji:'🤔', label:'思考中' },
+  { emoji:'😴', label:'需要咖啡' },
+  { emoji:'😬', label:'緊張期待' },
+];
+const DEFAULT_BRANDING = {
+  title:    'WorkshopAI',
+  tagline:  '你的 AI 學習夥伴，從今天開始',
+  host:     '',
+};
+const DEFAULT_CHECKIN = {
+  name:  { enabled:true, prompt:'你叫什麼名字？',       max:20, hint:'最多 20 字，會顯示在大螢幕' },
+  cards: { enabled:true, prompt:'選出最像你現在的字卡', min:1, max:2, hint:'最多選 2 張，你的選擇會個人化你的 AI 夥伴' },
+  mood:  { enabled:true, prompt:'今天帶著什麼能量來？' },
+};
+
+// Readers: pull from S.sessionConfig with default fallback.
+// Called lazily so they always reflect the latest config.
+const readConfig = {
+  cards()    { return S.sessionConfig?.cards?.length    ? S.sessionConfig.cards    : DEFAULT_CARDS; },
+  moods()    { return S.sessionConfig?.moods?.length    ? S.sessionConfig.moods    : DEFAULT_MOODS; },
+  branding() { return { ...DEFAULT_BRANDING, ...(S.sessionConfig?.branding || {}) }; },
+  checkin() {
+    const src = S.sessionConfig?.checkin || {};
+    return {
+      name:  { ...DEFAULT_CHECKIN.name,  ...(src.name  || {}) },
+      cards: { ...DEFAULT_CHECKIN.cards, ...(src.cards || {}) },
+      mood:  { ...DEFAULT_CHECKIN.mood,  ...(src.mood  || {}) },
+    };
+  },
+  // Active check-in steps in order, skipping disabled ones.
+  checkinSteps() {
+    const cfg = readConfig.checkin();
+    const order = ['name','cards','mood'];
+    return order.filter(k => cfg[k].enabled !== false);
+  },
+};
+
 const S = {
   sessionId:     null,
   joinCode:      '',
@@ -1359,29 +1417,8 @@ const S = {
   messages:      [],      // {role, content, type, url}
   activeModule:  null,
   isThinking:    false,
-  sessionConfig: {},      // 由講師端 session 注入：ai_config, cards, welcome...
+  sessionConfig: {},      // 由講師端 session 注入：ai_config, branding, cards, moods, checkin, modules...
   features: { ai_enabled: true, visual_enabled: true }, // 從 sessionConfig.ai_config.features 讀入
-  cards: [
-    { emoji:'🔭', word:'觀望中',   sub:'先看看再說',        dim:'A', hint:'催促轉型的主管' },
-    { emoji:'⚡', word:'已在用了', sub:'走在大家前面',       dim:'A', hint:'質疑效果的同事' },
-    { emoji:'⚖️', word:'半信半疑', sub:'需要更多說服',       dim:'A', hint:'過度樂觀的顧問' },
-    { emoji:'🌊', word:'被推著走', sub:'還沒準備好',         dim:'A', hint:'不情願的同事' },
-    { emoji:'📄', word:'文件海',   sub:'表單永遠填不完',     dim:'B', hint:'要求標準化的稽核' },
-    { emoji:'💬', word:'人心難測', sub:'溝通協調最燒腦',     dim:'B', hint:'情緒激動的員工' },
-    { emoji:'📊', word:'數字壓力', sub:'成本效益要說清楚',   dim:'B', hint:'質疑ROI的財務主管' },
-    { emoji:'🏛️', word:'規則叢林', sub:'合規讓我頭很大',     dim:'B', hint:'抗拒新系統的法務' },
-    { emoji:'🔓', word:'解放重複', sub:'把時間留給重要的事', dim:'C', hint:'害怕被取代的同事' },
-    { emoji:'🍚', word:'飯碗問題', sub:'說出口需要勇氣',     dim:'C', hint:'樂觀不切實際的主管' },
-    { emoji:'✨', word:'品質提升', sub:'做更好的決策',       dim:'C', hint:'習慣舊方法的前輩' },
-    { emoji:'❓', word:'誰來負責', sub:'AI出錯怎麼算',       dim:'C', hint:'強調風控的法遵主管' },
-  ],
-  moods: [
-    { emoji:'🔥', label:'滿血' },
-    { emoji:'💡', label:'好奇' },
-    { emoji:'🤔', label:'思考中' },
-    { emoji:'😴', label:'需要咖啡' },
-    { emoji:'😬', label:'緊張期待' },
-  ],
 };
 
 // ══════════════════════════════════════════
@@ -1541,7 +1578,7 @@ function renderCheckinStep(step) {
       <p style="font-size:13px;color:var(--text-dim);margin-top:-8px">最多選 2 張，你的選擇會個人化你的 AI 夥伴</p>
       <div class="card-grid" id="cardGrid">`;
     let curDim = null;
-    S.cards.forEach(c => {
+    readConfig.cards().forEach(c => {
       if(c.dim !== curDim) {
         curDim = c.dim;
         html += `<div class="dim-header" style="color:${dimColors[c.dim]}">${dimLabels[c.dim]}</div>`;
@@ -1564,7 +1601,7 @@ function renderCheckinStep(step) {
       <div class="step-tag">第三步</div>
       <div class="step-question">今天帶著什麼能量來？</div>
       <div class="mood-row" id="moodRow">
-        ${S.moods.map(m => `
+        ${readConfig.moods().map(m => `
           <div class="mood-btn ${S.mood===m.label?'selected':''}"
             onclick="selectMood(this,'${m.label}')" data-mood="${m.label}">
             <div class="mood-emoji">${m.emoji}</div>
@@ -1641,7 +1678,7 @@ async function completeCheckin() {
   if(navBtn) { navBtn.disabled = true; navBtn.textContent = '報到中...'; }
 
   try {
-    const roleHint = S.cards.find(c => S.picks.includes(c.word))?.hint || '一般同事';
+    const roleHint = readConfig.cards().find(c => S.picks.includes(c.word))?.hint || '一般同事';
     S.memory = {
       profile: { name: S.name, picks: S.picks, mood: S.mood, roleHint },
       learning_state: { visited_modules: [], key_insights: [], unresolved_questions: [] },
