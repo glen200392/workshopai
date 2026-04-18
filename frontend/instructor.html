@@ -1576,35 +1576,55 @@ async function pushModule(id) {
   const m = S.modules.find(m => m.id === id);
   if(!m) return;
 
-  // Confirmation toast instead of blocking the UI
   await _confirmPush(m.name, async () => {
-    S.modules.forEach(mo => mo.isActive = (mo.id === id));
-    renderModules();
-    document.getElementById('statActive').textContent = 1;
-    _updateActiveModulePill(m.name);
-    addLog('module', `已推送模組：${m.name}`, 'system');
-    showToast(`▶ 已推送：${m.name}`, 'success');
+    // Snapshot current state so we can roll back if server push fails
+    const prevActive = S.modules.find(mo => mo.isActive)?.id || null;
 
-    // 寫入 Supabase → 觸發 Realtime → 學員端自動切換模組
-    if(S.supabaseUrl && S.supabaseKey && S.sessionId) {
-      try {
-        const res = await fetch(
-          `${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}`,
-          {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': S.supabaseKey,
-              'Authorization': `Bearer ${S.supabaseKey}`,
-            },
-            body: JSON.stringify({ active_module_id: id })
-          }
-        );
-        if(!res.ok) throw new Error(await res.text());
-        addLog('module', `Supabase 已更新 active_module_id → 學員端 Realtime 觸發`, 'system');
-      } catch(e) {
-        addLog('module', `⚠ Supabase 推送失敗：${e.message}`, 'error');
-      }
+    // Apply optimistic UI only when there's no backend to talk to.
+    // When we DO have a backend, server-first: don't lie about "已推送" until it lands.
+    const hasBackend = !!(S.supabaseUrl && S.supabaseKey && S.sessionId);
+
+    if(!hasBackend) {
+      S.modules.forEach(mo => mo.isActive = (mo.id === id));
+      renderModules();
+      document.getElementById('statActive').textContent = 1;
+      _updateActiveModulePill(m.name);
+      addLog('module', `已推送模組：${m.name}（本地）`, 'system');
+      showToast(`▶ 已推送：${m.name}`, 'success');
+      return;
+    }
+
+    // Show "pushing..." feedback
+    showToast(`推送中：${m.name}...`, '', 1500);
+    try {
+      const res = await fetch(
+        `${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': S.supabaseKey,
+            'Authorization': `Bearer ${S.supabaseKey}`,
+          },
+          body: JSON.stringify({ active_module_id: id })
+        }
+      );
+      if(!res.ok) throw new Error(await res.text());
+      // Server confirmed → commit local state
+      S.modules.forEach(mo => mo.isActive = (mo.id === id));
+      renderModules();
+      document.getElementById('statActive').textContent = 1;
+      _updateActiveModulePill(m.name);
+      addLog('module', `已推送：${m.name} → Supabase 觸發 Realtime`, 'system');
+      showToast(`▶ 已推送：${m.name}`, 'success');
+    } catch(e) {
+      // Revert — make sure UI doesn't claim something landed that didn't
+      S.modules.forEach(mo => mo.isActive = (mo.id === prevActive));
+      renderModules();
+      const prevName = S.modules.find(mo => mo.id === prevActive)?.name || null;
+      _updateActiveModulePill(prevName);
+      addLog('module', `⚠ 推送失敗已還原：${e.message}`, 'error');
+      showToast(`✗ 推送失敗：${m.name}`, 'error', 4000);
     }
   });
 }
@@ -2299,8 +2319,12 @@ function _updateRtBadge(status, text) {
 }
 
 function _doInstructorSubscribe(sb) {
+  // Tear down old channels (called during reconnect)
+  try { S._rtChannels?.forEach(c => c.unsubscribe()); } catch(_) {}
+  S._rtChannels = [];
+
   // ① 新學員報到
-  sb.channel('instructor-participants:' + S.sessionId)
+  const chP = sb.channel('instructor-participants:' + S.sessionId)
     .on('postgres_changes', {
       event: 'INSERT', schema: 'public', table: 'participants',
       filter: `session_id=eq.${S.sessionId}`
@@ -2318,7 +2342,6 @@ function _doInstructorSubscribe(sb) {
         memory:    p.memory || {},
         _lastActiveMs: Date.now(),
       };
-      // 避免重複
       if(!S.participants.find(x => x.id === p.id)) {
         S.participants.push(newParticipant);
         renderParticipants(S.participants);
@@ -2326,41 +2349,61 @@ function _doInstructorSubscribe(sb) {
         addLog('checkin', `${p.display_name} 已報到（${(checkin.picks||[]).join('、')}）`, 'participant');
       }
     })
-    .subscribe(status => {
-      if(status === 'SUBSCRIBED') _updateRtBadge('live', '即時同步');
-      if(status === 'CHANNEL_ERROR') {
-        _updateRtBadge('error');
-        addLog('realtime', '學員報到訂閱失敗，請重新整理頁面', 'error');
-      }
-    });
+    .subscribe(status => _rtStatus(sb, 'participants', status));
 
   // ② 學員新訊息
-  sb.channel('instructor-conversations:' + S.sessionId)
+  const chC = sb.channel('instructor-conversations:' + S.sessionId)
     .on('postgres_changes', {
       event: 'INSERT', schema: 'public', table: 'conversations',
       filter: `session_id=eq.${S.sessionId}`
     }, payload => {
       const c = payload.new;
-      if(c.role === 'system') return; // 忽略系統訊息
+      if(c.role === 'system') return;
       const p = S.participants.find(x => x.id === c.participant_id);
       if(p) {
         p.messages.push({ role: c.role, content: c.content });
         p.lastActive = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'});
-        p._lastActiveMs = Date.now(); // for heat bar calculation
+        p._lastActiveMs = Date.now();
         renderParticipants(S.participants);
         updateTopStats();
-        // 如果目前右欄正在查看這位學員，即時更新
         if(S.selectedParticipant?.id === c.participant_id) {
           S.selectedParticipant = p;
           showParticipantDetail(p);
         }
       }
     })
-    .subscribe(status => {
-      if(status === 'CHANNEL_ERROR') addLog('realtime', '對話訂閱失敗，學員訊息將無法即時更新', 'error');
-    });
+    .subscribe(status => _rtStatus(sb, 'conversations', status));
 
+  S._rtChannels.push(chP, chC);
   addLog('realtime', 'Supabase Realtime 已訂閱（學員報到 + 對話）', 'system');
+}
+
+function _rtStatus(sb, which, status) {
+  if(status === 'SUBSCRIBED') {
+    S._rtOk = (S._rtOk || new Set());
+    S._rtOk.add(which);
+    if(S._rtOk.size >= 2) {
+      S._rtAttempts = 0;
+      _updateRtBadge('live', '即時同步');
+    }
+  } else if(status === 'CHANNEL_ERROR' || status === 'CLOSED' || status === 'TIMED_OUT') {
+    S._rtOk?.delete(which);
+    _updateRtBadge('error');
+    _scheduleInstructorReconnect(sb);
+  }
+}
+
+function _scheduleInstructorReconnect(sb) {
+  if(!S.isLive) return; // don't reconnect after endSession
+  if(S._rtReconnectTimer) return;
+  S._rtAttempts = (S._rtAttempts || 0) + 1;
+  const delays = [2000, 4000, 8000, 15000, 30000];
+  const wait = delays[Math.min(S._rtAttempts - 1, delays.length - 1)];
+  addLog('realtime', `Realtime 斷線，${Math.round(wait/1000)} 秒後重試（第 ${S._rtAttempts} 次）`, 'warn');
+  S._rtReconnectTimer = setTimeout(() => {
+    S._rtReconnectTimer = null;
+    _doInstructorSubscribe(sb);
+  }, wait);
 }
 
 function updateTopStats() {

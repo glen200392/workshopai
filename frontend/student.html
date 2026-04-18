@@ -1325,6 +1325,16 @@ const CONFIG = {
 };
 
 // ══════════════════════════════════════════
+// SAFE STORAGE — Safari private mode, quota, sandbox all throw on localStorage.
+// Wrap every access so error-recovery code doesn't die in those envs.
+// ══════════════════════════════════════════
+const safeStorage = {
+  get(k) { try { return localStorage.getItem(k); } catch(_) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); return true; } catch(_) { return false; } },
+  remove(k) { try { localStorage.removeItem(k); } catch(_) {} },
+};
+
+// ══════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════
 const S = {
@@ -1387,8 +1397,8 @@ async function joinSession() {
   btn.textContent = '驗證中...';
 
   // 恢復上次的 session（刷新頁面後保持身份）
-  const savedSession = localStorage.getItem('_sid_' + code);
-  const savedParticipant = localStorage.getItem('_pid_' + code);
+  const savedSession = safeStorage.get('_sid_' + code);
+  const savedParticipant = safeStorage.get('_pid_' + code);
 
   if(!CONFIG.supabaseUrl || CONFIG.demoMode) {
     // Demo 模式：不查資料庫
@@ -1614,27 +1624,46 @@ function nextStep() {
 }
 
 async function completeCheckin() {
-  const roleHint = S.cards.find(c => S.picks.includes(c.word))?.hint || '一般同事';
-  S.memory = {
-    profile: { name: S.name, picks: S.picks, mood: S.mood, roleHint },
-    learning_state: { visited_modules: [], key_insights: [], unresolved_questions: [] },
-    conversation_summary: '',
-    last_updated: new Date().toISOString(),
-  };
+  // Double-submit guard: reject re-entry if a submit is already in flight
+  if(S._checkinSubmitting) return;
+  S._checkinSubmitting = true;
+  const navBtn = document.getElementById('navNext');
+  if(navBtn) { navBtn.disabled = true; navBtn.textContent = '報到中...'; }
 
-  // 寫入 Supabase（若已設定）
-  if(CONFIG.supabaseUrl && !CONFIG.demoMode) {
-    await saveParticipant();
-  }
+  try {
+    const roleHint = S.cards.find(c => S.picks.includes(c.word))?.hint || '一般同事';
+    S.memory = {
+      profile: { name: S.name, picks: S.picks, mood: S.mood, roleHint },
+      learning_state: { visited_modules: [], key_insights: [], unresolved_questions: [] },
+      conversation_summary: '',
+      last_updated: new Date().toISOString(),
+    };
 
-  initSession();
-  showScreen('screen-session');
+    // 寫入 Supabase（若已設定）— 失敗時明確告訴學員資料沒存到雲端
+    let saveOk = true;
+    if(CONFIG.supabaseUrl && !CONFIG.demoMode) {
+      saveOk = await saveParticipant();
+    }
 
-  // 進入 session 後提示目前模式
-  if(CONFIG.demoMode) {
-    setTimeout(() => showToast('🎮 示範模式：所有對話僅存於本機', 'warn', 3200), 400);
-  } else {
-    setTimeout(() => showToast('✓ 已連線，AI 夥伴準備好了', 'success', 2000), 400);
+    initSession();
+    showScreen('screen-session');
+
+    setTimeout(() => {
+      if(CONFIG.demoMode) {
+        showToast('🎮 示範模式：所有對話僅存於本機', 'warn', 3200);
+      } else if(!saveOk) {
+        showToast('⚠ 報到到雲端失敗，對話暫存於本機', 'warn', 4000);
+      } else {
+        showToast('✓ 已連線，AI 夥伴準備好了', 'success', 2000);
+      }
+    }, 400);
+  } finally {
+    S._checkinSubmitting = false;
+    // navBtn remains disabled because screen has switched; if user hit back we re-enable
+    if(navBtn && document.getElementById('screen-checkin')?.classList.contains('hidden') === false) {
+      navBtn.disabled = false;
+      navBtn.textContent = '完成報到 →';
+    }
   }
 }
 
@@ -1679,7 +1708,7 @@ function initSession() {
   _updateRealtimeBadge(CONFIG.demoMode ? 'demo' : 'connecting');
 
   // Show tutorial on first visit（AI 開啟時才顯示）
-  if(S.features.ai_enabled && localStorage.getItem('_tutorialSeen')) {
+  if(S.features.ai_enabled && safeStorage.get('_tutorialSeen')) {
     document.getElementById('tutorialOverlay').style.display = 'none';
     document.getElementById('tutorialFab').classList.add('visible');
   }
@@ -1912,10 +1941,52 @@ function _showRetryAffordance(userRow, text, userMsgId) {
   const bubbleWrap = userRow.querySelector('div:last-child') || userRow;
   const status = document.createElement('div');
   status.className = 'msg-send-status failed';
-  status.innerHTML = `<span>⚠ 送出失敗</span>
-    <button class="retry-btn" onclick="_retrySend('${userMsgId}', this)">重新送出</button>`;
-  bubbleWrap.appendChild(status);
+
+  // If the last error was 503 / service busy, auto-retry once with a visible countdown.
+  // First 503 per message → auto-countdown. Subsequent failures → manual retry only.
+  const was503 = S._lastChatError?.code === 503;
+  const alreadyAutoRetried = userRow.dataset.autoRetried === '1';
+
+  if(was503 && !alreadyAutoRetried) {
+    userRow.dataset.autoRetried = '1';
+    const countdownFrom = 10;
+    status.innerHTML = `
+      <span>⚠ AI 服務忙碌，<span class="retry-countdown">${countdownFrom}</span> 秒後自動重試</span>
+      <button class="retry-btn" onclick="_cancelAutoRetry('${userMsgId}')">取消</button>`;
+    bubbleWrap.appendChild(status);
+
+    let remaining = countdownFrom;
+    const countdownEl = status.querySelector('.retry-countdown');
+    const tick = setInterval(() => {
+      remaining -= 1;
+      if(countdownEl) countdownEl.textContent = remaining;
+      if(remaining <= 0) {
+        clearInterval(tick);
+        if(!userRow.dataset.cancelled) {
+          window._retrySend(userMsgId);
+        }
+      }
+    }, 1000);
+    userRow._autoRetryTimer = tick;
+  } else {
+    status.innerHTML = `<span>⚠ 送出失敗</span>
+      <button class="retry-btn" onclick="_retrySend('${userMsgId}')">重新送出</button>`;
+    bubbleWrap.appendChild(status);
+  }
 }
+
+window._cancelAutoRetry = function(id) {
+  const row = document.getElementById(`msg-${id}`);
+  if(!row) return;
+  row.dataset.cancelled = '1';
+  if(row._autoRetryTimer) clearInterval(row._autoRetryTimer);
+  // Swap in a manual-retry affordance
+  const status = row.querySelector('.msg-send-status');
+  if(status) {
+    status.innerHTML = `<span>⚠ 送出失敗</span>
+      <button class="retry-btn" onclick="_retrySend('${id}')">重新送出</button>`;
+  }
+};
 
 window._retrySend = function(id, btn) {
   const row = document.getElementById(`msg-${id}`);
@@ -1975,7 +2046,7 @@ function dismissTutorial() {
   const fab = document.getElementById('tutorialFab');
   if(overlay) overlay.style.display = 'none';
   if(fab) fab.classList.add('visible');
-  try { localStorage.setItem('_tutorialSeen', '1'); } catch(_) {}
+  safeStorage.set('_tutorialSeen', '1');
 }
 
 function reopenTutorial() {
@@ -2111,14 +2182,16 @@ async function chatWithAI(userText, thinkingEl) {
 
     updateMemory('ai', reply);
     if(CONFIG.supabaseUrl) logConversation('assistant', reply);
+    S._lastChatError = null;
     return true;
 
   } catch(e) {
     thinkingEl.remove();
-    // Remove any partial streaming bubble left behind
     document.getElementById('stream-bubble')?.remove();
-    const hint = e.message?.includes('503')
-      ? 'AI 服務暫時忙碌，10 秒後可重新送出。'
+    const is503 = /503|overload|busy|rate.*limit/i.test(e.message || '');
+    S._lastChatError = { code: is503 ? 503 : 0, message: e.message || '' };
+    const hint = is503
+      ? 'AI 服務暫時忙碌，即將自動重試。'
       : '連線出現問題，可點「重新送出」再試一次。';
     const errDiv = document.createElement('div');
     errDiv.className = 'msg-row ai';
@@ -2380,13 +2453,14 @@ async function saveParticipant() {
     if(!res.ok) throw new Error(await res.text());
     const data = await res.json();
     S.participantId = data[0]?.id;
-    // 存入 localStorage（刷新頁面後恢復身份）
     if(S.participantId) {
-      localStorage.setItem('_pid_' + S.joinCode, S.participantId);
-      localStorage.setItem('_sid_' + S.joinCode, S.sessionId);
+      safeStorage.set('_pid_' + S.joinCode, S.participantId);
+      safeStorage.set('_sid_' + S.joinCode, S.sessionId);
     }
+    return true;
   } catch(e) {
     console.warn('saveParticipant failed (continuing in local mode):', e.message);
+    return false;
   }
 }
 
@@ -2438,7 +2512,10 @@ function _updateRealtimeBadge(status) {
 }
 
 function _doSubscribe(sb) {
-  sb.channel('session:' + S.sessionId)
+  const channel = sb.channel('session:' + S.sessionId);
+  S._rtChannel = channel;
+
+  channel
     .on('postgres_changes', {
       event: 'UPDATE', schema: 'public', table: 'sessions',
       filter: `id=eq.${S.sessionId}`
@@ -2454,7 +2531,6 @@ function _doSubscribe(sb) {
         S.activeModule = newModuleId;
         _handleModuleChange(newModuleId);
       }
-      // Handle broadcast message
       const broadcast = payload.new?.config?.broadcast;
       if(broadcast?.sent_at && broadcast.sent_at !== S._lastBroadcast) {
         S._lastBroadcast = broadcast.sent_at;
@@ -2463,16 +2539,34 @@ function _doSubscribe(sb) {
     })
     .subscribe(status => {
       if(status === 'SUBSCRIBED') {
+        S._rtAttempts = 0;
         _updateRealtimeBadge('live');
         _hideConnectionBanner();
-      } else if(status === 'CHANNEL_ERROR') {
+      } else if(status === 'CHANNEL_ERROR' || status === 'CLOSED' || status === 'TIMED_OUT') {
         _updateRealtimeBadge('error');
-        _showConnectionBanner('連線中斷，正在嘗試重新連線...');
-      } else if(status === 'CLOSED') {
-        _updateRealtimeBadge('error');
-        _showConnectionBanner('連線中斷，正在嘗試重新連線...');
+        _scheduleReconnect(sb);
       }
     });
+}
+
+// Exponential backoff reconnect: 2s → 4s → 8s → 15s → 30s (cap).
+// Stops when session ended. Kicks banner with user-visible countdown.
+function _scheduleReconnect(sb) {
+  if(S._sessionEnded) return;
+  if(S._rtReconnectTimer) return; // already scheduled
+  S._rtAttempts = (S._rtAttempts || 0) + 1;
+  const delays = [2000, 4000, 8000, 15000, 30000];
+  const wait = delays[Math.min(S._rtAttempts - 1, delays.length - 1)];
+
+  _showConnectionBanner(`連線中斷，${Math.round(wait/1000)} 秒後重試…（第 ${S._rtAttempts} 次）`);
+  S._rtReconnectTimer = setTimeout(() => {
+    S._rtReconnectTimer = null;
+    // Tear down old channel before creating a new one
+    try { S._rtChannel?.unsubscribe(); } catch(_) {}
+    S._rtChannel = null;
+    _showConnectionBanner('正在重新連線…');
+    _doSubscribe(sb);
+  }, wait);
 }
 
 function _handleSessionEnded() {
