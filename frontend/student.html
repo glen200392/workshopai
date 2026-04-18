@@ -1064,6 +1064,100 @@ body {
 .toast.warn    { background: #3a2d14; border-color: rgba(232,168,58,0.35); }
 .toast.error   { background: #3a1e18; border-color: rgba(232,120,100,0.35); }
 
+/* ── SURVEY CARD (student-side) ── */
+.survey-card {
+  background: var(--ai-surface, rgba(255,255,255,0.04));
+  border: 1px solid rgba(90,173,120,0.25);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin: 4px 0;
+}
+.survey-card-head {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+}
+.survey-card-label {
+  font-family: var(--mono, monospace); font-size: 10px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ai-accent, #5aad78);
+}
+.survey-card-title {
+  font-family: var(--serif, serif); font-size: 16px;
+  color: var(--ai-text, #eae4cd); font-weight: 600;
+}
+.survey-card-desc {
+  font-size: 13px; color: var(--ai-dim);
+  padding: 8px 10px; background: rgba(255,255,255,0.04);
+  border-radius: 6px; margin-bottom: 12px; line-height: 1.5;
+}
+.survey-q-list { display: flex; flex-direction: column; gap: 16px; }
+.sv-q-prompt {
+  font-size: 14px; color: var(--ai-text); margin-bottom: 8px; line-height: 1.5;
+}
+.sv-opt {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; margin-bottom: 4px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; cursor: pointer;
+  transition: all 0.15s;
+  font-size: 14px;
+}
+.sv-opt:has(input:checked) {
+  background: rgba(90,173,120,0.1);
+  border-color: rgba(90,173,120,0.4);
+}
+.sv-opt input { flex-shrink: 0; accent-color: var(--ai-accent, #5aad78); }
+.sv-scale-row {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px;
+}
+.sv-scale-step {
+  flex: 1; min-width: 32px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 8px 4px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px; cursor: pointer;
+  transition: all 0.15s;
+  font-size: 13px;
+}
+.sv-scale-step:has(input:checked) {
+  background: rgba(90,173,120,0.15);
+  border-color: rgba(90,173,120,0.5);
+  color: var(--ai-accent, #5aad78); font-weight: 700;
+}
+.sv-scale-step input { display: none; }
+.sv-scale-labels {
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: var(--ai-dim);
+  padding: 0 4px;
+}
+.sv-textarea {
+  width: 100%; box-sizing: border-box;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--ai-text); font-family: var(--sans);
+  font-size: 14px; resize: vertical; min-height: 60px;
+}
+.sv-textarea:focus { outline: none; border-color: rgba(90,173,120,0.5); }
+.survey-submit-btn {
+  width: 100%; margin-top: 12px;
+  padding: 12px; border-radius: 10px;
+  background: var(--accent, #2d5a3d); color: #fff;
+  border: none; cursor: pointer;
+  font-size: 14px; font-weight: 600;
+  transition: transform 0.1s, background 0.15s;
+}
+.survey-submit-btn:hover { background: #3a7050; }
+.survey-submit-btn:active { transform: scale(0.98); }
+.survey-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.survey-done-msg {
+  text-align: center; padding: 10px;
+  color: var(--ai-accent, #5aad78);
+  font-size: 13px; font-weight: 600;
+}
+
 /* ── CONNECTION BANNER (realtime drop / session ended) ── */
 .connection-banner {
   position: fixed;
@@ -1152,8 +1246,8 @@ body {
     <div class="join-blob blob-3"></div>
   </div>
   <div class="join-content">
-    <div class="join-logo">Workshop<em>AI</em></div>
-    <div class="join-tagline">你的 AI 學習夥伴，從今天開始</div>
+    <div class="join-logo" id="joinLogo">Workshop<em>AI</em></div>
+    <div class="join-tagline" id="joinTagline">你的 AI 學習夥伴，從今天開始</div>
     <div class="join-label">輸入課程代碼</div>
     <input class="join-code-input" id="joinCode" maxlength="6"
       placeholder="ABC123" autocomplete="off" autocapitalize="characters"
@@ -1347,6 +1441,64 @@ const safeStorage = {
 // ══════════════════════════════════════════
 // STATE
 // ══════════════════════════════════════════
+// ══════════════════════════════════════════
+// DEFAULTS — used when sessionConfig doesn't override.
+// Every reader in this file calls `readConfig.X()` which falls back here.
+// ══════════════════════════════════════════
+const DEFAULT_CARDS = [
+  { emoji:'🔭', word:'觀望中',   sub:'先看看再說',        dim:'A', hint:'催促轉型的主管' },
+  { emoji:'⚡', word:'已在用了', sub:'走在大家前面',       dim:'A', hint:'質疑效果的同事' },
+  { emoji:'⚖️', word:'半信半疑', sub:'需要更多說服',       dim:'A', hint:'過度樂觀的顧問' },
+  { emoji:'🌊', word:'被推著走', sub:'還沒準備好',         dim:'A', hint:'不情願的同事' },
+  { emoji:'📄', word:'文件海',   sub:'表單永遠填不完',     dim:'B', hint:'要求標準化的稽核' },
+  { emoji:'💬', word:'人心難測', sub:'溝通協調最燒腦',     dim:'B', hint:'情緒激動的員工' },
+  { emoji:'📊', word:'數字壓力', sub:'成本效益要說清楚',   dim:'B', hint:'質疑ROI的財務主管' },
+  { emoji:'🏛️', word:'規則叢林', sub:'合規讓我頭很大',     dim:'B', hint:'抗拒新系統的法務' },
+  { emoji:'🔓', word:'解放重複', sub:'把時間留給重要的事', dim:'C', hint:'害怕被取代的同事' },
+  { emoji:'🍚', word:'飯碗問題', sub:'說出口需要勇氣',     dim:'C', hint:'樂觀不切實際的主管' },
+  { emoji:'✨', word:'品質提升', sub:'做更好的決策',       dim:'C', hint:'習慣舊方法的前輩' },
+  { emoji:'❓', word:'誰來負責', sub:'AI出錯怎麼算',       dim:'C', hint:'強調風控的法遵主管' },
+];
+const DEFAULT_MOODS = [
+  { emoji:'🔥', label:'滿血' },
+  { emoji:'💡', label:'好奇' },
+  { emoji:'🤔', label:'思考中' },
+  { emoji:'😴', label:'需要咖啡' },
+  { emoji:'😬', label:'緊張期待' },
+];
+const DEFAULT_BRANDING = {
+  title:    'WorkshopAI',
+  tagline:  '你的 AI 學習夥伴，從今天開始',
+  host:     '',
+};
+const DEFAULT_CHECKIN = {
+  name:  { enabled:true, prompt:'你叫什麼名字？',       max:20, hint:'最多 20 字，會顯示在大螢幕' },
+  cards: { enabled:true, prompt:'選出最像你現在的字卡', min:1, max:2, hint:'最多選 2 張，你的選擇會個人化你的 AI 夥伴' },
+  mood:  { enabled:true, prompt:'今天帶著什麼能量來？' },
+};
+
+// Readers: pull from S.sessionConfig with default fallback.
+// Called lazily so they always reflect the latest config.
+const readConfig = {
+  cards()    { return S.sessionConfig?.cards?.length    ? S.sessionConfig.cards    : DEFAULT_CARDS; },
+  moods()    { return S.sessionConfig?.moods?.length    ? S.sessionConfig.moods    : DEFAULT_MOODS; },
+  branding() { return { ...DEFAULT_BRANDING, ...(S.sessionConfig?.branding || {}) }; },
+  checkin() {
+    const src = S.sessionConfig?.checkin || {};
+    return {
+      name:  { ...DEFAULT_CHECKIN.name,  ...(src.name  || {}) },
+      cards: { ...DEFAULT_CHECKIN.cards, ...(src.cards || {}) },
+      mood:  { ...DEFAULT_CHECKIN.mood,  ...(src.mood  || {}) },
+    };
+  },
+  // Active check-in steps in order, skipping disabled ones.
+  checkinSteps() {
+    const cfg = readConfig.checkin();
+    const order = ['name','cards','mood'];
+    return order.filter(k => cfg[k].enabled !== false);
+  },
+};
+
 const S = {
   sessionId:     null,
   joinCode:      '',
@@ -1359,29 +1511,8 @@ const S = {
   messages:      [],      // {role, content, type, url}
   activeModule:  null,
   isThinking:    false,
-  sessionConfig: {},      // 由講師端 session 注入：ai_config, cards, welcome...
+  sessionConfig: {},      // 由講師端 session 注入：ai_config, branding, cards, moods, checkin, modules...
   features: { ai_enabled: true, visual_enabled: true }, // 從 sessionConfig.ai_config.features 讀入
-  cards: [
-    { emoji:'🔭', word:'觀望中',   sub:'先看看再說',        dim:'A', hint:'催促轉型的主管' },
-    { emoji:'⚡', word:'已在用了', sub:'走在大家前面',       dim:'A', hint:'質疑效果的同事' },
-    { emoji:'⚖️', word:'半信半疑', sub:'需要更多說服',       dim:'A', hint:'過度樂觀的顧問' },
-    { emoji:'🌊', word:'被推著走', sub:'還沒準備好',         dim:'A', hint:'不情願的同事' },
-    { emoji:'📄', word:'文件海',   sub:'表單永遠填不完',     dim:'B', hint:'要求標準化的稽核' },
-    { emoji:'💬', word:'人心難測', sub:'溝通協調最燒腦',     dim:'B', hint:'情緒激動的員工' },
-    { emoji:'📊', word:'數字壓力', sub:'成本效益要說清楚',   dim:'B', hint:'質疑ROI的財務主管' },
-    { emoji:'🏛️', word:'規則叢林', sub:'合規讓我頭很大',     dim:'B', hint:'抗拒新系統的法務' },
-    { emoji:'🔓', word:'解放重複', sub:'把時間留給重要的事', dim:'C', hint:'害怕被取代的同事' },
-    { emoji:'🍚', word:'飯碗問題', sub:'說出口需要勇氣',     dim:'C', hint:'樂觀不切實際的主管' },
-    { emoji:'✨', word:'品質提升', sub:'做更好的決策',       dim:'C', hint:'習慣舊方法的前輩' },
-    { emoji:'❓', word:'誰來負責', sub:'AI出錯怎麼算',       dim:'C', hint:'強調風控的法遵主管' },
-  ],
-  moods: [
-    { emoji:'🔥', label:'滿血' },
-    { emoji:'💡', label:'好奇' },
-    { emoji:'🤔', label:'思考中' },
-    { emoji:'😴', label:'需要咖啡' },
-    { emoji:'😬', label:'緊張期待' },
-  ],
 };
 
 // ══════════════════════════════════════════
@@ -1451,6 +1582,7 @@ async function joinSession() {
     S.sessionId    = session.id;
     S.joinCode     = code;
     S.sessionConfig = session.config || {};
+    applyBranding();
 
     // 從 session config 注入 proxy URL
     const proxyUrl = session.config?.ai_config?.proxyUrl || '';
@@ -1499,84 +1631,103 @@ function joinDemo() {
 // ══════════════════════════════════════════
 // CHECK-IN STEPS
 // ══════════════════════════════════════════
+const STEP_LABELS_CN = ['第一步','第二步','第三步','第四步','第五步'];
+
 function renderCheckinStep(step) {
+  const activeSteps = readConfig.checkinSteps();   // ['name','cards','mood'] or subset
+  const cfg = readConfig.checkin();
+  const total = activeSteps.length;
+
+  // If instructor disabled every step, skip check-in entirely
+  if(total === 0) { completeCheckin(); return; }
+  // Clamp step into valid range
+  step = Math.max(1, Math.min(step, total));
   S.checkinStep = step;
-  document.getElementById('stepLabel').textContent = `步驟 ${step}／3`;
-  document.getElementById('progressFill').style.width = `${(step/3)*100}%`;
 
-  // Update step dots
-  document.querySelectorAll('.step-dot').forEach((dot, i) => {
-    const dotStep = i + 1;
-    dot.classList.remove('active', 'done');
-    if(dotStep === step) dot.classList.add('active');
-    else if(dotStep < step) dot.classList.add('done');
-  });
+  // Rebuild step dots dynamically (count = total)
+  const dotsEl = document.getElementById('stepDots');
+  if(dotsEl) {
+    dotsEl.innerHTML = Array.from({length: total}, (_, i) => {
+      const n = i + 1;
+      const cls = n === step ? 'active' : (n < step ? 'done' : '');
+      return `<div class="step-dot ${cls}" data-step="${n}"></div>`;
+    }).join('');
+  }
 
+  document.getElementById('stepLabel').textContent   = `步驟 ${step}／${total}`;
+  document.getElementById('progressFill').style.width = `${(step/total)*100}%`;
   document.getElementById('navBack').style.visibility = step > 1 ? 'visible' : 'hidden';
 
-  const body = document.getElementById('checkinBody');
+  const body    = document.getElementById('checkinBody');
+  const navNext = document.getElementById('navNext');
+  const which   = activeSteps[step - 1];
+  const isLast  = step === total;
+  navNext.textContent = isLast ? '完成報到 →' : '繼續';
+  navNext.disabled = false;
+  const tagLabel = STEP_LABELS_CN[step - 1] || `第 ${step} 步`;
 
-  if(step === 1) {
-    document.getElementById('navNext').textContent = '繼續';
-    document.getElementById('navNext').disabled = false;
+  if(which === 'name') {
+    const c = cfg.name;
     body.innerHTML = `
-      <div class="step-tag">第一步</div>
-      <div class="step-question">你叫什麼名字？</div>
-      <input class="name-field" id="nameField" maxlength="20"
+      <div class="step-tag">${tagLabel}</div>
+      <div class="step-question">${c.prompt}</div>
+      <input class="name-field" id="nameField" maxlength="${c.max}"
         placeholder="輸入名字或暱稱"
         value="${S.name}"
         oninput="S.name=this.value.trim()"
         autocomplete="off">
-      <p style="font-size:12px;color:var(--text-dim);text-align:center;margin-top:-8px">最多 20 字，會顯示在大螢幕</p>`;
+      <p style="font-size:12px;color:var(--text-dim);text-align:center;margin-top:-8px">${c.hint || `最多 ${c.max} 字`}</p>`;
     setTimeout(() => document.getElementById('nameField')?.focus(), 100);
   }
 
-  else if(step === 2) {
-    document.getElementById('navNext').textContent = '繼續';
+  else if(which === 'cards') {
+    const c = cfg.cards;
     const dimLabels = { A:'A — 此刻心理位置', B:'B — 工作現實痛點', C:'C — 期待或擔心' };
     const dimColors = { A:'var(--accent)', B:'var(--amber)', C:'var(--rust)' };
+    const limitHint = c.hint || `最多選 ${c.max} 張，你的選擇會個人化你的 AI 夥伴`;
     let html = `
-      <div class="step-tag">第二步</div>
-      <div class="step-question">選出最像你現在的字卡</div>
-      <p style="font-size:13px;color:var(--text-dim);margin-top:-8px">最多選 2 張，你的選擇會個人化你的 AI 夥伴</p>
+      <div class="step-tag">${tagLabel}</div>
+      <div class="step-question">${c.prompt}</div>
+      <p style="font-size:13px;color:var(--text-dim);margin-top:-8px">${limitHint}</p>
       <div class="card-grid" id="cardGrid">`;
     let curDim = null;
-    S.cards.forEach(c => {
-      if(c.dim !== curDim) {
-        curDim = c.dim;
-        html += `<div class="dim-header" style="color:${dimColors[c.dim]}">${dimLabels[c.dim]}</div>`;
+    readConfig.cards().forEach(card => {
+      if(card.dim !== curDim) {
+        curDim = card.dim;
+        html += `<div class="dim-header" style="color:${dimColors[card.dim] || 'var(--text-dim)'}">${dimLabels[card.dim] || card.dim}</div>`;
       }
-      const sel = S.picks.includes(c.word) ? 'selected' : '';
-      html += `<div class="word-card ${sel}" onclick="toggleCard(this,'${c.word}')" data-word="${c.word}">
+      const sel = S.picks.includes(card.word) ? 'selected' : '';
+      html += `<div class="word-card ${sel}" onclick="toggleCard(this,'${card.word}')" data-word="${card.word}">
         <div class="card-check">✓</div>
-        <div class="card-emoji">${c.emoji}</div>
-        <div class="card-word">${c.word}</div>
-        <div class="card-sub">${c.sub}</div>
+        <div class="card-emoji">${card.emoji}</div>
+        <div class="card-word">${card.word}</div>
+        <div class="card-sub">${card.sub}</div>
       </div>`;
     });
     html += `</div>`;
     body.innerHTML = html;
   }
 
-  else if(step === 3) {
-    document.getElementById('navNext').textContent = '完成報到 →';
+  else if(which === 'mood') {
+    const c = cfg.mood;
+    const summary = S.picks.length > 0
+      ? `<div style="font-size:14px;color:var(--text-mid)">字卡：<strong>${S.picks.join('、')}</strong></div>`
+      : '';
     body.innerHTML = `
-      <div class="step-tag">第三步</div>
-      <div class="step-question">今天帶著什麼能量來？</div>
+      <div class="step-tag">${tagLabel}</div>
+      <div class="step-question">${c.prompt}</div>
       <div class="mood-row" id="moodRow">
-        ${S.moods.map(m => `
+        ${readConfig.moods().map(m => `
           <div class="mood-btn ${S.mood===m.label?'selected':''}"
             onclick="selectMood(this,'${m.label}')" data-mood="${m.label}">
             <div class="mood-emoji">${m.emoji}</div>
             <div class="mood-label">${m.label}</div>
           </div>`).join('')}
       </div>
-      <div style="margin-top:16px;padding:16px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border)">
+      ${summary ? `<div style="margin-top:16px;padding:16px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border)">
         <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px">你的選擇</div>
-        <div style="font-size:14px;color:var(--text-mid)">
-          字卡：<strong>${S.picks.length > 0 ? S.picks.join('、') : '尚未選擇'}</strong>
-        </div>
-      </div>`;
+        ${summary}
+      </div>` : ''}`;
   }
 }
 
@@ -1591,7 +1742,8 @@ function toggleCard(el, word) {
     return;
   }
 
-  if(S.picks.length >= 2) {
+  const maxPicks = readConfig.checkin().cards.max ?? 2;
+  if(S.picks.length >= maxPicks) {
     // Make the displacement visible: animate the oldest pick out before taking its slot
     const oldWord = S.picks.shift();
     const oldEl = document.querySelector(`.word-card[data-word="${oldWord}"]`);
@@ -1621,15 +1773,29 @@ function prevStep() {
 }
 
 function nextStep() {
-  if(S.checkinStep === 1) {
-    if(!S.name) { showToast('請輸入你的名字'); return; }
-    renderCheckinStep(2);
-  } else if(S.checkinStep === 2) {
-    if(S.picks.length === 0) { showToast('請至少選 1 張字卡'); return; }
-    renderCheckinStep(3);
-  } else if(S.checkinStep === 3) {
-    if(!S.mood) { showToast('請選擇今天的能量狀態'); return; }
+  const activeSteps = readConfig.checkinSteps();
+  const cfg = readConfig.checkin();
+  const which = activeSteps[S.checkinStep - 1];
+
+  // Validate current step
+  if(which === 'name' && !S.name) {
+    showToast('請輸入你的名字', 'warn'); return;
+  }
+  if(which === 'cards') {
+    const min = cfg.cards.min ?? 1;
+    if(S.picks.length < min) {
+      showToast(`請至少選 ${min} 張字卡`, 'warn'); return;
+    }
+  }
+  if(which === 'mood' && !S.mood) {
+    showToast('請選擇今天的能量狀態', 'warn'); return;
+  }
+
+  // Advance or finish
+  if(S.checkinStep >= activeSteps.length) {
     completeCheckin();
+  } else {
+    renderCheckinStep(S.checkinStep + 1);
   }
 }
 
@@ -1641,7 +1807,7 @@ async function completeCheckin() {
   if(navBtn) { navBtn.disabled = true; navBtn.textContent = '報到中...'; }
 
   try {
-    const roleHint = S.cards.find(c => S.picks.includes(c.word))?.hint || '一般同事';
+    const roleHint = readConfig.cards().find(c => S.picks.includes(c.word))?.hint || '一般同事';
     S.memory = {
       profile: { name: S.name, picks: S.picks, mood: S.mood, roleHint },
       learning_state: { visited_modules: [], key_insights: [], unresolved_questions: [] },
@@ -1699,8 +1865,10 @@ function applyFeatureFlags() {
   }
 
   // companion 標題與狀態
+  const host = readConfig.branding().host;
+  const hostSuffix = host ? ` · ${host} 主持` : '';
   document.getElementById('companionName').textContent =
-    ai_enabled ? `${S.name} 的 AI 夥伴` : `${S.name} 的學習記錄`;
+    ai_enabled ? `${S.name} 的 AI 夥伴${hostSuffix}` : `${S.name} 的學習記錄${hostSuffix}`;
   document.getElementById('companionState').textContent =
     ai_enabled ? '已連線' : '記錄模式';
 }
@@ -2049,6 +2217,23 @@ function handleKey(e) {
 function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// Apply branding from sessionConfig to DOM. Safe to call repeatedly.
+function applyBranding() {
+  const b = readConfig.branding();
+  const logoEl = document.getElementById('joinLogo');
+  const tagEl  = document.getElementById('joinTagline');
+  if(logoEl)  logoEl.textContent = b.title;
+  if(tagEl)   tagEl.textContent  = b.tagline;
+  try { document.title = `${b.title} 學員`; } catch(_) {}
+  // Companion title is rendered when session starts; refresh if already on screen
+  const compEl = document.getElementById('companionName');
+  if(compEl && S.name) {
+    compEl.textContent = b.host
+      ? `${S.name} 的 AI 夥伴 · ${b.host} 主持`
+      : `${S.name} 的 AI 夥伴`;
+  }
 }
 
 function dismissTutorial() {
@@ -2613,12 +2798,157 @@ function _handleModuleChange(moduleId) {
   const module = (S.sessionConfig?.modules || []).find(m => m.id === moduleId);
   if(!module) return;
   document.getElementById('moduleBadge').textContent = module.name || '新活動';
+
+  // Survey module gets its own card renderer
+  if(module.type === 'survey' && module.questions?.length) {
+    renderSurveyCard(module);
+    return;
+  }
+
   const taskMsg = { role:'task', content: { title: module.name, desc: module.prompt || '' }, type:'task', id: Date.now() };
   S.messages.push(taskMsg);
   renderMessage(taskMsg);
   scrollChat();
   addMessage('ai', `講師推送了新活動「${module.name}」。${module.prompt || ''}`);
 }
+
+// ══════════════════════════════════════════
+// SURVEY (student-side renderer)
+// ══════════════════════════════════════════
+function renderSurveyCard(module) {
+  const area = document.getElementById('chatArea');
+  // Avoid duplicate render if same module is pushed again
+  const existing = document.getElementById('survey-' + module.id);
+  if(existing) return;
+
+  const qsHtml = (module.questions || []).map((q, i) => {
+    let body = '';
+    if(q.type === 'single') {
+      body = (q.options || []).map((o, oi) => `
+        <label class="sv-opt">
+          <input type="radio" name="sv-${module.id}-${i}" value="${oi}" data-answer>
+          <span>${_escHtml(o)}</span>
+        </label>`).join('');
+    } else if(q.type === 'scale') {
+      const min = q.scale?.min ?? 1;
+      const max = q.scale?.max ?? 10;
+      const steps = [];
+      for(let n = min; n <= max; n++) {
+        steps.push(`<label class="sv-scale-step"><input type="radio" name="sv-${module.id}-${i}" value="${n}" data-answer><span>${n}</span></label>`);
+      }
+      body = `
+        <div class="sv-scale-row">${steps.join('')}</div>
+        ${(q.scale?.minLabel || q.scale?.maxLabel) ? `<div class="sv-scale-labels">
+          <span>${_escHtml(q.scale?.minLabel || '')}</span>
+          <span>${_escHtml(q.scale?.maxLabel || '')}</span>
+        </div>` : ''}`;
+    } else if(q.type === 'text') {
+      body = `<textarea class="sv-textarea" rows="2" placeholder="在此作答..." data-answer></textarea>`;
+    }
+    return `
+      <div class="sv-q" data-qid="${q.id}" data-qtype="${q.type}">
+        <div class="sv-q-prompt"><strong>Q${i+1}.</strong> ${_escHtml(q.prompt)}</div>
+        <div class="sv-q-body">${body}</div>
+      </div>`;
+  }).join('');
+
+  const card = document.createElement('div');
+  card.className = 'msg-row ai';
+  card.id = 'survey-' + module.id;
+  card.innerHTML = `
+    <div class="msg-avatar">📊</div>
+    <div style="flex:1; min-width:0">
+      <div class="survey-card">
+        <div class="survey-card-head">
+          <div class="survey-card-label">▶ 問卷</div>
+          <div class="survey-card-title">${_escHtml(module.name)}</div>
+        </div>
+        ${module.surveyDesc ? `<div class="survey-card-desc">${_escHtml(module.surveyDesc)}</div>` : ''}
+        <div class="survey-q-list">${qsHtml}</div>
+        <button class="survey-submit-btn" onclick="submitSurvey('${module.id}')">送出回答</button>
+        <div class="survey-done-msg" id="survey-done-${module.id}" style="display:none">✓ 已送出，感謝你的回應</div>
+      </div>
+    </div>`;
+  area.appendChild(card);
+  scrollChat();
+}
+
+function _escHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+window.submitSurvey = async function(moduleId) {
+  const card = document.getElementById('survey-' + moduleId);
+  if(!card) return;
+  const module = (S.sessionConfig?.modules || []).find(m => m.id === moduleId);
+  if(!module) return;
+
+  // Collect answers
+  const answers = [];
+  for(const q of (module.questions || [])) {
+    const qEl = card.querySelector(`[data-qid="${q.id}"]`);
+    if(!qEl) continue;
+    let value = null;
+    if(q.type === 'single' || q.type === 'scale') {
+      const checked = qEl.querySelector('input[type="radio"]:checked');
+      if(checked) value = checked.value;
+    } else if(q.type === 'text') {
+      value = qEl.querySelector('textarea')?.value.trim() || '';
+    }
+    if(value === null || value === '') {
+      showToast(`⚠ 請回答：${q.prompt.slice(0,14)}...`, 'warn', 3000);
+      qEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    answers.push({ qid: q.id, qtype: q.type, answer: value });
+  }
+
+  // Disable form
+  card.querySelectorAll('input, textarea, button').forEach(el => el.disabled = true);
+
+  // Persist to Supabase (via conversations table with content_type='survey_response')
+  const payload = {
+    module_id: moduleId,
+    module_name: module.name,
+    answers,
+    submitted_at: new Date().toISOString(),
+  };
+
+  if(CONFIG.supabaseUrl && !CONFIG.demoMode && S.participantId) {
+    try {
+      const res = await fetch(`${CONFIG.supabaseUrl}/rest/v1/conversations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': CONFIG.supabaseKey,
+          'Authorization': `Bearer ${CONFIG.supabaseKey}`,
+        },
+        body: JSON.stringify({
+          session_id:     S.sessionId,
+          participant_id: S.participantId,
+          role:           'user',
+          content:        JSON.stringify(payload),
+          content_type:   'survey_response',
+          metadata:       { module_id: moduleId },
+        })
+      });
+      if(!res.ok) throw new Error(await res.text());
+      showToast('✓ 回答已送出', 'success');
+    } catch(e) {
+      showToast('⚠ 送出失敗，請重試', 'error');
+      card.querySelectorAll('input, textarea, button').forEach(el => el.disabled = false);
+      console.error('submitSurvey failed:', e);
+      return;
+    }
+  } else {
+    // Demo mode — just acknowledge locally
+    showToast('✓ 回答已記錄（示範模式）', 'success');
+  }
+
+  // Show "done" state
+  document.getElementById('survey-done-' + moduleId).style.display = 'block';
+  card.querySelector('.survey-submit-btn').style.display = 'none';
+};
 
 // ── UTILS ──
 function showToast(msg, type = '', duration = 2500) {

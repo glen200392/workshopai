@@ -242,6 +242,240 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   letter-spacing: 0.12em; text-transform: uppercase;
   color: var(--text-dim); margin-bottom: 5px; display: block;
 }
+.field-hint {
+  font-size: 11px; color: var(--text-dim); margin-top: 4px; line-height: 1.4;
+}
+.section-header {
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--green);
+  padding: 6px 0;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Survey designer ── */
+.sq-row {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: var(--surface);
+  position: relative;
+}
+.sq-head {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+}
+.sq-type-badge {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
+  padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--border2); color: var(--text-mid);
+  flex-shrink: 0;
+}
+.sq-type-badge.single { color: var(--blue);   border-color: var(--blue); }
+.sq-type-badge.scale  { color: var(--amber);  border-color: var(--amber); }
+.sq-type-badge.text   { color: var(--purple); border-color: var(--purple); }
+.sq-num { font-family: var(--mono); font-size: 11px; color: var(--text-dim); flex-shrink: 0; }
+.sq-del {
+  margin-left: auto;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-dim); padding: 3px 8px; border-radius: 4px;
+  cursor: pointer; font-size: 11px;
+  transition: all 0.15s;
+}
+.sq-del:hover { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+.sq-prompt {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px; padding: 6px 10px; color: var(--text);
+  font-family: var(--sans); font-size: 13px; margin-bottom: 6px;
+}
+.sq-prompt:focus { outline: none; border-color: var(--green); }
+.sq-options { display: flex; flex-direction: column; gap: 4px; }
+.sq-opt {
+  display: flex; gap: 6px; align-items: center;
+}
+.sq-opt input {
+  flex: 1; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px; padding: 4px 8px; color: var(--text);
+  font-size: 12px;
+}
+.sq-opt-del {
+  width: 20px; height: 20px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-dim); border-radius: 3px; font-size: 10px;
+  cursor: pointer;
+}
+.sq-add-opt {
+  background: transparent; border: 1px dashed var(--border);
+  color: var(--text-dim); padding: 4px; border-radius: 4px;
+  font-size: 11px; cursor: pointer; margin-top: 4px;
+}
+.sq-add-opt:hover { border-color: var(--green); color: var(--green); }
+.sq-scale { display: flex; gap: 8px; align-items: center; font-size: 11px; color: var(--text-dim); }
+.sq-scale input[type="text"] {
+  flex: 1; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px; padding: 4px 8px; color: var(--text); font-size: 12px;
+}
+.sq-scale input[type="number"] {
+  width: 52px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 4px; padding: 4px; color: var(--text); font-size: 12px;
+  text-align: center; font-family: var(--mono);
+}
+
+/* Survey question button inside module list */
+.module-design-btn {
+  font-size: 10px !important;
+  background: var(--purple-dim) !important;
+  border-color: var(--purple) !important;
+  color: var(--purple) !important;
+}
+
+/* Live aggregate for survey responses */
+.survey-agg-root { padding: 12px; }
+.survey-agg-q { margin-bottom: 18px; }
+.survey-agg-prompt { font-weight: 600; margin-bottom: 6px; font-size: 13px; }
+.survey-agg-meta { font-size: 11px; color: var(--text-dim); margin-bottom: 8px; font-family: var(--mono); }
+.survey-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 12px; }
+.survey-bar-label { min-width: 80px; color: var(--text-mid); }
+.survey-bar-track {
+  flex: 1; height: 16px; background: var(--surface); border-radius: 3px;
+  position: relative; overflow: hidden;
+}
+.survey-bar-fill {
+  height: 100%; background: var(--blue);
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.survey-bar-count { min-width: 50px; text-align: right; font-family: var(--mono); font-size: 11px; color: var(--text-mid); }
+.survey-scale-stat {
+  font-family: var(--mono); font-size: 14px;
+  padding: 8px; background: var(--surface); border-radius: 4px;
+  text-align: center;
+}
+.survey-text-list {
+  background: var(--surface); border-radius: 4px; padding: 8px;
+  max-height: 200px; overflow-y: auto;
+}
+.survey-text-item {
+  padding: 6px 8px; border-bottom: 1px solid var(--border);
+  font-size: 12px; line-height: 1.5;
+}
+.survey-text-item:last-child { border-bottom: none; }
+
+/* ── Check-in step editor ── */
+.ck-step-row {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  background: var(--bg);
+  transition: border-color 0.15s, opacity 0.15s;
+}
+.ck-step-row.disabled { opacity: 0.55; }
+.ck-step-row.disabled .ck-prompt-input,
+.ck-step-row.disabled .ck-extra { pointer-events: none; }
+.ck-step-head {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+}
+.ck-step-name { font-weight: 600; font-size: 12px; flex: 1; }
+.ck-toggle {
+  width: 34px; height: 18px;
+  background: var(--border); border-radius: 999px;
+  position: relative; cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.ck-toggle::after {
+  content: '';
+  position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--text-dim);
+  transition: transform 0.18s, background 0.15s;
+}
+.ck-toggle.on { background: var(--green-dim); }
+.ck-toggle.on::after { transform: translateX(16px); background: var(--green); }
+.ck-prompt-input {
+  width: 100%; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text);
+  padding: 5px 8px; font-size: 12px; font-family: var(--sans);
+  transition: border-color 0.15s;
+}
+.ck-prompt-input:focus { outline: none; border-color: var(--green); }
+.ck-extra { display: flex; gap: 8px; margin-top: 5px; }
+.ck-num-input {
+  width: 56px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text); padding: 4px 6px; font-size: 11px;
+  font-family: var(--mono); text-align: center;
+}
+.ck-num-label { font-size: 11px; color: var(--text-dim); line-height: 24px; }
+
+/* ── Card editor ── */
+.card-dim-block { margin-bottom: 14px; }
+.card-dim-head {
+  font-family: var(--mono); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 4px 0 6px;
+  text-transform: uppercase;
+}
+.card-row {
+  display: flex; gap: 6px; align-items: flex-start;
+  padding: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 5px;
+}
+.card-emoji-in {
+  width: 32px; height: 32px;
+  text-align: center;
+  font-size: 18px; line-height: 1;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text);
+  flex-shrink: 0;
+  padding: 0;
+}
+.card-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.card-word, .card-sub, .card-hint {
+  width: 100%; background: transparent; border: none;
+  color: var(--text); font-family: var(--sans);
+  padding: 2px 4px; border-bottom: 1px solid transparent;
+  transition: border-color 0.15s;
+}
+.card-word { font-size: 13px; font-weight: 600; }
+.card-sub  { font-size: 11px; color: var(--text-mid); }
+.card-hint { font-size: 11px; color: var(--text-dim); font-style: italic; }
+.card-word:focus, .card-sub:focus, .card-hint:focus {
+  outline: none; border-bottom-color: var(--green);
+}
+.card-del {
+  width: 24px; height: 24px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-dim); border-radius: 4px;
+  cursor: pointer; font-size: 12px;
+  transition: all 0.15s;
+}
+.card-del:hover { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+.card-add {
+  width: 100%; background: transparent;
+  border: 1px dashed var(--border); color: var(--text-dim);
+  padding: 6px; border-radius: 4px; cursor: pointer;
+  font-size: 11px; margin-top: 4px;
+  transition: all 0.15s;
+}
+.card-add:hover { border-color: var(--green); color: var(--green); }
+.card-empty { font-size: 11px; color: var(--text-dim); padding: 6px; text-align: center; }
+.card-actions {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0 6px;
+  border-top: 1px solid var(--border); margin-top: 10px;
+}
+.card-count { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+.card-reset-btn {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-mid); padding: 5px 10px; border-radius: 4px;
+  cursor: pointer; font-size: 11px;
+  transition: all 0.15s;
+}
+.card-reset-btn:hover { border-color: var(--amber); color: var(--amber); }
 .field-input, .field-select, .field-textarea {
   width: 100%; background: var(--bg);
   border: 1px solid var(--border); border-radius: var(--radius);
@@ -899,6 +1133,27 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   </div>
 </div>
 
+<!-- SURVEY DESIGNER MODAL -->
+<div class="modal-overlay" id="surveyDesignerModal">
+  <div class="modal" style="width:min(640px, 92vw); max-height: 85vh; display:flex; flex-direction:column;">
+    <div class="modal-title" id="surveyDesignerTitle">📊 設計問卷</div>
+    <div class="field-group">
+      <label class="field-label">說明文字（選填，會顯示在問卷開頭）</label>
+      <textarea class="field-textarea" id="surveyDesc" rows="2" placeholder="例：請花 2 分鐘回答以下問題，協助我們了解你的觀點"></textarea>
+    </div>
+    <div id="surveyQuestionsList" style="overflow-y:auto; flex:1; min-height:100px; padding-right:4px; margin:8px 0"></div>
+    <div style="display:flex; gap:6px; flex-wrap:wrap">
+      <button class="top-btn btn-ghost" onclick="onSurveyAddQuestion('single')">+ 單選題</button>
+      <button class="top-btn btn-ghost" onclick="onSurveyAddQuestion('scale')">+ 量表題</button>
+      <button class="top-btn btn-ghost" onclick="onSurveyAddQuestion('text')">+ 開放文字</button>
+    </div>
+    <div class="modal-footer">
+      <button class="top-btn btn-ghost" onclick="closeSurveyDesigner(false)">取消</button>
+      <button class="top-btn btn-start" onclick="closeSurveyDesigner(true)">✓ 儲存問卷</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODULE MODAL -->
 <div class="modal-overlay" id="moduleModal">
   <div class="modal">
@@ -994,7 +1249,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
     <div class="sidebar-tabs">
       <button class="stab active" id="stabModules" onclick="switchSidebarTab('modules')">模組</button>
       <button class="stab" id="stabAgent" onclick="switchSidebarTab('agent')">AI 設定</button>
-      <button class="stab" id="stabCheckin" onclick="switchSidebarTab('checkin')">報到卡</button>
+      <button class="stab" id="stabCheckin" onclick="switchSidebarTab('checkin')">內容</button>
     </div>
 
     <!-- Modules tab -->
@@ -1133,14 +1388,46 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
     <!-- Check-in cards tab -->
     <div class="sidebar-body" id="tabCheckin" style="display:none">
+
+      <!-- ─── 🎨 品牌 ─── -->
+      <div class="section-header">🎨 品牌</div>
       <div class="field-group">
-        <label class="field-label">歡迎訊息</label>
-        <input class="field-input" id="welcomeMsg" value="歡迎參加 HR & 總務 AI 轉型思維工作坊">
+        <label class="field-label">工作坊標題</label>
+        <input class="field-input" id="brandingTitle" placeholder="WorkshopAI"
+          oninput="onBrandingChange()" maxlength="40">
+        <div class="field-hint">顯示在學員加入畫面（最多 40 字）</div>
       </div>
       <div class="field-group">
-        <label class="field-label">字卡內容（可編輯）</label>
+        <label class="field-label">副標</label>
+        <input class="field-input" id="brandingTagline" placeholder="你的 AI 學習夥伴，從今天開始"
+          oninput="onBrandingChange()" maxlength="60">
+        <div class="field-hint">加入畫面的副標文案</div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">主持人（選填）</label>
+        <input class="field-input" id="brandingHost" placeholder="例：Glen"
+          oninput="onBrandingChange()" maxlength="20">
+        <div class="field-hint">填寫後會顯示在學員的 AI 夥伴標題後</div>
+      </div>
+
+      <!-- ─── 📝 報到步驟 ─── -->
+      <div class="section-header" style="margin-top:16px">📝 報到步驟</div>
+      <div class="checkin-steps-editor" id="checkinStepsEditor"></div>
+
+      <!-- ─── 歡迎訊息 ─── -->
+      <div class="section-header" style="margin-top:16px">📢 歡迎訊息</div>
+      <div class="field-group">
+        <label class="field-label">講師廣播（可選）</label>
+        <input class="field-input" id="welcomeMsg" value="歡迎參加 HR & 總務 AI 轉型思維工作坊">
+        <div class="field-hint">會以廣播方式推送給所有學員</div>
+      </div>
+
+      <!-- ─── 字卡編輯器 ─── -->
+      <div class="section-header" style="margin-top:16px">🃏 字卡庫</div>
+      <div class="field-group">
         <div id="cardConfigList"></div>
       </div>
+
       <button class="ai-run-btn" onclick="saveCheckinConfig()" style="margin-top:8px">▶ 套用並開放報到</button>
     </div>
   </aside>
@@ -1150,6 +1437,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
     <div class="main-toolbar">
       <div class="view-toggle">
         <button class="vtab active" id="vtabGrid" onclick="switchView('grid')">格狀監控</button>
+        <button class="vtab" id="vtabSurvey" onclick="switchView('survey')">📊 問卷結果</button>
         <button class="vtab" id="vtabProjection" onclick="switchView('projection')">投影大螢幕</button>
         <button class="vtab" id="vtabLog" onclick="switchView('log')">事件 Log</button>
       </div>
@@ -1205,6 +1493,16 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
         <div class="proj-stat"><div class="proj-stat-num" id="pstatR" style="color:var(--blue)">0</div><div class="proj-stat-label">回應數</div></div>
         <div class="proj-stat"><div class="proj-stat-num" id="pstatW" style="color:var(--amber)">0</div><div class="proj-stat-label">關鍵詞</div></div>
         <div class="proj-stat"><div class="proj-stat-num" id="pstatT" style="color:var(--purple)">—</div><div class="proj-stat-label">張力點</div></div>
+      </div>
+    </div>
+
+    <!-- Survey aggregate view -->
+    <div style="display:none;flex:1;overflow-y:auto" id="surveyView">
+      <div class="survey-agg-root" id="surveyAggRoot">
+        <div style="color:var(--text-dim); padding:40px 20px; text-align:center; font-family:var(--mono); font-size:13px">
+          ── 尚無問卷回應 ──<br>
+          <span style="font-size:11px; margin-top:8px; display:block">推送一個「即時問卷」模組後，學員的答案會即時顯示在這裡</span>
+        </div>
       </div>
     </div>
 
@@ -1340,6 +1638,9 @@ const S = {
 
   participants: [],
   wordFreq: {},
+  // cards: drafted by instructor via 內容 tab; written to sessionConfig on start.
+  // Restored from localStorage on init if present, else populated with defaults.
+  cards: null,
   modules: [
     { id:'m1', seq:1, type:'checkin',    name:'學員報到 Check-in',  prompt:'引導學員選擇字卡，建立個人化記憶。',                               isActive:false, duration:10 },
     { id:'m2', seq:2, type:'discussion', name:'AI 焦慮開場討論',    prompt:'探索學員對 AI 轉型的真實感受，不評判，鼓勵說出擔憂。',              isActive:false, duration:20 },
@@ -1398,7 +1699,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('joinCodeBadge').textContent = S.joinCode;
   renderModules();
   renderCardConfig();
+  renderCheckinStepsEditor();
   restoreSettings();
+  restoreBranding();
   renderEmptyInvite();
   setTimeout(loadDemoParticipants, 1500);
 });
@@ -1471,6 +1774,9 @@ async function writeSessionToSupabase() {
     const sessionConfig = {
       workshop_title: document.getElementById('wsName')?.value || 'WorkshopAI',
       join_code: S.joinCode,
+      branding: collectBranding(),
+      cards: _getCardsDraft(),
+      checkin: _getCheckinDraft(),
       ai_config: {
         claudeModel: S.aiConfig.claudeModel,
         geminiModel: S.aiConfig.geminiModel,
@@ -1557,17 +1863,23 @@ async function endSession() {
 function renderModules() {
   const list = document.getElementById('moduleList');
   const typeColors = { checkin:'var(--green)', discussion:'var(--blue)', roleplay:'var(--amber)', convergence:'var(--purple)', reflection:'var(--red)', survey:'var(--text-mid)' };
-  list.innerHTML = S.modules.map(m => `
+  list.innerHTML = S.modules.map(m => {
+    const surveyBtn = m.type === 'survey'
+      ? `<button class="maction module-design-btn" onclick="openSurveyDesigner('${m.id}')">📊 設計問卷 (${m.questions?.length || 0})</button>`
+      : '';
+    return `
     <div class="module-item ${m.isActive?'active-module':''}" id="mod-${m.id}">
       <div class="module-seq">模組 ${m.seq} · ${m.duration}分</div>
       <div class="module-name">${m.name}</div>
       <div class="module-type-badge" style="border-color:${typeColors[m.type]||'var(--border)'};color:${typeColors[m.type]||'var(--text-dim)'}">${m.type}</div>
       <div class="module-actions">
         <button class="maction ${m.isActive?'push':''}" onclick="pushModule('${m.id}')">${m.isActive?'✓ 進行中':'▶ 推送'}</button>
+        ${surveyBtn}
         <button class="maction" onclick="editModule('${m.id}')">編輯</button>
         <button class="maction" onclick="deleteModule('${m.id}')">刪除</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function _updateActiveModulePill(name) {
@@ -1705,6 +2017,168 @@ function editModule(id) {
   document.getElementById('newModuleType').value = m.type;
   openModal();
 }
+
+// ══════════════════════════════════════════
+// SURVEY DESIGNER
+// ══════════════════════════════════════════
+// Draft state lives on the module object during editing; on save, flushed
+// to module.questions and (if live) pushed to Supabase sessionConfig.modules
+let _surveyDraft = null;  // { moduleId, questions: [...], desc }
+
+function openSurveyDesigner(moduleId) {
+  const m = S.modules.find(m => m.id === moduleId);
+  if(!m) return;
+  _surveyDraft = {
+    moduleId,
+    desc: m.surveyDesc || '',
+    questions: JSON.parse(JSON.stringify(m.questions || [])),
+  };
+  document.getElementById('surveyDesignerTitle').textContent = `📊 設計問卷：${m.name}`;
+  document.getElementById('surveyDesc').value = _surveyDraft.desc;
+  document.getElementById('surveyDesc').oninput = (e) => { _surveyDraft.desc = e.target.value; };
+  _renderSurveyDraft();
+  document.getElementById('surveyDesignerModal').classList.add('open');
+}
+
+function closeSurveyDesigner(save) {
+  const overlay = document.getElementById('surveyDesignerModal');
+  if(!save) {
+    _surveyDraft = null;
+    overlay.classList.remove('open');
+    return;
+  }
+  // Validate
+  if(!_surveyDraft) return;
+  for(const q of _surveyDraft.questions) {
+    if(!q.prompt?.trim()) {
+      showToast('⚠ 每個問題都要有題目', 'warn'); return;
+    }
+    if(q.type !== 'text' && q.type !== 'scale' && !(q.options?.length >= 2)) {
+      showToast(`⚠「${q.prompt.slice(0,10)}」至少要有 2 個選項`, 'warn'); return;
+    }
+  }
+  // Commit to module
+  const m = S.modules.find(m => m.id === _surveyDraft.moduleId);
+  if(m) {
+    m.questions = _surveyDraft.questions;
+    m.surveyDesc = _surveyDraft.desc;
+  }
+  _surveyDraft = null;
+  overlay.classList.remove('open');
+  renderModules();
+  showToast('✓ 問卷已儲存', 'success');
+  // Hot-push if live
+  if(S.isLive && S.supabaseUrl && S.sessionId) _pushModulesUpdate();
+}
+
+async function _pushModulesUpdate() {
+  clearTimeout(_pushModulesUpdate._t);
+  _pushModulesUpdate._t = setTimeout(async () => {
+    try {
+      const res = await fetch(`${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}&select=config`, {
+        headers: { 'apikey': S.supabaseKey, 'Authorization': `Bearer ${S.supabaseKey}` }
+      });
+      const data = await res.json();
+      const cfg = data?.[0]?.config || {};
+      cfg.modules = S.modules;
+      await fetch(`${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': S.supabaseKey,
+          'Authorization': `Bearer ${S.supabaseKey}`,
+        },
+        body: JSON.stringify({ config: cfg })
+      });
+      addLog('modules', '模組設定已同步', 'system');
+    } catch(e) {
+      addLog('modules', `⚠ 模組同步失敗：${e.message}`, 'error');
+    }
+  }, 600);
+}
+
+function _renderSurveyDraft() {
+  const el = document.getElementById('surveyQuestionsList');
+  if(!_surveyDraft || _surveyDraft.questions.length === 0) {
+    el.innerHTML = `<div style="color:var(--text-dim); font-size:13px; text-align:center; padding:24px">
+      尚未新增問題 — 點下方按鈕開始設計</div>`;
+    return;
+  }
+  el.innerHTML = _surveyDraft.questions.map((q, i) => {
+    let body = '';
+    if(q.type === 'single') {
+      body = `
+        <div class="sq-options">
+          ${(q.options || []).map((o, oi) => `
+            <div class="sq-opt">
+              <input value="${_esc(o)}" oninput="onSurveyOptChange(${i},${oi},this.value)" placeholder="選項 ${oi+1}">
+              <button class="sq-opt-del" onclick="onSurveyOptDel(${i},${oi})" title="刪除選項">✕</button>
+            </div>
+          `).join('')}
+        </div>
+        <button class="sq-add-opt" onclick="onSurveyOptAdd(${i})">+ 新增選項</button>
+      `;
+    } else if(q.type === 'scale') {
+      body = `
+        <div class="sq-scale">
+          從
+          <input type="number" value="${q.scale?.min ?? 1}" min="0" max="10" oninput="onSurveyScaleChange(${i},'min',this.value)">
+          到
+          <input type="number" value="${q.scale?.max ?? 10}" min="1" max="10" oninput="onSurveyScaleChange(${i},'max',this.value)">
+        </div>
+        <div class="sq-scale" style="margin-top:4px">
+          <input type="text" value="${_esc(q.scale?.minLabel || '')}" placeholder="最低分說明（選填）" oninput="onSurveyScaleChange(${i},'minLabel',this.value)">
+          <input type="text" value="${_esc(q.scale?.maxLabel || '')}" placeholder="最高分說明（選填）" oninput="onSurveyScaleChange(${i},'maxLabel',this.value)">
+        </div>
+      `;
+    } else if(q.type === 'text') {
+      body = `<div style="font-size:11px; color:var(--text-dim)">學員會看到一個開放文字框</div>`;
+    }
+    return `
+      <div class="sq-row">
+        <div class="sq-head">
+          <span class="sq-num">Q${i+1}</span>
+          <span class="sq-type-badge ${q.type}">${{single:'單選',scale:'量表',text:'文字'}[q.type]}</span>
+          <button class="sq-del" onclick="onSurveyQDel(${i})">刪除</button>
+        </div>
+        <input class="sq-prompt" value="${_esc(q.prompt || '')}" placeholder="題目內容" oninput="onSurveyPromptChange(${i},this.value)">
+        ${body}
+      </div>`;
+  }).join('');
+}
+
+window.onSurveyAddQuestion = function(type) {
+  if(!_surveyDraft) return;
+  const base = { id: 'q'+Date.now(), type, prompt: '' };
+  if(type === 'single') base.options = ['', ''];
+  if(type === 'scale')  base.scale = { min:1, max:10, minLabel:'', maxLabel:'' };
+  _surveyDraft.questions.push(base);
+  _renderSurveyDraft();
+};
+
+window.onSurveyQDel = function(i) {
+  _surveyDraft.questions.splice(i, 1);
+  _renderSurveyDraft();
+};
+
+window.onSurveyPromptChange = function(i, val) { _surveyDraft.questions[i].prompt = val; };
+window.onSurveyOptChange    = function(i, oi, val) { _surveyDraft.questions[i].options[oi] = val; };
+window.onSurveyOptAdd       = function(i) { _surveyDraft.questions[i].options.push(''); _renderSurveyDraft(); };
+window.onSurveyOptDel       = function(i, oi) {
+  const q = _surveyDraft.questions[i];
+  if(q.options.length <= 2) { showToast('⚠ 至少保留 2 個選項', 'warn'); return; }
+  q.options.splice(oi, 1);
+  _renderSurveyDraft();
+};
+window.onSurveyScaleChange = function(i, field, val) {
+  const n = parseInt(val, 10);
+  if(field === 'min' || field === 'max') {
+    if(!Number.isFinite(n)) return;
+    _surveyDraft.questions[i].scale[field] = n;
+  } else {
+    _surveyDraft.questions[i].scale[field] = val;
+  }
+};
 
 // ══════════════════════════════════════════
 // PARTICIPANT RENDERING
@@ -1892,10 +2366,133 @@ function switchSidebarTab(tab) {
 // ══════════════════════════════════════════
 function switchView(view) {
   document.getElementById('participantGrid').style.display = view==='grid'?'grid':'none';
-  document.getElementById('projectionView').style.display = view==='projection'?'flex':'none';
-  document.getElementById('logView').style.display = view==='log'?'flex':'none';
-  ['grid','projection','log'].forEach(v => document.getElementById('vtab'+v.charAt(0).toUpperCase()+v.slice(1))?.classList.toggle('active', v===view));
+  document.getElementById('surveyView').style.display      = view==='survey'?'block':'none';
+  document.getElementById('projectionView').style.display  = view==='projection'?'flex':'none';
+  document.getElementById('logView').style.display         = view==='log'?'flex':'none';
+  ['grid','survey','projection','log'].forEach(v =>
+    document.getElementById('vtab'+v.charAt(0).toUpperCase()+v.slice(1))?.classList.toggle('active', v===view));
   if(view==='projection') syncProjection();
+  if(view==='survey')     renderSurveyAggregate();
+}
+
+// ══════════════════════════════════════════
+// SURVEY AGGREGATE (instructor-side live view)
+// ══════════════════════════════════════════
+// Structure: S._surveyResponses[moduleId] = [{participantId, answers: [{qid, qtype, answer}]}, ...]
+S._surveyResponses = {};
+
+function recordSurveyResponse(participantId, payload) {
+  if(!payload?.module_id) return;
+  const m = payload.module_id;
+  if(!S._surveyResponses[m]) S._surveyResponses[m] = [];
+  // de-dupe by participant (latest wins)
+  S._surveyResponses[m] = S._surveyResponses[m].filter(r => r.participantId !== participantId);
+  S._surveyResponses[m].push({
+    participantId,
+    answers: payload.answers || [],
+    submittedAt: payload.submitted_at,
+  });
+  // Refresh if user is looking at the survey view
+  if(document.getElementById('surveyView')?.style.display === 'block') {
+    renderSurveyAggregate();
+  }
+}
+
+function renderSurveyAggregate() {
+  const root = document.getElementById('surveyAggRoot');
+  if(!root) return;
+  const surveyModules = (S.modules || []).filter(m => m.type === 'survey' && (m.questions?.length));
+  if(surveyModules.length === 0) {
+    root.innerHTML = `<div style="color:var(--text-dim); padding:40px 20px; text-align:center; font-family:var(--mono); font-size:13px">
+      ── 尚未設計任何問卷 ──<br>
+      <span style="font-size:11px; margin-top:8px; display:block">左側新增「即時問卷」模組，再點「📊 設計問卷」編輯題目</span>
+    </div>`;
+    return;
+  }
+
+  root.innerHTML = surveyModules.map(m => {
+    const responses = S._surveyResponses[m.id] || [];
+    const n = responses.length;
+    const isActive = m.isActive;
+    const header = `
+      <h3 style="margin:0; font-size:15px; display:flex; align-items:center; gap:8px">
+        <span>${_esc(m.name)}</span>
+        ${isActive ? '<span style="font-size:10px; color:var(--green); padding:2px 8px; border:1px solid var(--green); border-radius:999px">進行中</span>' : ''}
+      </h3>
+      <div class="survey-agg-meta">${n} 位回應 · ${m.questions.length} 題</div>
+    `;
+    const qBlocks = m.questions.map((q, qi) => _renderSurveyQAgg(q, qi, responses)).join('');
+    return `
+      <div style="margin-bottom:32px">
+        ${header}
+        ${n === 0 ? '<div style="color:var(--text-dim); font-size:12px; padding:12px 0">尚無回應</div>' : qBlocks}
+      </div>`;
+  }).join('');
+}
+
+function _renderSurveyQAgg(q, qi, responses) {
+  const values = responses
+    .map(r => r.answers.find(a => a.qid === q.id))
+    .filter(Boolean)
+    .map(a => a.answer);
+
+  if(q.type === 'single') {
+    const counts = {};
+    (q.options || []).forEach((o, oi) => { counts[oi] = 0; });
+    values.forEach(v => { if(counts[v] !== undefined) counts[v] += 1; });
+    const total = values.length || 1;
+    const bars = (q.options || []).map((o, oi) => {
+      const c = counts[oi];
+      const pct = (c / total) * 100;
+      return `
+        <div class="survey-bar-row">
+          <div class="survey-bar-label">${_esc(o)}</div>
+          <div class="survey-bar-track"><div class="survey-bar-fill" style="width:${pct}%"></div></div>
+          <div class="survey-bar-count">${c} · ${pct.toFixed(0)}%</div>
+        </div>`;
+    }).join('');
+    return `<div class="survey-agg-q">
+      <div class="survey-agg-prompt">Q${qi+1}. ${_esc(q.prompt)}</div>
+      ${bars}
+    </div>`;
+  }
+
+  if(q.type === 'scale') {
+    const nums = values.map(v => parseInt(v,10)).filter(Number.isFinite);
+    const avg = nums.length ? (nums.reduce((a,b)=>a+b,0) / nums.length) : 0;
+    const min = q.scale?.min ?? 1;
+    const max = q.scale?.max ?? 10;
+    // Bucket counts
+    const buckets = {};
+    for(let n = min; n <= max; n++) buckets[n] = 0;
+    nums.forEach(n => { if(buckets[n] !== undefined) buckets[n] += 1; });
+    const total = nums.length || 1;
+    const bars = Object.keys(buckets).map(n => {
+      const c = buckets[n];
+      const pct = (c / total) * 100;
+      return `
+        <div class="survey-bar-row">
+          <div class="survey-bar-label">${n}</div>
+          <div class="survey-bar-track"><div class="survey-bar-fill" style="width:${pct}%; background:var(--amber)"></div></div>
+          <div class="survey-bar-count">${c}</div>
+        </div>`;
+    }).join('');
+    return `<div class="survey-agg-q">
+      <div class="survey-agg-prompt">Q${qi+1}. ${_esc(q.prompt)}</div>
+      <div class="survey-scale-stat">平均：${avg.toFixed(1)} / ${max}</div>
+      <div style="margin-top:8px">${bars}</div>
+    </div>`;
+  }
+
+  if(q.type === 'text') {
+    const items = values.map(v => `<div class="survey-text-item">${_esc(v)}</div>`).join('') ||
+                  '<div style="padding:10px; color:var(--text-dim); font-size:12px; text-align:center">（無文字回應）</div>';
+    return `<div class="survey-agg-q">
+      <div class="survey-agg-prompt">Q${qi+1}. ${_esc(q.prompt)}</div>
+      <div class="survey-text-list">${items}</div>
+    </div>`;
+  }
+  return '';
 }
 
 function toggleProjection() {
@@ -2370,6 +2967,16 @@ function _doInstructorSubscribe(sb) {
       filter: `session_id=eq.${S.sessionId}`
     }, payload => {
       const c = payload.new;
+      // Survey responses: not a chat message — route to aggregate
+      if(c.content_type === 'survey_response') {
+        try {
+          const payload = JSON.parse(c.content);
+          recordSurveyResponse(c.participant_id, payload);
+        } catch(e) {
+          addLog('survey', `⚠ 問卷回應解析失敗：${e.message}`, 'error');
+        }
+        return;
+      }
       if(c.role === 'system') return;
       const p = S.participants.find(x => x.id === c.participant_id);
       if(p) {
@@ -2429,36 +3036,317 @@ function updateTopStats() {
 // ══════════════════════════════════════════
 // CHECK-IN CARD CONFIG
 // ══════════════════════════════════════════
-const defaultCards = [
-  {emoji:'🔭',word:'觀望中',sub:'先看看再說',dim:'A'},
-  {emoji:'⚡',word:'已在用了',sub:'走在大家前面',dim:'A'},
-  {emoji:'⚖️',word:'半信半疑',sub:'需要更多說服',dim:'A'},
-  {emoji:'🌊',word:'被推著走',sub:'還沒準備好',dim:'A'},
-  {emoji:'📄',word:'文件海',sub:'表單永遠填不完',dim:'B'},
-  {emoji:'💬',word:'人心難測',sub:'溝通協調最燒腦',dim:'B'},
-  {emoji:'📊',word:'數字壓力',sub:'成本效益要說清楚',dim:'B'},
-  {emoji:'🏛️',word:'規則叢林',sub:'合規讓我頭很大',dim:'B'},
-  {emoji:'🔓',word:'解放重複',sub:'把時間留給重要的事',dim:'C'},
-  {emoji:'🍚',word:'飯碗問題',sub:'說出口需要勇氣',dim:'C'},
-  {emoji:'✨',word:'品質提升',sub:'做更好的決策',dim:'C'},
-  {emoji:'❓',word:'誰來負責',sub:'AI出錯怎麼算',dim:'C'},
+// Shipped default cards (must include `hint` — used by AI roleplay).
+const DEFAULT_CARDS = [
+  {emoji:'🔭',word:'觀望中',  sub:'先看看再說',        dim:'A', hint:'催促轉型的主管'},
+  {emoji:'⚡',word:'已在用了',sub:'走在大家前面',       dim:'A', hint:'質疑效果的同事'},
+  {emoji:'⚖️',word:'半信半疑',sub:'需要更多說服',       dim:'A', hint:'過度樂觀的顧問'},
+  {emoji:'🌊',word:'被推著走',sub:'還沒準備好',         dim:'A', hint:'不情願的同事'},
+  {emoji:'📄',word:'文件海',  sub:'表單永遠填不完',     dim:'B', hint:'要求標準化的稽核'},
+  {emoji:'💬',word:'人心難測',sub:'溝通協調最燒腦',     dim:'B', hint:'情緒激動的員工'},
+  {emoji:'📊',word:'數字壓力',sub:'成本效益要說清楚',   dim:'B', hint:'質疑 ROI 的財務主管'},
+  {emoji:'🏛️',word:'規則叢林',sub:'合規讓我頭很大',     dim:'B', hint:'抗拒新系統的法務'},
+  {emoji:'🔓',word:'解放重複',sub:'把時間留給重要的事', dim:'C', hint:'害怕被取代的同事'},
+  {emoji:'🍚',word:'飯碗問題',sub:'說出口需要勇氣',     dim:'C', hint:'樂觀不切實際的主管'},
+  {emoji:'✨',word:'品質提升',sub:'做更好的決策',       dim:'C', hint:'習慣舊方法的前輩'},
+  {emoji:'❓',word:'誰來負責',sub:'AI 出錯怎麼算',      dim:'C', hint:'強調風控的法遵主管'},
 ];
+// Old alias kept so nothing else in this file breaks.
+const defaultCards = DEFAULT_CARDS;
+
+// ══════════════════════════════════════════
+// CHECK-IN STEP EDITOR
+// ══════════════════════════════════════════
+const DEFAULT_CHECKIN_CFG = {
+  name:  { enabled:true, prompt:'你叫什麼名字？',       max:20 },
+  cards: { enabled:true, prompt:'選出最像你現在的字卡', min:1, max:2 },
+  mood:  { enabled:true, prompt:'今天帶著什麼能量來？' },
+};
+
+function _getCheckinDraft() {
+  if(S.checkinCfg) return S.checkinCfg;
+  const stored = safeStorage.get('_checkinDraft');
+  if(stored) { try { S.checkinCfg = JSON.parse(stored); return S.checkinCfg; } catch(_) {} }
+  S.checkinCfg = JSON.parse(JSON.stringify(DEFAULT_CHECKIN_CFG));
+  return S.checkinCfg;
+}
+
+function _persistCheckinDraft() {
+  safeStorage.set('_checkinDraft', JSON.stringify(S.checkinCfg));
+  if(S.isLive && S.supabaseUrl && S.sessionId) _pushCheckinUpdate(S.checkinCfg);
+}
+
+async function _pushCheckinUpdate(checkin) {
+  clearTimeout(_pushCheckinUpdate._t);
+  _pushCheckinUpdate._t = setTimeout(async () => {
+    try {
+      const res = await fetch(`${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}&select=config`, {
+        headers: { 'apikey': S.supabaseKey, 'Authorization': `Bearer ${S.supabaseKey}` }
+      });
+      const data = await res.json();
+      const cfg = data?.[0]?.config || {};
+      cfg.checkin = checkin;
+      await fetch(`${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': S.supabaseKey,
+          'Authorization': `Bearer ${S.supabaseKey}`,
+        },
+        body: JSON.stringify({ config: cfg })
+      });
+      addLog('checkin', '報到步驟設定已同步', 'system');
+    } catch(e) {
+      addLog('checkin', `⚠ 報到設定同步失敗：${e.message}`, 'error');
+    }
+  }, 800);
+}
+
+function renderCheckinStepsEditor() {
+  const el = document.getElementById('checkinStepsEditor');
+  if(!el) return;
+  const cfg = _getCheckinDraft();
+
+  const row = (key, label, body) => {
+    const s = cfg[key];
+    return `
+      <div class="ck-step-row ${s.enabled ? '' : 'disabled'}" data-key="${key}">
+        <div class="ck-step-head">
+          <span class="ck-step-name">${label}</span>
+          <div class="ck-toggle ${s.enabled ? 'on' : ''}" role="switch" aria-checked="${s.enabled}"
+            onclick="onCheckinToggle('${key}')" tabindex="0"></div>
+        </div>
+        <input class="ck-prompt-input" value="${_esc(s.prompt)}" placeholder="輸入提問文字"
+          oninput="onCheckinPromptChange('${key}', this.value)">
+        ${body}
+      </div>`;
+  };
+
+  el.innerHTML =
+    row('name', '① 輸入名字', `
+      <div class="ck-extra">
+        <span class="ck-num-label">最多</span>
+        <input class="ck-num-input" type="number" min="4" max="40" value="${cfg.name.max}"
+          oninput="onCheckinNumChange('name','max',this.value)">
+        <span class="ck-num-label">字</span>
+      </div>`) +
+    row('cards', '② 選字卡', `
+      <div class="ck-extra">
+        <span class="ck-num-label">至少</span>
+        <input class="ck-num-input" type="number" min="0" max="4" value="${cfg.cards.min}"
+          oninput="onCheckinNumChange('cards','min',this.value)">
+        <span class="ck-num-label">最多</span>
+        <input class="ck-num-input" type="number" min="1" max="4" value="${cfg.cards.max}"
+          oninput="onCheckinNumChange('cards','max',this.value)">
+        <span class="ck-num-label">張</span>
+      </div>`) +
+    row('mood', '③ 能量狀態', '');
+}
+
+window.onCheckinToggle = function(key) {
+  const cfg = _getCheckinDraft();
+  const enabledCount = ['name','cards','mood'].filter(k => cfg[k].enabled).length;
+  if(cfg[key].enabled && enabledCount <= 1) {
+    showToast('⚠ 至少保留一個報到步驟', 'warn');
+    return;
+  }
+  cfg[key].enabled = !cfg[key].enabled;
+  _persistCheckinDraft();
+  renderCheckinStepsEditor();
+};
+
+window.onCheckinPromptChange = function(key, val) {
+  const cfg = _getCheckinDraft();
+  cfg[key].prompt = val;
+  _persistCheckinDraft();
+};
+
+window.onCheckinNumChange = function(key, field, val) {
+  const cfg = _getCheckinDraft();
+  const n = parseInt(val, 10);
+  if(!Number.isFinite(n)) return;
+  cfg[key][field] = n;
+  // cards: keep min ≤ max
+  if(key === 'cards') {
+    if(field === 'min' && cfg.cards.min > cfg.cards.max) cfg.cards.max = cfg.cards.min;
+    if(field === 'max' && cfg.cards.max < cfg.cards.min) cfg.cards.min = cfg.cards.max;
+  }
+  _persistCheckinDraft();
+};
+
+// Lazy-init cards state from localStorage or defaults.
+function _getCardsDraft() {
+  if(S.cards) return S.cards;
+  const stored = safeStorage.get('_cardsDraft');
+  if(stored) { try { S.cards = JSON.parse(stored); return S.cards; } catch(_) {} }
+  S.cards = DEFAULT_CARDS.map(c => ({ ...c }));
+  return S.cards;
+}
+
+function _persistCardsDraft() {
+  safeStorage.set('_cardsDraft', JSON.stringify(S.cards));
+  // If live, push to Supabase sessionConfig.cards
+  if(S.isLive && S.supabaseUrl && S.sessionId) _pushCardsUpdate(S.cards);
+}
+
+async function _pushCardsUpdate(cards) {
+  clearTimeout(_pushCardsUpdate._t);
+  _pushCardsUpdate._t = setTimeout(async () => {
+    try {
+      // Fetch current config, merge cards, PATCH back
+      const res = await fetch(`${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}&select=config`, {
+        headers: { 'apikey': S.supabaseKey, 'Authorization': `Bearer ${S.supabaseKey}` }
+      });
+      const data = await res.json();
+      const cfg = data?.[0]?.config || {};
+      cfg.cards = cards;
+      await fetch(`${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': S.supabaseKey,
+          'Authorization': `Bearer ${S.supabaseKey}`,
+        },
+        body: JSON.stringify({ config: cfg })
+      });
+      addLog('cards', '字卡已同步到學員端', 'system');
+    } catch(e) {
+      addLog('cards', `⚠ 字卡同步失敗：${e.message}`, 'error');
+    }
+  }, 800);
+}
+
+const DIM_LABELS = { A:'A 此刻心理位置', B:'B 工作現實痛點', C:'C 期待與擔心' };
+const DIM_COLORS = { A:'var(--green)', B:'var(--amber)', C:'var(--red)' };
 
 function renderCardConfig() {
   const el = document.getElementById('cardConfigList');
-  const dimColors = {A:'var(--green)',B:'var(--amber)',C:'var(--red)'};
-  el.innerHTML = defaultCards.map((c,i) => `
-    <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border)">
-      <span style="font-size:16px">${c.emoji}</span>
-      <div style="flex:1;min-width:0">
-        <input style="width:100%;background:transparent;border:none;color:var(--text);font-family:var(--sans);font-size:12px;font-weight:600" value="${c.word}">
-        <input style="width:100%;background:transparent;border:none;color:var(--text-dim);font-family:var(--sans);font-size:11px" value="${c.sub}">
+  if(!el) return;
+  const cards = _getCardsDraft();
+  const grouped = { A:[], B:[], C:[] };
+  cards.forEach((c, idx) => { (grouped[c.dim] || (grouped[c.dim]=[])).push({ c, idx }); });
+
+  const sections = ['A','B','C'].map(dim => {
+    const items = (grouped[dim] || []).map(({c, idx}) => `
+      <div class="card-row">
+        <input class="card-emoji-in" maxlength="3" value="${_esc(c.emoji)}" oninput="onCardEdit(${idx},'emoji',this.value)">
+        <div class="card-fields">
+          <input class="card-word" placeholder="字" maxlength="8" value="${_esc(c.word)}" oninput="onCardEdit(${idx},'word',this.value)">
+          <input class="card-sub" placeholder="副標" maxlength="16" value="${_esc(c.sub)}" oninput="onCardEdit(${idx},'sub',this.value)">
+          <input class="card-hint" placeholder="AI 角色扮演對象（必填）" maxlength="20" value="${_esc(c.hint||'')}" oninput="onCardEdit(${idx},'hint',this.value)">
+        </div>
+        <button class="card-del" title="刪除此字卡" onclick="onCardDelete(${idx})" aria-label="刪除字卡">✕</button>
       </div>
-      <span style="font-size:9px;font-weight:700;color:${dimColors[c.dim]};width:16px;text-align:center">${c.dim}</span>
-    </div>`).join('');
+    `).join('') || '<div class="card-empty">（此組無字卡）</div>';
+    return `
+      <div class="card-dim-block">
+        <div class="card-dim-head" style="color:${DIM_COLORS[dim]}">${DIM_LABELS[dim]}</div>
+        ${items}
+        <button class="card-add" onclick="onCardAdd('${dim}')">+ 新增 ${dim} 類字卡</button>
+      </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    ${sections}
+    <div class="card-actions">
+      <span class="card-count">共 ${cards.length} 張</span>
+      <button class="card-reset-btn" onclick="onCardsRestore()">↺ 還原預設 12 張</button>
+    </div>`;
 }
 
-function saveCheckinConfig() { showToast('✓ 報到設定已套用'); }
+function _esc(s) { return String(s || '').replace(/"/g, '&quot;'); }
+
+window.onCardEdit = function(idx, field, val) {
+  const cards = _getCardsDraft();
+  if(!cards[idx]) return;
+  cards[idx][field] = val;
+  _persistCardsDraft();
+};
+
+window.onCardAdd = function(dim) {
+  const cards = _getCardsDraft();
+  cards.push({ emoji:'✦', word:'新字卡', sub:'請編輯', dim, hint:'持相反意見的同事' });
+  _persistCardsDraft();
+  renderCardConfig();
+};
+
+window.onCardDelete = function(idx) {
+  const cards = _getCardsDraft();
+  if(cards.length <= 2) { showToast('⚠ 至少保留 2 張字卡', 'warn'); return; }
+  cards.splice(idx, 1);
+  _persistCardsDraft();
+  renderCardConfig();
+};
+
+window.onCardsRestore = function() {
+  if(!confirm('要還原成預設 12 張字卡？你目前的編輯會被覆蓋。')) return;
+  S.cards = DEFAULT_CARDS.map(c => ({ ...c }));
+  _persistCardsDraft();
+  renderCardConfig();
+  showToast('✓ 已還原預設字卡', 'success');
+};
+
+// ══════════════════════════════════════════
+// BRANDING — in-memory draft, written to sessionConfig on session start
+// ══════════════════════════════════════════
+function collectBranding() {
+  return {
+    title:   (document.getElementById('brandingTitle')?.value   || '').trim() || 'WorkshopAI',
+    tagline: (document.getElementById('brandingTagline')?.value || '').trim() || '你的 AI 學習夥伴，從今天開始',
+    host:    (document.getElementById('brandingHost')?.value    || '').trim(),
+  };
+}
+
+function onBrandingChange() {
+  // Persist to localStorage so refresh doesn't wipe instructor's work-in-progress
+  const b = collectBranding();
+  safeStorage.set('_branding', JSON.stringify(b));
+  S.branding = b;
+  // If session is already live, PATCH the config so learners pick up the change
+  if(S.isLive && S.supabaseUrl && S.sessionId) _pushBrandingUpdate(b);
+}
+
+async function _pushBrandingUpdate(branding) {
+  clearTimeout(_pushBrandingUpdate._t);
+  _pushBrandingUpdate._t = setTimeout(async () => {
+    try {
+      await fetch(`${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': S.supabaseKey,
+          'Authorization': `Bearer ${S.supabaseKey}`,
+        },
+        body: JSON.stringify({
+          config: { ...S._serverConfig, branding }
+        })
+      });
+      addLog('branding', '品牌設定已即時同步到學員端', 'system');
+    } catch(e) {
+      addLog('branding', `⚠ 品牌同步失敗：${e.message}`, 'error');
+    }
+  }, 800);
+}
+
+function restoreBranding() {
+  try {
+    const raw = safeStorage.get('_branding');
+    if(!raw) return;
+    const b = JSON.parse(raw);
+    const t = document.getElementById('brandingTitle');
+    const g = document.getElementById('brandingTagline');
+    const h = document.getElementById('brandingHost');
+    if(t && b.title)   t.value = b.title;
+    if(g && b.tagline) g.value = b.tagline;
+    if(h && b.host)    h.value = b.host;
+    S.branding = b;
+  } catch(_) {}
+}
+
+function saveCheckinConfig() {
+  onBrandingChange(); // capture + persist branding
+  showToast('✓ 內容設定已套用', 'success');
+}
 
 function getEnabledTools() {
   return [...document.querySelectorAll('#toolChips .tool-chip.on')]
