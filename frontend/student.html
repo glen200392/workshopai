@@ -69,10 +69,20 @@ body {
   display: flex;
   flex-direction: column;
   background: var(--bg);
-  transition: opacity 0.35s ease, transform 0.35s ease;
+  visibility: visible;
+  transition: opacity 0.35s ease, transform 0.35s ease, visibility 0s;
   z-index: 10;
 }
-.screen.hidden { opacity: 0; pointer-events: none; transform: translateY(12px); }
+/* visibility:hidden makes the whole subtree non-interactive — prevents
+   children with pointer-events:auto (like the tutorial overlay) from
+   escaping the parent and catching input on the active screen. */
+.screen.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  visibility: hidden;
+  transition: opacity 0.35s ease, transform 0.35s ease, visibility 0s 0.35s;
+}
 
 /* ─────────────────────────────
    SCREEN 1: JOIN / ENTRY
