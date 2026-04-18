@@ -828,6 +828,27 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
 <div class="toast" id="toast"></div>
 
+<!-- PUSH MESSAGE MODAL -->
+<div class="modal-overlay" id="pushModal">
+  <div class="modal">
+    <div class="modal-title" id="pushModalTitle">📢 推送訊息給學員</div>
+    <div class="field-group">
+      <label class="field-label">訊息內容（會注入該學員 AI 夥伴的 system prompt）</label>
+      <textarea class="field-textarea" id="pushModalText" rows="4" maxlength="400"
+        placeholder="例：請特別關注這位學員對『飯碗問題』字卡的反應..."
+        oninput="document.getElementById('pushModalCount').textContent=this.value.length"></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+        <span style="font-size:11px;color:var(--text-dim)">按 ⌘/Ctrl + Enter 送出</span>
+        <span style="font-size:11px;color:var(--text-dim)"><span id="pushModalCount">0</span> / 400</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="top-btn btn-ghost" onclick="closePushModal(false)">取消</button>
+      <button class="top-btn btn-start" id="pushModalSend" onclick="closePushModal(true)">送出推送</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODULE MODAL -->
 <div class="modal-overlay" id="moduleModal">
   <div class="modal">
@@ -1780,10 +1801,55 @@ function viewConvo(e, id) {
   selectParticipant(id);
 }
 
+function openPushModal(name) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('pushModal');
+    const textEl  = document.getElementById('pushModalText');
+    const titleEl = document.getElementById('pushModalTitle');
+    const countEl = document.getElementById('pushModalCount');
+    titleEl.textContent = `📢 推送訊息給 ${name}`;
+    textEl.value = '';
+    countEl.textContent = '0';
+    overlay.classList.add('open');
+    setTimeout(() => textEl.focus(), 50);
+
+    // Shortcut: Cmd/Ctrl+Enter submits, Esc cancels
+    const onKey = (ev) => {
+      if((ev.metaKey || ev.ctrlKey) && ev.key === 'Enter') {
+        ev.preventDefault();
+        finish(true);
+      } else if(ev.key === 'Escape') {
+        ev.preventDefault();
+        finish(false);
+      }
+    };
+    const onOverlayClick = (ev) => { if(ev.target === overlay) finish(false); };
+
+    const finish = (ok) => {
+      overlay.classList.remove('open');
+      textEl.removeEventListener('keydown', onKey);
+      overlay.removeEventListener('click', onOverlayClick);
+      window._pushModalResolver = null;
+      resolve(ok ? textEl.value.trim() : null);
+    };
+
+    textEl.addEventListener('keydown', onKey);
+    overlay.addEventListener('click', onOverlayClick);
+    // Button handlers in markup call closePushModal(bool) which forwards here
+    window._pushModalResolver = finish;
+  });
+}
+
+function closePushModal(ok) {
+  if(typeof window._pushModalResolver === 'function') {
+    window._pushModalResolver(!!ok);
+  }
+}
+
 async function pushToUser(e, id) {
   e?.stopPropagation();
   const p = S.participants.find(p => p.id === id);
-  const msg = prompt(`推送訊息給 ${p?.name}（會出現在他的 AI 夥伴對話框）：`);
+  const msg = await openPushModal(p?.name || '學員');
   if(!msg) return;
 
   addLog('push', `推送給 ${p?.name}：${msg}`, 'instructor');
@@ -1905,18 +1971,37 @@ async function resetAllMemory() {
   showToast('↺ 已重置所有記憶');
 }
 
+// Keep filter query + sort key in state so each operation composes with the other.
+S._filterQuery = '';
+S._sortBy = 'joined';
+
 function filterParticipants(q) {
-  const filtered = S.participants.filter(p => p.name.includes(q) || (p.picks||[]).some(pk=>pk.includes(q)));
-  renderParticipants(filtered);
+  S._filterQuery = (q || '').trim();
+  _applyFilterSort();
 }
 
 function sortParticipants(by) {
-  const sorted = [...S.participants].sort((a,b) => {
-    if(by==='messages') return (b.messages?.length||0)-(a.messages?.length||0);
-    if(by==='name') return a.name.localeCompare(b.name);
-    return 0;
+  S._sortBy = by || 'joined';
+  _applyFilterSort();
+}
+
+function _applyFilterSort() {
+  const q = S._filterQuery;
+  let list = S.participants;
+  if(q) {
+    list = list.filter(p =>
+      p.name.includes(q) || (p.picks||[]).some(pk => pk.includes(q))
+    );
+  }
+  list = [...list].sort((a,b) => {
+    switch(S._sortBy) {
+      case 'messages': return (b.messages?.length||0) - (a.messages?.length||0);
+      case 'name':     return a.name.localeCompare(b.name);
+      case 'active':   return (b._lastActiveMs||0) - (a._lastActiveMs||0);
+      default:         return (a._joinedMs||0) - (b._joinedMs||0);
+    }
   });
-  renderParticipants(sorted);
+  renderParticipants(list);
 }
 
 // ══════════════════════════════════════════
