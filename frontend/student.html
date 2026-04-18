@@ -331,6 +331,21 @@ body {
   display: none; align-items: center; justify-content: center;
 }
 .word-card.selected .card-check { display: flex; }
+.word-card.swapping-out {
+  animation: card-swap-out 0.55s cubic-bezier(0.55, 0, 0.1, 1) forwards;
+}
+.word-card.swap-flash {
+  animation: card-swap-flash 0.45s ease-out;
+}
+@keyframes card-swap-out {
+  0%   { transform: scale(1);    border-color: var(--accent); background: rgba(45,90,61,0.07); }
+  40%  { transform: scale(0.92); border-color: var(--amber); background: rgba(193,127,36,0.12); }
+  100% { transform: scale(1);    border-color: var(--border); background: var(--surface); }
+}
+@keyframes card-swap-flash {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(45,90,61,0); }
+  50%      { box-shadow: 0 0 0 4px rgba(45,90,61,0.25); }
+}
 .card-emoji { font-size: clamp(20px,6vw,26px); line-height: 1; }
 .card-word {
   font-size: clamp(11px,3.2vw,13px);
@@ -694,11 +709,7 @@ body {
 }
 
 /* ── SEND LOCK (prevent double-send) ── */
-.send-btn.locked {
-  background: var(--ai-surface);
-  color: var(--ai-dim);
-  cursor: not-allowed;
-}
+/* .send-btn.locked styles defined below alongside :disabled */
 
 /* ── MOOD BTN enhanced ── */
 .mood-btn {
@@ -789,7 +800,27 @@ body {
   flex-shrink: 0;
 }
 .send-btn:active { transform: scale(0.9); }
-.send-btn:disabled { opacity: 0.3; }
+.send-btn:disabled {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.45);
+  cursor: not-allowed;
+  opacity: 1;
+}
+.send-btn.locked {
+  background: rgba(45,90,61,0.55);
+  color: transparent;
+  cursor: progress;
+  position: relative;
+  opacity: 1;
+}
+.send-btn.locked::after {
+  content: '';
+  position: absolute; inset: 8px;
+  border: 2px solid rgba(255,255,255,0.25);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
 
 /* ── TUTORIAL OVERLAY ── */
 .tutorial-overlay {
@@ -913,22 +944,33 @@ body {
 .tutorial-fab {
   position: absolute;
   bottom: calc(var(--sab) + 140px);
-  right: 16px;
-  width: 40px; height: 40px;
-  border-radius: 50%;
-  background: rgba(90,173,120,0.2);
-  border: 1px solid rgba(90,173,120,0.4);
+  right: 14px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 18px;
+  background: rgba(90,173,120,0.18);
+  border: 1px solid rgba(90,173,120,0.45);
   color: var(--ai-accent);
-  font-size: 16px;
+  font-size: 13px;
+  font-weight: 600;
   display: none;
-  align-items: center; justify-content: center;
+  align-items: center; gap: 6px;
   cursor: pointer;
   z-index: 100;
   transition: all 0.2s;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  white-space: nowrap;
+  font-family: var(--sans, system-ui);
 }
-.tutorial-fab.visible { display: flex; }
-.tutorial-fab:active { transform: scale(0.9); }
+.tutorial-fab.visible { display: inline-flex; animation: tutorial-fab-attention 1.6s ease-out 1; }
+.tutorial-fab:active { transform: scale(0.94); }
+.tutorial-fab:hover  { background: rgba(90,173,120,0.28); }
+.tutorial-fab .fab-icon { font-size: 14px; }
+@keyframes tutorial-fab-attention {
+  0%   { transform: translateY(8px) scale(0.85); opacity: 0; }
+  60%  { transform: translateY(0) scale(1.06);   opacity: 1; box-shadow: 0 0 0 8px rgba(90,173,120,0.18); }
+  100% { transform: translateY(0) scale(1);      opacity: 1; box-shadow: 0 4px 14px rgba(0,0,0,0.35); }
+}
 
 /* ── SVG ARTIFACT ── */
 .artifact-svg-body {
@@ -959,11 +1001,136 @@ body {
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.gen-stage-row {
+  display: flex;
+  gap: 14px;
+  font-size: 11px;
+  color: var(--ai-dim);
+  font-family: var(--mono, monospace);
+  letter-spacing: 0.02em;
+  margin-top: 6px;
+}
+.gen-stage { opacity: 0.4; transition: opacity 0.3s, color 0.3s; }
+.gen-stage.done {
+  opacity: 1;
+  color: var(--ai-accent, #5aad78);
+}
+.gen-stage.active {
+  opacity: 1;
+  color: #eae4cd;
+  animation: stage-pulse 1.2s ease-in-out infinite;
+}
+@keyframes stage-pulse {
+  0%, 100% { opacity: 0.7; }
+  50%      { opacity: 1; }
+}
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(24px + var(--sab));
+  transform: translate(-50%, 20px);
+  background: rgba(20,30,24,0.96);
+  color: #f2f2ef;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  max-width: calc(100vw - 32px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.08);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-align: center;
+  line-height: 1.45;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.success { background: #1f3a2a; border-color: rgba(122,200,148,0.3); }
+.toast.warn    { background: #3a2d14; border-color: rgba(232,168,58,0.35); }
+.toast.error   { background: #3a1e18; border-color: rgba(232,120,100,0.35); }
+
+/* ── CONNECTION BANNER (realtime drop / session ended) ── */
+.connection-banner {
+  position: fixed;
+  left: 50%;
+  top: calc(var(--sat, 0px) + 48px);
+  transform: translate(-50%, -12px);
+  background: rgba(60,40,10,0.96);
+  color: #f3d99a;
+  border: 1px solid rgba(232,168,58,0.35);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9997;
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width: calc(100vw - 32px);
+  text-align: center;
+}
+.connection-banner.show { opacity: 1; transform: translate(-50%, 0); }
+.connection-banner[data-tone="info"] { background: rgba(30,50,40,0.96); color: #bde5c8; border-color: rgba(122,200,148,0.35); }
+.connection-banner[data-tone="error"] { background: rgba(60,25,20,0.96); color: #f3b0a0; border-color: rgba(232,120,100,0.4); }
+
+/* ── DEMO BADGE (persistent indicator for demoMode) ── */
+.demo-badge {
+  position: fixed;
+  top: calc(10px + var(--sat, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #c17f24, #e8a83a);
+  color: #1a1410;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  box-shadow: 0 4px 14px rgba(193,127,36,0.35);
+  z-index: 9998;
+  display: none;
+  cursor: help;
+  user-select: none;
+}
+.demo-badge.show { display: inline-block; }
+
+/* ── MESSAGE RETRY ── */
+.msg-row.user { position: relative; }
+.msg-row.pending .msg-bubble { opacity: 0.55; }
+.msg-send-status {
+  font-size: 11px;
+  color: var(--ai-dim);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.msg-send-status.failed { color: #e88270; }
+.retry-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(232,130,112,0.4);
+  color: #e88270;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.retry-btn:hover, .retry-btn:active { background: rgba(232,130,112,0.15); }
 </style>
 </head>
 <body>
 
 <div class="toast" id="toast"></div>
+<div class="demo-badge" id="demoBadge" title="目前使用本機示範資料，不會連線後端">🎮 示範模式</div>
 
 <!-- ═══════════════════════════════
      SCREEN 1: JOIN
@@ -1011,7 +1178,7 @@ body {
   </div>
 
   <div class="step-nav">
-    <button class="nav-back" id="navBack" onclick="prevStep()">←</button>
+    <button class="nav-back" id="navBack" onclick="prevStep()" aria-label="回到上一步">←</button>
     <button class="nav-next" id="navNext" onclick="nextStep()">繼續</button>
   </div>
 </div>
@@ -1078,7 +1245,9 @@ body {
   </div>
 
   <!-- FAB: re-open tutorial -->
-  <div class="tutorial-fab" id="tutorialFab" onclick="reopenTutorial()" title="查看使用說明">?</div>
+  <div class="tutorial-fab" id="tutorialFab" onclick="reopenTutorial()" title="查看使用說明" role="button" aria-label="重新查看使用說明">
+    <span class="fab-icon">💡</span><span>使用說明</span>
+  </div>
 
   <div class="session-bar">
     <div class="session-companion">
@@ -1115,7 +1284,7 @@ body {
         rows="1"
         onkeydown="handleKey(event)"
         oninput="autoResize(this)"></textarea>
-      <button class="send-btn" onclick="sendMessage()" id="sendBtn">↑</button>
+      <button class="send-btn" onclick="sendMessage()" id="sendBtn" aria-label="送出訊息" title="送出（Enter）">↑</button>
     </div>
   </div>
 
@@ -1130,7 +1299,7 @@ body {
         rows="1"
         onkeydown="handleNoteKey(event)"
         oninput="autoResize(this)"></textarea>
-      <button class="send-btn" onclick="saveNote()">↑</button>
+      <button class="send-btn" onclick="saveNote()" aria-label="儲存筆記" title="儲存（Enter）">↑</button>
     </div>
   </div>
 </div>
@@ -1153,6 +1322,16 @@ const CONFIG = {
   // 模型選擇（由講師端 session config 覆蓋）
   claudeModel:  'claude-sonnet-4-20250514',
   geminiModel:  'gemini-2.5-flash-image',
+};
+
+// ══════════════════════════════════════════
+// SAFE STORAGE — Safari private mode, quota, sandbox all throw on localStorage.
+// Wrap every access so error-recovery code doesn't die in those envs.
+// ══════════════════════════════════════════
+const safeStorage = {
+  get(k) { try { return localStorage.getItem(k); } catch(_) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); return true; } catch(_) { return false; } },
+  remove(k) { try { localStorage.removeItem(k); } catch(_) {} },
 };
 
 // ══════════════════════════════════════════
@@ -1218,14 +1397,16 @@ async function joinSession() {
   btn.textContent = '驗證中...';
 
   // 恢復上次的 session（刷新頁面後保持身份）
-  const savedSession = localStorage.getItem('_sid_' + code);
-  const savedParticipant = localStorage.getItem('_pid_' + code);
+  const savedSession = safeStorage.get('_sid_' + code);
+  const savedParticipant = safeStorage.get('_pid_' + code);
 
   if(!CONFIG.supabaseUrl || CONFIG.demoMode) {
     // Demo 模式：不查資料庫
     S.joinCode = code;
     S.sessionId = 'demo-' + code;
     if(savedParticipant) S.participantId = savedParticipant;
+    CONFIG.demoMode = true;
+    setDemoBadge(true);
     btn.disabled = false;
     btn.textContent = '進入工作坊';
     renderCheckinStep(1);
@@ -1234,20 +1415,29 @@ async function joinSession() {
   }
 
   try {
+    // 先查任何狀態的 session，再依 status 分類錯誤
     const res = await fetch(
-      `${CONFIG.supabaseUrl}/rest/v1/sessions?join_code=eq.${code}&status=in.(active,waiting)&select=id,config`,
+      `${CONFIG.supabaseUrl}/rest/v1/sessions?join_code=eq.${code}&select=id,config,status`,
       { headers: { 'apikey': CONFIG.supabaseKey, 'Authorization': `Bearer ${CONFIG.supabaseKey}` }}
     );
+    if(!res.ok) throw new Error(`HTTP_${res.status}`);
     const data = await res.json();
 
     if(!Array.isArray(data) || !data.length) {
-      showToast('找不到此代碼，請確認後再試');
+      showToast('❌ 找不到此代碼，請確認是否輸入正確', 'error', 3200);
       btn.disabled = false;
       btn.textContent = '進入工作坊';
       return;
     }
 
     const session = data[0];
+    if(session.status && !['active','waiting'].includes(session.status)) {
+      showToast('⚠ 此工作坊已結束，請聯絡講師', 'warn', 3200);
+      btn.disabled = false;
+      btn.textContent = '進入工作坊';
+      return;
+    }
+
     S.sessionId    = session.id;
     S.joinCode     = code;
     S.sessionConfig = session.config || {};
@@ -1257,6 +1447,7 @@ async function joinSession() {
     if(proxyUrl) {
       CONFIG.proxyUrl  = proxyUrl;
       CONFIG.demoMode  = false;
+      setDemoBadge(false);
     }
 
     // 若已有上次的 participantId，嘗試恢復（避免重複報到）
@@ -1271,10 +1462,13 @@ async function joinSession() {
     showScreen('screen-checkin');
 
   } catch(e) {
-    showToast('連線失敗，進入示範模式');
+    // 網路或 API 失敗：明確告知並詢問是否使用示範模式
+    console.warn('joinSession error:', e);
+    showToast('⚠ 連線失敗，已切換為示範模式（講師端未連線）', 'warn', 3500);
     S.joinCode = code;
     S.sessionId = 'demo-' + code;
     CONFIG.demoMode = true;
+    setDemoBadge(true);
     renderCheckinStep(1);
     showScreen('screen-checkin');
   } finally {
@@ -1286,6 +1480,8 @@ async function joinSession() {
 function joinDemo() {
   S.joinCode = 'DEMO01';
   S.sessionId = 'demo-session';
+  CONFIG.demoMode = true;
+  setDemoBadge(true);
   renderCheckinStep(1);
   showScreen('screen-checkin');
 }
@@ -1316,12 +1512,12 @@ function renderCheckinStep(step) {
     body.innerHTML = `
       <div class="step-tag">第一步</div>
       <div class="step-question">你叫什麼名字？</div>
-      <input class="name-field" id="nameField" maxlength="12"
+      <input class="name-field" id="nameField" maxlength="20"
         placeholder="輸入名字或暱稱"
         value="${S.name}"
         oninput="S.name=this.value.trim()"
         autocomplete="off">
-      <p style="font-size:12px;color:var(--text-dim);text-align:center;margin-top:-8px">最多 12 字，會顯示在大螢幕</p>`;
+      <p style="font-size:12px;color:var(--text-dim);text-align:center;margin-top:-8px">最多 20 字，會顯示在大螢幕</p>`;
     setTimeout(() => document.getElementById('nameField')?.focus(), 100);
   }
 
@@ -1382,16 +1578,26 @@ function toggleCard(el, word) {
   if(el.classList.contains('selected')) {
     el.classList.remove('selected');
     S.picks = S.picks.filter(p => p !== word);
-  } else {
-    if(S.picks.length >= 2) {
-      // Deselect oldest pick
-      const oldWord = S.picks[0];
-      document.querySelector(`.word-card[data-word="${oldWord}"]`)?.classList.remove('selected');
-      S.picks.shift();
-    }
-    el.classList.add('selected');
-    S.picks.push(word);
+    return;
   }
+
+  if(S.picks.length >= 2) {
+    // Make the displacement visible: animate the oldest pick out before taking its slot
+    const oldWord = S.picks.shift();
+    const oldEl = document.querySelector(`.word-card[data-word="${oldWord}"]`);
+    if(oldEl) {
+      oldEl.classList.add('swapping-out');
+      setTimeout(() => {
+        oldEl.classList.remove('selected', 'swapping-out');
+      }, 540);
+    }
+    // Micro-pulse on the newcomer so the swap reads as "one out, one in"
+    el.classList.add('swap-flash');
+    setTimeout(() => el.classList.remove('swap-flash'), 460);
+  }
+
+  el.classList.add('selected');
+  S.picks.push(word);
 }
 
 function selectMood(el, label) {
@@ -1418,21 +1624,47 @@ function nextStep() {
 }
 
 async function completeCheckin() {
-  const roleHint = S.cards.find(c => S.picks.includes(c.word))?.hint || '一般同事';
-  S.memory = {
-    profile: { name: S.name, picks: S.picks, mood: S.mood, roleHint },
-    learning_state: { visited_modules: [], key_insights: [], unresolved_questions: [] },
-    conversation_summary: '',
-    last_updated: new Date().toISOString(),
-  };
+  // Double-submit guard: reject re-entry if a submit is already in flight
+  if(S._checkinSubmitting) return;
+  S._checkinSubmitting = true;
+  const navBtn = document.getElementById('navNext');
+  if(navBtn) { navBtn.disabled = true; navBtn.textContent = '報到中...'; }
 
-  // 寫入 Supabase（若已設定）
-  if(CONFIG.supabaseUrl && !CONFIG.demoMode) {
-    await saveParticipant();
+  try {
+    const roleHint = S.cards.find(c => S.picks.includes(c.word))?.hint || '一般同事';
+    S.memory = {
+      profile: { name: S.name, picks: S.picks, mood: S.mood, roleHint },
+      learning_state: { visited_modules: [], key_insights: [], unresolved_questions: [] },
+      conversation_summary: '',
+      last_updated: new Date().toISOString(),
+    };
+
+    // 寫入 Supabase（若已設定）— 失敗時明確告訴學員資料沒存到雲端
+    let saveOk = true;
+    if(CONFIG.supabaseUrl && !CONFIG.demoMode) {
+      saveOk = await saveParticipant();
+    }
+
+    initSession();
+    showScreen('screen-session');
+
+    setTimeout(() => {
+      if(CONFIG.demoMode) {
+        showToast('🎮 示範模式：所有對話僅存於本機', 'warn', 3200);
+      } else if(!saveOk) {
+        showToast('⚠ 報到到雲端失敗，對話暫存於本機', 'warn', 4000);
+      } else {
+        showToast('✓ 已連線，AI 夥伴準備好了', 'success', 2000);
+      }
+    }, 400);
+  } finally {
+    S._checkinSubmitting = false;
+    // navBtn remains disabled because screen has switched; if user hit back we re-enable
+    if(navBtn && document.getElementById('screen-checkin')?.classList.contains('hidden') === false) {
+      navBtn.disabled = false;
+      navBtn.textContent = '完成報到 →';
+    }
   }
-
-  initSession();
-  showScreen('screen-session');
 }
 
 // ══════════════════════════════════════════
@@ -1476,7 +1708,7 @@ function initSession() {
   _updateRealtimeBadge(CONFIG.demoMode ? 'demo' : 'connecting');
 
   // Show tutorial on first visit（AI 開啟時才顯示）
-  if(S.features.ai_enabled && localStorage.getItem('_tutorialSeen')) {
+  if(S.features.ai_enabled && safeStorage.get('_tutorialSeen')) {
     document.getElementById('tutorialOverlay').style.display = 'none';
     document.getElementById('tutorialFab').classList.add('visible');
   }
@@ -1640,44 +1872,132 @@ function triggerAction(type) {
 // ── SEND MESSAGE ──
 async function sendMessage() {
   if(!S.features?.ai_enabled) {
-    showToast('此工作坊尚未開啟 AI 對話功能');
+    showToast('此工作坊尚未開啟 AI 對話功能', 'warn');
     return;
   }
   const input = document.getElementById('chatInput');
   const text = input.value.trim();
   if(!text || S.isThinking) return;
 
-  // Send lock — prevent double send
+  input.value = '';
+  autoResize(input);
+  addMessage('user', text);
+  const userMsgId = S.messages[S.messages.length - 1]?.id;
+
+  await _runSend(text, userMsgId);
+}
+
+// Separate runner so retry can reuse without re-adding the user bubble.
+async function _runSend(text, userMsgId) {
   S.isThinking = true;
   const sendBtn = document.getElementById('sendBtn');
   sendBtn.disabled = true;
   sendBtn.classList.add('locked');
-  input.value = '';
-  autoResize(input);
 
-  addMessage('user', text);
-
-  // Log to Supabase
-  if(CONFIG.supabaseUrl) logConversation('user', text);
-
-  document.getElementById('companionState').textContent = '思考中...';
-
-  const thinkingEl = showThinking();
-
-  // Detect if user wants visualisation
-  const wantsVisual = /視覺化|畫出|圖片|圖像|mind.*map|心智圖|示意圖|概念圖|幫我畫|畫一個/.test(text);
-
-  if(wantsVisual) {
-    await generateVisual(text, thinkingEl);
-  } else {
-    await chatWithAI(text, thinkingEl);
+  // Mark user bubble as pending (dims it until reply arrives or fails)
+  const userRow = userMsgId ? document.getElementById(`msg-${userMsgId}`) : null;
+  if(userRow) {
+    userRow.classList.add('pending');
+    userRow.classList.remove('failed');
+    const oldStatus = userRow.querySelector('.msg-send-status');
+    if(oldStatus) oldStatus.remove();
   }
 
-  S.isThinking = false;
-  sendBtn.disabled = false;
-  sendBtn.classList.remove('locked');
-  document.getElementById('companionState').textContent = '已連線';
+  // Log user message to Supabase (once, on first attempt)
+  if(CONFIG.supabaseUrl && !userRow?.dataset.logged) {
+    logConversation('user', text);
+    if(userRow) userRow.dataset.logged = '1';
+  }
+
+  document.getElementById('companionState').textContent = '思考中...';
+  const thinkingEl = showThinking();
+
+  const wantsVisual = /視覺化|畫出|圖片|圖像|mind.*map|心智圖|示意圖|概念圖|幫我畫|畫一個/.test(text);
+
+  let failed = false;
+  try {
+    if(wantsVisual) {
+      failed = await generateVisual(text, thinkingEl) === false;
+    } else {
+      failed = await chatWithAI(text, thinkingEl) === false;
+    }
+  } finally {
+    S.isThinking = false;
+    sendBtn.disabled = false;
+    sendBtn.classList.remove('locked');
+    document.getElementById('companionState').textContent = '已連線';
+
+    if(userRow) {
+      userRow.classList.remove('pending');
+      if(failed) {
+        userRow.classList.add('failed');
+        _showRetryAffordance(userRow, text, userMsgId);
+      }
+    }
+  }
 }
+
+function _showRetryAffordance(userRow, text, userMsgId) {
+  const bubbleWrap = userRow.querySelector('div:last-child') || userRow;
+  const status = document.createElement('div');
+  status.className = 'msg-send-status failed';
+
+  // If the last error was 503 / service busy, auto-retry once with a visible countdown.
+  // First 503 per message → auto-countdown. Subsequent failures → manual retry only.
+  const was503 = S._lastChatError?.code === 503;
+  const alreadyAutoRetried = userRow.dataset.autoRetried === '1';
+
+  if(was503 && !alreadyAutoRetried) {
+    userRow.dataset.autoRetried = '1';
+    const countdownFrom = 10;
+    status.innerHTML = `
+      <span>⚠ AI 服務忙碌，<span class="retry-countdown">${countdownFrom}</span> 秒後自動重試</span>
+      <button class="retry-btn" onclick="_cancelAutoRetry('${userMsgId}')">取消</button>`;
+    bubbleWrap.appendChild(status);
+
+    let remaining = countdownFrom;
+    const countdownEl = status.querySelector('.retry-countdown');
+    const tick = setInterval(() => {
+      remaining -= 1;
+      if(countdownEl) countdownEl.textContent = remaining;
+      if(remaining <= 0) {
+        clearInterval(tick);
+        if(!userRow.dataset.cancelled) {
+          window._retrySend(userMsgId);
+        }
+      }
+    }, 1000);
+    userRow._autoRetryTimer = tick;
+  } else {
+    status.innerHTML = `<span>⚠ 送出失敗</span>
+      <button class="retry-btn" onclick="_retrySend('${userMsgId}')">重新送出</button>`;
+    bubbleWrap.appendChild(status);
+  }
+}
+
+window._cancelAutoRetry = function(id) {
+  const row = document.getElementById(`msg-${id}`);
+  if(!row) return;
+  row.dataset.cancelled = '1';
+  if(row._autoRetryTimer) clearInterval(row._autoRetryTimer);
+  // Swap in a manual-retry affordance
+  const status = row.querySelector('.msg-send-status');
+  if(status) {
+    status.innerHTML = `<span>⚠ 送出失敗</span>
+      <button class="retry-btn" onclick="_retrySend('${id}')">重新送出</button>`;
+  }
+};
+
+window._retrySend = function(id, btn) {
+  const row = document.getElementById(`msg-${id}`);
+  if(!row) return;
+  const msg = S.messages.find(m => String(m.id) === String(id));
+  if(!msg) return;
+  const status = row.querySelector('.msg-send-status');
+  if(status) status.remove();
+  row.classList.remove('failed');
+  _runSend(msg.content, msg.id);
+};
 
 function showThinking() {
   const area = document.getElementById('chatArea');
@@ -1706,6 +2026,34 @@ function showThinking() {
 // ── 記錄模式 note 輸入 ──
 function handleNoteKey(e) {
   if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveNote(); }
+}
+
+// Chat textarea: Enter submits, Shift+Enter inserts newline
+function handleKey(e) {
+  if(e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function dismissTutorial() {
+  const overlay = document.getElementById('tutorialOverlay');
+  const fab = document.getElementById('tutorialFab');
+  if(overlay) overlay.style.display = 'none';
+  if(fab) fab.classList.add('visible');
+  safeStorage.set('_tutorialSeen', '1');
+}
+
+function reopenTutorial() {
+  const overlay = document.getElementById('tutorialOverlay');
+  const fab = document.getElementById('tutorialFab');
+  if(overlay) overlay.style.display = '';
+  if(fab) fab.classList.remove('visible');
 }
 
 async function saveNote() {
@@ -1834,19 +2182,24 @@ async function chatWithAI(userText, thinkingEl) {
 
     updateMemory('ai', reply);
     if(CONFIG.supabaseUrl) logConversation('assistant', reply);
+    S._lastChatError = null;
+    return true;
 
   } catch(e) {
     thinkingEl.remove();
-    // Graceful error with retry hint
-    const errMsg = e.message?.includes('503')
-      ? 'AI 服務暫時忙碌，請稍等 10 秒後再試。'
-      : '連線出現問題，請重新整理後再試。';
+    document.getElementById('stream-bubble')?.remove();
+    const is503 = /503|overload|busy|rate.*limit/i.test(e.message || '');
+    S._lastChatError = { code: is503 ? 503 : 0, message: e.message || '' };
+    const hint = is503
+      ? 'AI 服務暫時忙碌，即將自動重試。'
+      : '連線出現問題，可點「重新送出」再試一次。';
     const errDiv = document.createElement('div');
     errDiv.className = 'msg-row ai';
-    errDiv.innerHTML = `<div class="msg-avatar">🤖</div><div style="flex:1;min-width:0"><div class="msg-bubble error">${errMsg}</div></div>`;
+    errDiv.innerHTML = `<div class="msg-avatar">🤖</div><div style="flex:1;min-width:0"><div class="msg-bubble error">${hint}</div></div>`;
     document.getElementById('chatArea').appendChild(errDiv);
     scrollChat();
     console.error('chatWithAI error:', e);
+    return false;
   }
 }
 
@@ -1862,23 +2215,61 @@ async function generateVisual(userPrompt, thinkingEl) {
   const placeholderId = 'artifact-' + Date.now();
   thinkingEl.remove();
 
-  // 即時顯示生成中卡片
+  // 即時顯示生成中卡片（含階段式進度）
   const area = document.getElementById('chatArea');
   const cardDiv = document.createElement('div');
   cardDiv.id = placeholderId;
   cardDiv.innerHTML = `
     <div class="artifact-card">
       <div class="artifact-header">
-        <div class="artifact-type-badge">🎨 視覺化生成中</div>
-        <div class="artifact-label">AI 正在為你繪製概念圖...</div>
+        <div class="artifact-type-badge" id="${placeholderId}-badge">🎨 視覺化生成中</div>
+        <div class="artifact-label" id="${placeholderId}-label">理解你的想法中...</div>
       </div>
       <div class="artifact-generating">
         <div class="gen-spinner"></div>
-        <div style="font-size:12px;color:var(--ai-dim);margin-top:4px">稍等一下</div>
+        <div class="gen-stage-row">
+          <span class="gen-stage done" data-stage="1">① 理解</span>
+          <span class="gen-stage active" data-stage="2">② 構圖</span>
+          <span class="gen-stage" data-stage="3">③ 繪製</span>
+        </div>
+        <div class="gen-elapsed" id="${placeholderId}-elapsed" style="font-size:11px;color:var(--ai-dim);margin-top:6px">約需 3-10 秒</div>
       </div>
     </div>`;
   area.appendChild(cardDiv);
   scrollChat();
+
+  // 階段式進度：用計時器推進，給使用者「有在做事」的感知
+  const t0 = Date.now();
+  const stageTimers = [];
+  const labelEl   = () => document.getElementById(`${placeholderId}-label`);
+  const elapsedEl = () => document.getElementById(`${placeholderId}-elapsed`);
+  const setStage = (n, text) => {
+    const card = document.getElementById(placeholderId);
+    if(!card) return;
+    card.querySelectorAll('.gen-stage').forEach(el => {
+      const s = +el.dataset.stage;
+      el.classList.toggle('done', s < n);
+      el.classList.toggle('active', s === n);
+    });
+    const lbl = labelEl();
+    if(lbl) lbl.textContent = text;
+  };
+  stageTimers.push(setTimeout(() => setStage(3, 'AI 正在繪製...'), 1800));
+  stageTimers.push(setTimeout(() => {
+    const e = elapsedEl();
+    if(e) e.textContent = '還在處理，請再等一下';
+  }, 6000));
+  // 每秒更新經過時間
+  const tick = setInterval(() => {
+    const e = elapsedEl();
+    if(!e) return clearInterval(tick);
+    const s = Math.round((Date.now() - t0) / 1000);
+    if(s >= 3) e.textContent = `已等待 ${s} 秒`;
+  }, 1000);
+  const clearStageUi = () => {
+    stageTimers.forEach(clearTimeout);
+    clearInterval(tick);
+  };
 
   // 對話脈絡（傳給後端，讓 AI 知道要視覺化什麼）
   const convoContext = S.messages
@@ -1896,11 +2287,12 @@ async function generateVisual(userPrompt, thinkingEl) {
       picks: S.picks,
       mood: S.mood,
     });
+    clearStageUi();
 
     if(result.demo) {
       // Demo mode：用 Claude SVG 直接生成（示範用，實際部署走 proxy）
       await generateSvgDemo(userPrompt, convoContext, existing);
-      return;
+      return true;
     }
 
     if(result.type === 'image' && result.base64) {
@@ -1936,45 +2328,57 @@ async function generateVisual(userPrompt, thinkingEl) {
 
     scrollChat();
     addMessage('ai', result.followUp || '這是根據我們討論生成的視覺化。你覺得有抓到你想整理的概念嗎？');
+    return true;
 
   } catch(e) {
+    clearStageUi();
     if(existing) existing.innerHTML = '';
-    addMessage('ai', '視覺化暫時無法使用，請繼續文字討論，稍後再試。');
+    addMessage('ai', '視覺化暫時無法使用，可點下方「重新送出」再試一次。');
     console.error('generateVisual error:', e);
+    return false;
   }
 }
 
 // Demo mode 用：直接呼叫 Claude 生成 SVG（僅用於示範，不在生產環境暴露 key）
 async function generateSvgDemo(userPrompt, convoContext, placeholderEl) {
-  // 示範模式沒有 key，顯示靜態範例 SVG
+  // 示範模式沒有 key，用學員實際輸入做一張半動態概念圖
   await new Promise(r => setTimeout(r, 1200));
-  const demoSvg = `<svg viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg" style="background:#1a2820">
-    <text x="200" y="28" text-anchor="middle" fill="#5aad78" font-size="14" font-family="sans-serif" font-weight="bold">AI 轉型概念圖（示範）</text>
-    <rect x="140" y="50" width="120" height="36" rx="8" fill="none" stroke="#5aad78" stroke-width="1.5"/>
-    <text x="200" y="73" text-anchor="middle" fill="#d8eedf" font-size="12" font-family="sans-serif">你的字卡選擇</text>
-    <line x1="200" y1="86" x2="120" y2="130" stroke="#7aaa88" stroke-width="1" marker-end="url(#arr)"/>
-    <line x1="200" y1="86" x2="280" y2="130" stroke="#7aaa88" stroke-width="1" marker-end="url(#arr)"/>
-    <rect x="60" y="130" width="120" height="36" rx="8" fill="none" stroke="#c17f24" stroke-width="1.5"/>
-    <text x="120" y="153" text-anchor="middle" fill="#d8eedf" font-size="12" font-family="sans-serif">工作現實痛點</text>
-    <rect x="220" y="130" width="120" height="36" rx="8" fill="none" stroke="#4d9fff" stroke-width="1.5"/>
-    <text x="280" y="153" text-anchor="middle" fill="#d8eedf" font-size="12" font-family="sans-serif">期待與擔心</text>
-    <line x1="120" y1="166" x2="200" y2="210" stroke="#7aaa88" stroke-width="1" marker-end="url(#arr)"/>
-    <line x1="280" y1="166" x2="200" y2="210" stroke="#7aaa88" stroke-width="1" marker-end="url(#arr)"/>
-    <rect x="140" y="210" width="120" height="36" rx="8" fill="#2d5a3d" stroke="#5aad78" stroke-width="1.5"/>
-    <text x="200" y="233" text-anchor="middle" fill="#5aad78" font-size="12" font-family="sans-serif" font-weight="bold">行動方向</text>
+
+  // Sanitize user text for SVG
+  const esc = (s) => String(s || '').replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+  const title = esc(userPrompt.length > 24 ? userPrompt.slice(0,22) + '…' : userPrompt || 'AI 轉型概念圖');
+  const p0 = esc(S.picks[0] || '觀望中');
+  const p1 = esc(S.picks[1] || '工作現實');
+  const mood = esc(S.mood || '思考中');
+
+  const demoSvg = `<svg viewBox="0 0 400 280" xmlns="http://www.w3.org/2000/svg" style="background:#1a2820">
     <defs><marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#7aaa88"/></marker></defs>
+    <text x="200" y="24" text-anchor="middle" fill="#5aad78" font-size="13" font-family="sans-serif" font-weight="bold">${title}</text>
+    <text x="200" y="42" text-anchor="middle" fill="#7a9a88" font-size="10" font-family="sans-serif">今天的能量：${mood}</text>
+    <rect x="140" y="58" width="120" height="36" rx="8" fill="none" stroke="#5aad78" stroke-width="1.5"/>
+    <text x="200" y="81" text-anchor="middle" fill="#d8eedf" font-size="12" font-family="sans-serif">${p0}</text>
+    <line x1="200" y1="94" x2="120" y2="140" stroke="#7aaa88" stroke-width="1" marker-end="url(#arr)"/>
+    <line x1="200" y1="94" x2="280" y2="140" stroke="#7aaa88" stroke-width="1" marker-end="url(#arr)"/>
+    <rect x="60" y="140" width="120" height="36" rx="8" fill="none" stroke="#c17f24" stroke-width="1.5"/>
+    <text x="120" y="163" text-anchor="middle" fill="#d8eedf" font-size="12" font-family="sans-serif">${p1}</text>
+    <rect x="220" y="140" width="120" height="36" rx="8" fill="none" stroke="#4d9fff" stroke-width="1.5"/>
+    <text x="280" y="163" text-anchor="middle" fill="#d8eedf" font-size="12" font-family="sans-serif">期待與擔心</text>
+    <line x1="120" y1="176" x2="200" y2="220" stroke="#7aaa88" stroke-width="1" marker-end="url(#arr)"/>
+    <line x1="280" y1="176" x2="200" y2="220" stroke="#7aaa88" stroke-width="1" marker-end="url(#arr)"/>
+    <rect x="140" y="220" width="120" height="36" rx="8" fill="#2d5a3d" stroke="#5aad78" stroke-width="1.5"/>
+    <text x="200" y="243" text-anchor="middle" fill="#5aad78" font-size="12" font-family="sans-serif" font-weight="bold">你的行動方向</text>
   </svg>`;
 
   if(placeholderEl) placeholderEl.innerHTML = `
     <div class="artifact-card">
       <div class="artifact-header">
         <div class="artifact-type-badge">📐 概念圖（示範）</div>
-        <div class="artifact-label">示範模式 — 實際部署後由 AI 動態生成</div>
+        <div class="artifact-label">${esc(userPrompt).slice(0,40)}</div>
       </div>
       <div class="artifact-svg-body">${demoSvg}</div>
     </div>`;
   scrollChat();
-  addMessage('ai', '這是示範模式的靜態概念圖。連接後端後，AI 會根據你的實際對話動態生成客製化的視覺化圖表。');
+  addMessage('ai', '這是示範模式用你的輸入即時組出的概念圖。連接後端後，AI 會根據完整對話動態繪製客製化視覺化。');
 }
 // ── CLAUDE SVG 概念圖生成（Nano Banana 的 fallback）─────────
 function buildSystemPrompt() {
@@ -2012,12 +2416,17 @@ function updateMemory(role, content) {
 }
 
 function getDemoResponse(text) {
+  const hasPicks = Array.isArray(S.picks) && S.picks.length > 0;
+  const pickRef = hasPicks
+    ? `你選了「${S.picks[0]}」，這個選擇很誠實。`
+    : `從你剛剛說的來看，`;
+
   const responses = [
-    `你選了「${S.picks[0] || '觀望中'}」，這個選擇很誠實。我想問你：在你的工作裡，有沒有一件事情，你其實很想要有 AI 幫你做，但又說不太出口？`,
+    `${pickRef}我想問你：在你的工作裡，有沒有一件事情，你其實很想要有 AI 幫你做，但又說不太出口？`,
     `有趣。你說的這個點，其實觸碰到 HR AI 轉型最核心的張力——「效率」和「信任」之間的拉鋸。在你的部門，同事最擔心的是哪一邊？`,
     `我聽到了。「誰來負責」這個問題，幾乎每個 HR 主管都問過。我換個角度問你：如果 AI 做了一個你不確定的決定，你希望有什麼樣的機制可以讓你「喊暫停」？`,
     `這個想法很值得深挖。你可以試著用一句話說說看：如果明天你的工作裡有一個 AI 助理，你最希望它幫你做掉的第一件事是什麼？`,
-    `很好的觀察。從你的字卡來看，你其實在「期待」和「擔心」之間擺動——這很正常。給「AI 轉型」打一個 0-10 分，你會打幾分？然後告訴我為什麼不是更高或更低。`,
+    `很好的觀察。${hasPicks ? '從你的字卡來看，你其實在「期待」和「擔心」之間擺動——這很正常。' : ''}給「AI 轉型」打一個 0-10 分，你會打幾分？然後告訴我為什麼不是更高或更低。`,
   ];
   return responses[Math.floor(Math.random() * responses.length)];
 }
@@ -2044,13 +2453,14 @@ async function saveParticipant() {
     if(!res.ok) throw new Error(await res.text());
     const data = await res.json();
     S.participantId = data[0]?.id;
-    // 存入 localStorage（刷新頁面後恢復身份）
     if(S.participantId) {
-      localStorage.setItem('_pid_' + S.joinCode, S.participantId);
-      localStorage.setItem('_sid_' + S.joinCode, S.sessionId);
+      safeStorage.set('_pid_' + S.joinCode, S.participantId);
+      safeStorage.set('_sid_' + S.joinCode, S.sessionId);
     }
+    return true;
   } catch(e) {
     console.warn('saveParticipant failed (continuing in local mode):', e.message);
+    return false;
   }
 }
 
@@ -2102,17 +2512,25 @@ function _updateRealtimeBadge(status) {
 }
 
 function _doSubscribe(sb) {
-  sb.channel('session:' + S.sessionId)
+  const channel = sb.channel('session:' + S.sessionId);
+  S._rtChannel = channel;
+
+  channel
     .on('postgres_changes', {
       event: 'UPDATE', schema: 'public', table: 'sessions',
       filter: `id=eq.${S.sessionId}`
     }, payload => {
+      // Session ended — stop accepting input and tell the learner
+      if(payload.new?.status === 'ended' && !S._sessionEnded) {
+        S._sessionEnded = true;
+        _handleSessionEnded();
+        return;
+      }
       const newModuleId = payload.new?.active_module_id;
       if(newModuleId && newModuleId !== S.activeModule) {
         S.activeModule = newModuleId;
         _handleModuleChange(newModuleId);
       }
-      // Handle broadcast message
       const broadcast = payload.new?.config?.broadcast;
       if(broadcast?.sent_at && broadcast.sent_at !== S._lastBroadcast) {
         S._lastBroadcast = broadcast.sent_at;
@@ -2121,14 +2539,64 @@ function _doSubscribe(sb) {
     })
     .subscribe(status => {
       if(status === 'SUBSCRIBED') {
+        S._rtAttempts = 0;
         _updateRealtimeBadge('live');
-      } else if(status === 'CHANNEL_ERROR') {
+        _hideConnectionBanner();
+      } else if(status === 'CHANNEL_ERROR' || status === 'CLOSED' || status === 'TIMED_OUT') {
         _updateRealtimeBadge('error');
-        console.error('Realtime 訂閱失敗，模組推送將無法即時接收');
-      } else if(status === 'CLOSED') {
-        _updateRealtimeBadge('error');
+        _scheduleReconnect(sb);
       }
     });
+}
+
+// Exponential backoff reconnect: 2s → 4s → 8s → 15s → 30s (cap).
+// Stops when session ended. Kicks banner with user-visible countdown.
+function _scheduleReconnect(sb) {
+  if(S._sessionEnded) return;
+  if(S._rtReconnectTimer) return; // already scheduled
+  S._rtAttempts = (S._rtAttempts || 0) + 1;
+  const delays = [2000, 4000, 8000, 15000, 30000];
+  const wait = delays[Math.min(S._rtAttempts - 1, delays.length - 1)];
+
+  _showConnectionBanner(`連線中斷，${Math.round(wait/1000)} 秒後重試…（第 ${S._rtAttempts} 次）`);
+  S._rtReconnectTimer = setTimeout(() => {
+    S._rtReconnectTimer = null;
+    // Tear down old channel before creating a new one
+    try { S._rtChannel?.unsubscribe(); } catch(_) {}
+    S._rtChannel = null;
+    _showConnectionBanner('正在重新連線…');
+    _doSubscribe(sb);
+  }, wait);
+}
+
+function _handleSessionEnded() {
+  // Lock input, notify learner with a sticky banner
+  const input = document.getElementById('chatInput');
+  const sendBtn = document.getElementById('sendBtn');
+  if(input) { input.disabled = true; input.placeholder = '工作坊已結束'; }
+  if(sendBtn) sendBtn.disabled = true;
+  document.getElementById('companionState').textContent = '工作坊已結束';
+  _showConnectionBanner('✨ 工作坊已結束，感謝你的參與。對話已保留。', { persistent: true, tone: 'info' });
+  addMessage('ai', '講師已結束這場工作坊，我們的對話到此告一段落。✨ 你今天的分享已被記錄下來，謝謝你的投入。');
+}
+
+function _showConnectionBanner(msg, opts = {}) {
+  let el = document.getElementById('connectionBanner');
+  if(!el) {
+    el = document.createElement('div');
+    el.id = 'connectionBanner';
+    el.className = 'connection-banner';
+    document.body.appendChild(el);
+  }
+  el.dataset.tone = opts.tone || 'warn';
+  el.textContent = msg;
+  el.classList.add('show');
+  if(opts.persistent) el.dataset.persistent = '1';
+}
+function _hideConnectionBanner() {
+  const el = document.getElementById('connectionBanner');
+  if(!el || el.dataset.persistent) return;
+  el.classList.remove('show');
 }
 
 function _handleModuleChange(moduleId) {
@@ -2143,11 +2611,20 @@ function _handleModuleChange(moduleId) {
 }
 
 // ── UTILS ──
-function showToast(msg) {
+function showToast(msg, type = '', duration = 2500) {
   const t = document.getElementById('toast');
   t.textContent = msg;
+  t.classList.remove('success', 'warn', 'error');
+  if(type) t.classList.add(type);
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function setDemoBadge(on) {
+  const el = document.getElementById('demoBadge');
+  if(!el) return;
+  el.classList.toggle('show', !!on);
 }
 
 // ── VIEWPORT ──

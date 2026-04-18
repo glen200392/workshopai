@@ -99,6 +99,31 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 }
 .join-code-badge:hover { border-color: var(--green); color: var(--green); }
 
+.active-module-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(77,159,255,0.1);
+  border: 1px solid rgba(77,159,255,0.35);
+  color: var(--blue);
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-family: var(--sans);
+  max-width: 280px;
+  white-space: nowrap; overflow: hidden;
+}
+.active-module-label { font-size: 10px; color: var(--text-mid); letter-spacing: 0.06em; text-transform: uppercase; }
+.active-module-name { font-weight: 600; color: var(--blue); overflow: hidden; text-overflow: ellipsis; }
+.active-module-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--blue);
+  box-shadow: 0 0 8px var(--blue);
+  animation: module-pulse 1.8s ease-in-out infinite;
+}
+@keyframes module-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.3); }
+}
+
 .topbar-spacer { flex: 1; }
 
 .top-stat {
@@ -256,12 +281,26 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .vtab.active { background: var(--surface2); color: var(--text); }
 
 .search-input {
-  flex: 1; max-width: 220px;
+  width: 100%;
   background: var(--bg); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 6px 12px;
   font-family: var(--sans); font-size: 12px; color: var(--text);
 }
 .search-input:focus { outline: none; border-color: var(--border2); }
+.search-wrap {
+  position: relative;
+  flex: 1; max-width: 240px;
+}
+.search-count {
+  position: absolute;
+  right: 8px; top: 50%; transform: translateY(-50%);
+  font-family: var(--mono); font-size: 10px;
+  color: var(--text-dim); pointer-events: none;
+  background: var(--surface); padding: 2px 6px; border-radius: 10px;
+  opacity: 0; transition: opacity 0.15s;
+}
+.search-count.show { opacity: 1; }
+.search-count.empty { color: var(--amber); border: 1px solid rgba(255,184,48,0.3); }
 
 .sort-select {
   background: var(--bg); border: 1px solid var(--border);
@@ -280,6 +319,91 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 }
 .participant-grid::-webkit-scrollbar { width: 4px; }
 .participant-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── EMPTY STATE — share join code prominently ── */
+.empty-invite {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 40px 20px;
+  text-align: center;
+}
+.empty-invite-title {
+  font-family: var(--mono);
+  color: var(--text-mid);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.empty-invite-code {
+  font-family: var(--mono);
+  font-size: clamp(56px, 10vw, 96px);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--green);
+  line-height: 1;
+  padding: 16px 32px;
+  border: 2px dashed rgba(0,230,118,0.3);
+  border-radius: 16px;
+  background: rgba(0,230,118,0.04);
+  cursor: pointer;
+  user-select: all;
+  transition: all 0.2s;
+}
+.empty-invite-code:hover {
+  background: rgba(0,230,118,0.08);
+  border-color: var(--green);
+  transform: scale(1.02);
+}
+.empty-invite-hint {
+  font-size: 13px;
+  color: var(--text-mid);
+  max-width: 420px;
+  line-height: 1.6;
+}
+.empty-invite-actions {
+  display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+}
+.empty-invite-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--sans);
+}
+.empty-invite-btn:hover { border-color: var(--green); color: var(--green); }
+.empty-invite-btn.primary { background: var(--green); color: #0d0f12; border-color: var(--green); font-weight: 700; }
+.empty-invite-btn.primary:hover { background: #00ff88; }
+.empty-invite-qr {
+  background: #fff;
+  padding: 12px;
+  border-radius: 12px;
+  width: 180px; height: 180px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.empty-invite-qr img { width: 100%; height: 100%; display: block; }
+.empty-invite-qr-fallback {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 12px;
+}
+.empty-invite-link {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-mid);
+  word-break: break-all;
+  max-width: 360px;
+}
 
 /* Participant card */
 .p-card {
@@ -659,13 +783,24 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 .toast {
   position: fixed; bottom: 20px; left: 50%;
   transform: translateX(-50%) translateY(20px);
-  background: var(--text); color: var(--bg);
+  background: var(--surface2); color: var(--text);
+  border: 1px solid var(--border2);
   padding: 10px 18px; border-radius: 20px;
   font-size: 13px; font-weight: 600;
   opacity: 0; transition: all 0.25s;
   pointer-events: none; z-index: 999; white-space: nowrap;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  max-width: calc(100vw - 32px);
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.success { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.toast.warn    { background: var(--amber-dim); border-color: var(--amber); color: var(--amber); }
+.toast.error   { background: var(--red-dim);   border-color: var(--red);   color: var(--red); }
+
+/* Inline spinner icon (use inside buttons) */
+.spin-icon { display: inline-block; transition: transform 0.2s; }
+.spin-icon.spinning { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -743,6 +878,27 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
 <div class="toast" id="toast"></div>
 
+<!-- PUSH MESSAGE MODAL -->
+<div class="modal-overlay" id="pushModal">
+  <div class="modal">
+    <div class="modal-title" id="pushModalTitle">📢 推送訊息給學員</div>
+    <div class="field-group">
+      <label class="field-label">訊息內容（會注入該學員 AI 夥伴的 system prompt）</label>
+      <textarea class="field-textarea" id="pushModalText" rows="4" maxlength="400"
+        placeholder="例：請特別關注這位學員對『飯碗問題』字卡的反應..."
+        oninput="document.getElementById('pushModalCount').textContent=this.value.length"></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+        <span style="font-size:11px;color:var(--text-dim)">按 ⌘/Ctrl + Enter 送出</span>
+        <span style="font-size:11px;color:var(--text-dim)"><span id="pushModalCount">0</span> / 400</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="top-btn btn-ghost" onclick="closePushModal(false)">取消</button>
+      <button class="top-btn btn-start" id="pushModalSend" onclick="closePushModal(true)">送出推送</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODULE MODAL -->
 <div class="modal-overlay" id="moduleModal">
   <div class="modal">
@@ -782,7 +938,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
   <!-- TOPBAR -->
   <header class="topbar">
-    <button class="sidebar-toggle-btn" id="sidebarToggleBtn" onclick="toggleSidebar()" title="模組設計器">☰</button>
+    <button class="sidebar-toggle-btn" id="sidebarToggleBtn" onclick="toggleSidebar()" title="模組設計器" aria-label="切換工作坊流程側欄">☰</button>
     <div class="logo">WorkshopAI<span>講師後台</span></div>
 
     <div class="session-status">
@@ -790,13 +946,19 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
       <span class="status-text" id="statusText">未開始</span>
     </div>
 
-    <div class="rt-badge" id="rtBadge" data-status="offline">
+    <div class="rt-badge" id="rtBadge" data-status="offline" title="與 Supabase 的即時連線狀態">
       <div class="rt-dot"></div>
-      <span id="rtBadgeText">Realtime</span>
+      <span id="rtBadgeText">即時</span>
     </div>
 
     <div class="join-code-badge" id="joinCodeBadge" onclick="copyCode()" title="點擊複製">
       ——————
+    </div>
+
+    <div class="active-module-pill" id="activeModulePill" style="display:none" title="當前推送給學員的模組">
+      <span class="active-module-dot"></span>
+      <span class="active-module-label">模組：</span>
+      <span class="active-module-name" id="activeModuleName">—</span>
     </div>
 
     <div class="topbar-spacer"></div>
@@ -991,7 +1153,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
         <button class="vtab" id="vtabProjection" onclick="switchView('projection')">投影大螢幕</button>
         <button class="vtab" id="vtabLog" onclick="switchView('log')">事件 Log</button>
       </div>
-      <input class="search-input" placeholder="搜尋學員..." oninput="filterParticipants(this.value)">
+      <div class="search-wrap">
+        <input class="search-input" id="searchInput" placeholder="搜尋學員或字卡..." oninput="filterParticipants(this.value)">
+        <span class="search-count" id="searchCount" aria-live="polite"></span>
+      </div>
       <select class="sort-select" onchange="sortParticipants(this.value)">
         <option value="joined">加入時間</option>
         <option value="active">最後活躍</option>
@@ -1004,10 +1169,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
     <!-- Grid view -->
     <div class="participant-grid" id="participantGrid">
-      <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-dim);font-family:var(--mono);font-size:13px">
-        ── 等待學員報到中 ──<br>
-        <span style="font-size:11px;margin-top:8px;display:block">分享代碼給學員後，將在這裡看到所有人的狀態</span>
-      </div>
+      <!-- Empty state injected by renderEmptyInvite() on init -->
     </div>
 
     <!-- Projection view (hidden initially) -->
@@ -1120,8 +1282,8 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
           <div id="edgeFnStatus" style="font-size:12px;color:var(--text-dim);margin-bottom:8px">
             尚未連線，請先設定 Supabase URL
           </div>
-          <button class="top-btn btn-ghost" style="width:100%;font-size:11px"
-            onclick="checkEdgeFunction()">⟳ 檢查 Proxy 連線</button>
+          <button class="top-btn btn-ghost" id="checkEdgeBtn" style="width:100%;font-size:11px"
+            onclick="checkEdgeFunction()"><span class="spin-icon">⟳</span> 檢查 Proxy 連線</button>
         </div>
 
         <button class="ai-run-btn" onclick="saveSessionConfig()">✓ 儲存設定</button>
@@ -1226,6 +1388,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderModules();
   renderCardConfig();
   restoreSettings();
+  renderEmptyInvite();
   setTimeout(loadDemoParticipants, 1500);
 });
 
@@ -1352,6 +1515,7 @@ async function endSession() {
   document.getElementById('statusText').textContent = '已結束';
   document.getElementById('startBtn').style.display = '';
   document.getElementById('endBtn').style.display = 'none';
+  _updateActiveModulePill(null);
 
   // 更新 Supabase session 狀態
   if(S.supabaseUrl && S.supabaseKey && S.sessionId) {
@@ -1395,38 +1559,72 @@ function renderModules() {
     </div>`).join('');
 }
 
+function _updateActiveModulePill(name) {
+  const pill = document.getElementById('activeModulePill');
+  const label = document.getElementById('activeModuleName');
+  if(!pill || !label) return;
+  if(name) {
+    label.textContent = name;
+    pill.style.display = 'inline-flex';
+    pill.title = `當前推送給學員的模組：${name}`;
+  } else {
+    pill.style.display = 'none';
+  }
+}
+
 async function pushModule(id) {
   const m = S.modules.find(m => m.id === id);
   if(!m) return;
 
-  // Confirmation toast instead of blocking the UI
   await _confirmPush(m.name, async () => {
-    S.modules.forEach(mo => mo.isActive = (mo.id === id));
-    renderModules();
-    document.getElementById('statActive').textContent = 1;
-    addLog('module', `已推送模組：${m.name}`, 'system');
-    showToast(`▶ 已推送：${m.name}`);
+    // Snapshot current state so we can roll back if server push fails
+    const prevActive = S.modules.find(mo => mo.isActive)?.id || null;
 
-    // 寫入 Supabase → 觸發 Realtime → 學員端自動切換模組
-    if(S.supabaseUrl && S.supabaseKey && S.sessionId) {
-      try {
-        const res = await fetch(
-          `${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}`,
-          {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': S.supabaseKey,
-              'Authorization': `Bearer ${S.supabaseKey}`,
-            },
-            body: JSON.stringify({ active_module_id: id })
-          }
-        );
-        if(!res.ok) throw new Error(await res.text());
-        addLog('module', `Supabase 已更新 active_module_id → 學員端 Realtime 觸發`, 'system');
-      } catch(e) {
-        addLog('module', `⚠ Supabase 推送失敗：${e.message}`, 'error');
-      }
+    // Apply optimistic UI only when there's no backend to talk to.
+    // When we DO have a backend, server-first: don't lie about "已推送" until it lands.
+    const hasBackend = !!(S.supabaseUrl && S.supabaseKey && S.sessionId);
+
+    if(!hasBackend) {
+      S.modules.forEach(mo => mo.isActive = (mo.id === id));
+      renderModules();
+      document.getElementById('statActive').textContent = 1;
+      _updateActiveModulePill(m.name);
+      addLog('module', `已推送模組：${m.name}（本地）`, 'system');
+      showToast(`▶ 已推送：${m.name}`, 'success');
+      return;
+    }
+
+    // Show "pushing..." feedback
+    showToast(`推送中：${m.name}...`, '', 1500);
+    try {
+      const res = await fetch(
+        `${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': S.supabaseKey,
+            'Authorization': `Bearer ${S.supabaseKey}`,
+          },
+          body: JSON.stringify({ active_module_id: id })
+        }
+      );
+      if(!res.ok) throw new Error(await res.text());
+      // Server confirmed → commit local state
+      S.modules.forEach(mo => mo.isActive = (mo.id === id));
+      renderModules();
+      document.getElementById('statActive').textContent = 1;
+      _updateActiveModulePill(m.name);
+      addLog('module', `已推送：${m.name} → Supabase 觸發 Realtime`, 'system');
+      showToast(`▶ 已推送：${m.name}`, 'success');
+    } catch(e) {
+      // Revert — make sure UI doesn't claim something landed that didn't
+      S.modules.forEach(mo => mo.isActive = (mo.id === prevActive));
+      renderModules();
+      const prevName = S.modules.find(mo => mo.id === prevActive)?.name || null;
+      _updateActiveModulePill(prevName);
+      addLog('module', `⚠ 推送失敗已還原：${e.message}`, 'error');
+      showToast(`✗ 推送失敗：${m.name}`, 'error', 4000);
     }
   });
 }
@@ -1453,8 +1651,23 @@ function _confirmPush(moduleName, onConfirm) {
   });
 }
 
-function openModal() { document.getElementById('moduleModal').classList.add('open'); }
+function openModal() {
+  const el = document.getElementById('moduleModal');
+  el.classList.add('open');
+  setTimeout(() => document.getElementById('newModuleName')?.focus(), 50);
+}
 function closeModal() { document.getElementById('moduleModal').classList.remove('open'); }
+
+// Global modal Esc/backdrop handling — applies to moduleModal and any future overlay
+document.addEventListener('keydown', (e) => {
+  if(e.key !== 'Escape') return;
+  const modal = document.getElementById('moduleModal');
+  if(modal?.classList.contains('open')) { e.preventDefault(); closeModal(); }
+});
+document.addEventListener('click', (e) => {
+  const modal = document.getElementById('moduleModal');
+  if(modal?.classList.contains('open') && e.target === modal) closeModal();
+});
 
 function addModule() {
   const type = document.getElementById('newModuleType').value;
@@ -1497,10 +1710,72 @@ function _getHeat(p) {
   return 'cold';
 }
 
+function renderEmptyInvite() {
+  const grid = document.getElementById('participantGrid');
+  if(!grid) return;
+  const code = S.joinCode || '——————';
+  const hasCode = !!S.joinCode;
+  // Build shareable link from current origin → student.html
+  const origin = location.origin && !location.origin.startsWith('null') ? location.origin : '';
+  const base = origin
+    ? origin + location.pathname.replace(/instructor\.html.*$/, 'student.html')
+    : 'student.html';
+  const shareUrl = hasCode ? `${base}?code=${code}` : '';
+  const qrSrc = hasCode
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=0&data=${encodeURIComponent(shareUrl)}`
+    : '';
+
+  grid.innerHTML = `
+    <div class="empty-invite">
+      <div class="empty-invite-title">▸ 分享代碼讓學員加入</div>
+      <div class="empty-invite-code" onclick="copyCode()" title="點擊複製">${code}</div>
+      ${hasCode ? `
+        <div class="empty-invite-qr" title="用手機掃描直接加入">
+          <img src="${qrSrc}" alt="QR code" onerror="this.style.display='none';this.parentElement.classList.add('empty-invite-qr-fallback');this.parentElement.textContent='QR 無法載入，請用代碼手動加入';">
+        </div>
+        <div class="empty-invite-link">${shareUrl}</div>
+        <div class="empty-invite-actions">
+          <button class="empty-invite-btn primary" onclick="copyCode()">複製代碼</button>
+          <button class="empty-invite-btn" onclick="copyJoinLink()">複製連結</button>
+          <button class="empty-invite-btn" onclick="shareJoinLink()">分享…</button>
+        </div>
+        <div class="empty-invite-hint">學員打開網址或掃描 QR，輸入代碼 <strong style="color:var(--green)">${code}</strong> 即可加入。報到完成後會出現在這裡。</div>
+      ` : `
+        <div class="empty-invite-hint">按下右上角「▶ 開始工作坊」產生代碼，學員才能加入。</div>
+      `}
+    </div>`;
+}
+
+function copyJoinLink() {
+  const origin = location.origin && !location.origin.startsWith('null') ? location.origin : '';
+  const base = origin
+    ? origin + location.pathname.replace(/instructor\.html.*$/, 'student.html')
+    : 'student.html';
+  const url = `${base}?code=${S.joinCode}`;
+  navigator.clipboard?.writeText(url).then(
+    () => showToast('✓ 加入連結已複製'),
+    () => showToast('⚠ 複製失敗，請手動選取')
+  );
+}
+
+function shareJoinLink() {
+  const origin = location.origin && !location.origin.startsWith('null') ? location.origin : '';
+  const base = origin
+    ? origin + location.pathname.replace(/instructor\.html.*$/, 'student.html')
+    : 'student.html';
+  const url = `${base}?code=${S.joinCode}`;
+  if(navigator.share) {
+    navigator.share({ title: 'WorkshopAI 加入工作坊', text: `代碼：${S.joinCode}`, url })
+      .catch(() => {});
+  } else {
+    copyJoinLink();
+  }
+}
+
 function renderParticipants(list) {
   const grid = document.getElementById('participantGrid');
   if(list.length === 0) {
-    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--text-dim);font-family:var(--mono);font-size:13px">── 等待學員報到中 ──</div>`;
+    renderEmptyInvite();
     return;
   }
   grid.innerHTML = list.map((p,i) => {
@@ -1635,10 +1910,55 @@ function viewConvo(e, id) {
   selectParticipant(id);
 }
 
+function openPushModal(name) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('pushModal');
+    const textEl  = document.getElementById('pushModalText');
+    const titleEl = document.getElementById('pushModalTitle');
+    const countEl = document.getElementById('pushModalCount');
+    titleEl.textContent = `📢 推送訊息給 ${name}`;
+    textEl.value = '';
+    countEl.textContent = '0';
+    overlay.classList.add('open');
+    setTimeout(() => textEl.focus(), 50);
+
+    // Shortcut: Cmd/Ctrl+Enter submits, Esc cancels
+    const onKey = (ev) => {
+      if((ev.metaKey || ev.ctrlKey) && ev.key === 'Enter') {
+        ev.preventDefault();
+        finish(true);
+      } else if(ev.key === 'Escape') {
+        ev.preventDefault();
+        finish(false);
+      }
+    };
+    const onOverlayClick = (ev) => { if(ev.target === overlay) finish(false); };
+
+    const finish = (ok) => {
+      overlay.classList.remove('open');
+      textEl.removeEventListener('keydown', onKey);
+      overlay.removeEventListener('click', onOverlayClick);
+      window._pushModalResolver = null;
+      resolve(ok ? textEl.value.trim() : null);
+    };
+
+    textEl.addEventListener('keydown', onKey);
+    overlay.addEventListener('click', onOverlayClick);
+    // Button handlers in markup call closePushModal(bool) which forwards here
+    window._pushModalResolver = finish;
+  });
+}
+
+function closePushModal(ok) {
+  if(typeof window._pushModalResolver === 'function') {
+    window._pushModalResolver(!!ok);
+  }
+}
+
 async function pushToUser(e, id) {
   e?.stopPropagation();
   const p = S.participants.find(p => p.id === id);
-  const msg = prompt(`推送訊息給 ${p?.name}（會出現在他的 AI 夥伴對話框）：`);
+  const msg = await openPushModal(p?.name || '學員');
   if(!msg) return;
 
   addLog('push', `推送給 ${p?.name}：${msg}`, 'instructor');
@@ -1760,18 +2080,57 @@ async function resetAllMemory() {
   showToast('↺ 已重置所有記憶');
 }
 
+// Keep filter query + sort key in state so each operation composes with the other.
+S._filterQuery = '';
+S._sortBy = 'joined';
+
+let _filterDebounce;
 function filterParticipants(q) {
-  const filtered = S.participants.filter(p => p.name.includes(q) || (p.picks||[]).some(pk=>pk.includes(q)));
-  renderParticipants(filtered);
+  // Debounce so each keystroke doesn't re-render the grid
+  clearTimeout(_filterDebounce);
+  const raw = (q || '').trim();
+  _filterDebounce = setTimeout(() => {
+    S._filterQuery = raw;
+    _applyFilterSort();
+  }, 120);
 }
 
 function sortParticipants(by) {
-  const sorted = [...S.participants].sort((a,b) => {
-    if(by==='messages') return (b.messages?.length||0)-(a.messages?.length||0);
-    if(by==='name') return a.name.localeCompare(b.name);
-    return 0;
+  S._sortBy = by || 'joined';
+  _applyFilterSort();
+}
+
+function _applyFilterSort() {
+  const q = S._filterQuery;
+  let list = S.participants;
+  if(q) {
+    list = list.filter(p =>
+      p.name.includes(q) || (p.picks||[]).some(pk => pk.includes(q))
+    );
+  }
+  list = [...list].sort((a,b) => {
+    switch(S._sortBy) {
+      case 'messages': return (b.messages?.length||0) - (a.messages?.length||0);
+      case 'name':     return a.name.localeCompare(b.name);
+      case 'active':   return (b._lastActiveMs||0) - (a._lastActiveMs||0);
+      default:         return (a._joinedMs||0) - (b._joinedMs||0);
+    }
   });
-  renderParticipants(sorted);
+  _updateSearchCount(q, list.length);
+  renderParticipants(list);
+}
+
+function _updateSearchCount(q, count) {
+  const el = document.getElementById('searchCount');
+  if(!el) return;
+  if(!q) {
+    el.classList.remove('show', 'empty');
+    el.textContent = '';
+    return;
+  }
+  el.classList.add('show');
+  el.classList.toggle('empty', count === 0);
+  el.textContent = count === 0 ? '無結果' : `找到 ${count}`;
 }
 
 // ══════════════════════════════════════════
@@ -1956,12 +2315,16 @@ function _updateRtBadge(status, text) {
   const label = document.getElementById('rtBadgeText');
   if(!badge) return;
   badge.dataset.status = status;
-  if(label) label.textContent = text || (status === 'live' ? '即時同步' : status === 'error' ? '連線失敗' : 'Realtime');
+  if(label) label.textContent = text || (status === 'live' ? '即時同步' : status === 'error' ? '連線失敗' : '即時');
 }
 
 function _doInstructorSubscribe(sb) {
+  // Tear down old channels (called during reconnect)
+  try { S._rtChannels?.forEach(c => c.unsubscribe()); } catch(_) {}
+  S._rtChannels = [];
+
   // ① 新學員報到
-  sb.channel('instructor-participants:' + S.sessionId)
+  const chP = sb.channel('instructor-participants:' + S.sessionId)
     .on('postgres_changes', {
       event: 'INSERT', schema: 'public', table: 'participants',
       filter: `session_id=eq.${S.sessionId}`
@@ -1979,7 +2342,6 @@ function _doInstructorSubscribe(sb) {
         memory:    p.memory || {},
         _lastActiveMs: Date.now(),
       };
-      // 避免重複
       if(!S.participants.find(x => x.id === p.id)) {
         S.participants.push(newParticipant);
         renderParticipants(S.participants);
@@ -1987,41 +2349,61 @@ function _doInstructorSubscribe(sb) {
         addLog('checkin', `${p.display_name} 已報到（${(checkin.picks||[]).join('、')}）`, 'participant');
       }
     })
-    .subscribe(status => {
-      if(status === 'SUBSCRIBED') _updateRtBadge('live', '即時同步');
-      if(status === 'CHANNEL_ERROR') {
-        _updateRtBadge('error');
-        addLog('realtime', '學員報到訂閱失敗，請重新整理頁面', 'error');
-      }
-    });
+    .subscribe(status => _rtStatus(sb, 'participants', status));
 
   // ② 學員新訊息
-  sb.channel('instructor-conversations:' + S.sessionId)
+  const chC = sb.channel('instructor-conversations:' + S.sessionId)
     .on('postgres_changes', {
       event: 'INSERT', schema: 'public', table: 'conversations',
       filter: `session_id=eq.${S.sessionId}`
     }, payload => {
       const c = payload.new;
-      if(c.role === 'system') return; // 忽略系統訊息
+      if(c.role === 'system') return;
       const p = S.participants.find(x => x.id === c.participant_id);
       if(p) {
         p.messages.push({ role: c.role, content: c.content });
         p.lastActive = new Date().toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'});
-        p._lastActiveMs = Date.now(); // for heat bar calculation
+        p._lastActiveMs = Date.now();
         renderParticipants(S.participants);
         updateTopStats();
-        // 如果目前右欄正在查看這位學員，即時更新
         if(S.selectedParticipant?.id === c.participant_id) {
           S.selectedParticipant = p;
           showParticipantDetail(p);
         }
       }
     })
-    .subscribe(status => {
-      if(status === 'CHANNEL_ERROR') addLog('realtime', '對話訂閱失敗，學員訊息將無法即時更新', 'error');
-    });
+    .subscribe(status => _rtStatus(sb, 'conversations', status));
 
+  S._rtChannels.push(chP, chC);
   addLog('realtime', 'Supabase Realtime 已訂閱（學員報到 + 對話）', 'system');
+}
+
+function _rtStatus(sb, which, status) {
+  if(status === 'SUBSCRIBED') {
+    S._rtOk = (S._rtOk || new Set());
+    S._rtOk.add(which);
+    if(S._rtOk.size >= 2) {
+      S._rtAttempts = 0;
+      _updateRtBadge('live', '即時同步');
+    }
+  } else if(status === 'CHANNEL_ERROR' || status === 'CLOSED' || status === 'TIMED_OUT') {
+    S._rtOk?.delete(which);
+    _updateRtBadge('error');
+    _scheduleInstructorReconnect(sb);
+  }
+}
+
+function _scheduleInstructorReconnect(sb) {
+  if(!S.isLive) return; // don't reconnect after endSession
+  if(S._rtReconnectTimer) return;
+  S._rtAttempts = (S._rtAttempts || 0) + 1;
+  const delays = [2000, 4000, 8000, 15000, 30000];
+  const wait = delays[Math.min(S._rtAttempts - 1, delays.length - 1)];
+  addLog('realtime', `Realtime 斷線，${Math.round(wait/1000)} 秒後重試（第 ${S._rtAttempts} 次）`, 'warn');
+  S._rtReconnectTimer = setTimeout(() => {
+    S._rtReconnectTimer = null;
+    _doInstructorSubscribe(sb);
+  }, wait);
 }
 
 function updateTopStats() {
@@ -2272,11 +2654,23 @@ function saveSessionConfig() {
 
 async function checkEdgeFunction() {
   const url = S.supabaseUrl || document.getElementById('sbUrl')?.value.trim();
-  if(!url) { showToast('請先填寫 Supabase URL'); return; }
+  if(!url) { showToast('⚠ 請先填寫 Supabase URL', 'warn'); return; }
 
   const statusEl = document.getElementById('edgeFnStatus');
-  if(statusEl) statusEl.textContent = '檢查中...';
+  const btn = document.getElementById('checkEdgeBtn');
 
+  if(btn) {
+    btn.disabled = true;
+    btn.classList.add('checking');
+    btn.dataset.origLabel = btn.dataset.origLabel || btn.innerHTML;
+    btn.innerHTML = `<span class="spin-icon spinning">⟳</span> 檢查中...`;
+  }
+  if(statusEl) {
+    statusEl.textContent = '正在連線 Edge Function...';
+    statusEl.style.color = 'var(--text-mid)';
+  }
+
+  const t0 = Date.now();
   try {
     const res = await fetch(`${url}/functions/v1/ai-proxy`, {
       method: 'POST',
@@ -2285,8 +2679,12 @@ async function checkEdgeFunction() {
     });
     const data = await res.json();
     if(data.ok || data.pong) {
-      if(statusEl) { statusEl.textContent = '✓ Edge Function 運作正常'; statusEl.style.color = 'var(--green)'; }
-      showToast('✓ Proxy 連線正常');
+      const ms = Date.now() - t0;
+      if(statusEl) {
+        statusEl.innerHTML = `✓ Edge Function 運作正常 <span style="color:var(--text-dim);font-size:10px">(${ms}ms)</span>`;
+        statusEl.style.color = 'var(--green)';
+      }
+      showToast('✓ Proxy 連線正常', 'success');
     } else {
       throw new Error(JSON.stringify(data));
     }
@@ -2295,6 +2693,13 @@ async function checkEdgeFunction() {
       statusEl.innerHTML = `✗ 尚未部署或連線失敗<br>
         <span style="font-size:10px;color:var(--text-dim)">請參考 README 部署 Supabase Edge Function</span>`;
       statusEl.style.color = 'var(--amber)';
+    }
+    showToast('✗ Proxy 連線失敗', 'error');
+  } finally {
+    if(btn) {
+      btn.disabled = false;
+      btn.classList.remove('checking');
+      if(btn.dataset.origLabel) btn.innerHTML = btn.dataset.origLabel;
     }
   }
 }
@@ -2389,11 +2794,21 @@ function loadDemoParticipants() {
 // ══════════════════════════════════════════
 // UTILS
 // ══════════════════════════════════════════
-function showToast(msg) {
+function showToast(msg, type = '', duration = 2500) {
   const t = document.getElementById('toast');
+  if(!t) return;
+  // Auto-detect type from leading symbol if caller didn't pass one
+  if(!type && typeof msg === 'string') {
+    if(/^✓|^✅/.test(msg))      type = 'success';
+    else if(/^⚠|^⚡/.test(msg)) type = 'warn';
+    else if(/^✗|^❌|^⛔/.test(msg)) type = 'error';
+  }
   t.textContent = msg;
+  t.classList.remove('success', 'warn', 'error');
+  if(type) t.classList.add(type);
   t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2500);
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(() => t.classList.remove('show'), duration);
 }
 
 // Auto-refresh projection every 5s
