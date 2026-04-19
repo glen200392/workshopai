@@ -408,6 +408,63 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 }
 .ck-num-label { font-size: 11px; color: var(--text-dim); line-height: 24px; }
 
+/* ── Chip editor ── */
+.chip-row {
+  display: flex; gap: 4px; align-items: center;
+  padding: 4px; margin-bottom: 4px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.chip-emoji-in {
+  width: 28px; height: 28px;
+  text-align: center;
+  font-size: 14px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text);
+  padding: 0;
+}
+.chip-label-in {
+  width: 70px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text);
+  padding: 5px 8px; font-size: 12px;
+  font-weight: 600;
+}
+.chip-prompt-in {
+  flex: 1; min-width: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text);
+  padding: 5px 8px; font-size: 11px;
+  color: var(--text-mid);
+  font-family: var(--sans);
+}
+.chip-emoji-in:focus, .chip-label-in:focus, .chip-prompt-in:focus {
+  outline: none; border-color: var(--green);
+}
+.chip-del {
+  width: 22px; height: 22px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-dim); border-radius: 3px; font-size: 10px;
+  cursor: pointer; flex-shrink: 0;
+}
+.chip-del:hover { background: var(--red-dim); color: var(--red); border-color: var(--red); }
+.chip-add-row {
+  display: flex; gap: 6px; margin-top: 6px;
+}
+.chip-add-btn {
+  flex: 1; background: transparent;
+  border: 1px dashed var(--border); color: var(--text-dim);
+  padding: 5px; border-radius: 4px; cursor: pointer;
+  font-size: 11px;
+}
+.chip-add-btn:hover { border-color: var(--green); color: var(--green); }
+.chip-reset-btn {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-mid); padding: 5px 10px; border-radius: 4px;
+  cursor: pointer; font-size: 11px;
+}
+.chip-reset-btn:hover { border-color: var(--amber); color: var(--amber); }
+
 /* ── Card editor ── */
 .card-dim-block { margin-bottom: 14px; }
 .card-dim-head {
@@ -1454,6 +1511,13 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
         <div class="field-hint">會以廣播方式推送給所有學員</div>
       </div>
 
+      <!-- ─── 快速指令（Action Chips） ─── -->
+      <div class="section-header" style="margin-top:16px">⚡ 快速指令</div>
+      <div class="field-group" style="font-size:11px;color:var(--text-dim);margin-top:-4px">
+        學員對話區上方的快速按鈕；最多 6 個，每個點擊會把 prompt 填入輸入框
+      </div>
+      <div id="chipEditorList"></div>
+
       <!-- ─── 字卡編輯器 ─── -->
       <div class="section-header" style="margin-top:16px">🃏 字卡庫</div>
       <div class="field-group">
@@ -1732,6 +1796,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderModules();
   renderCardConfig();
   renderCheckinStepsEditor();
+  renderChipEditor();
   restoreSettings();
   restoreBranding();
   renderEmptyInvite();
@@ -1808,6 +1873,7 @@ async function writeSessionToSupabase() {
       join_code: S.joinCode,
       branding: collectBranding(),
       cards: _getCardsDraft(),
+      chips: _getChipsDraft(),
       checkin: _getCheckinDraft(),
       ai_config: {
         claudeModel: S.aiConfig.claudeModel,
@@ -3281,6 +3347,104 @@ window.onCheckinNumChange = function(key, field, val) {
     if(field === 'max' && cfg.cards.max < cfg.cards.min) cfg.cards.min = cfg.cards.max;
   }
   _persistCheckinDraft();
+};
+
+// ══════════════════════════════════════════
+// ACTION CHIP EDITOR
+// ══════════════════════════════════════════
+const DEFAULT_CHIPS = [
+  { id:'discuss',   emoji:'💬', label:'討論',     prompt:'請針對目前的討論主題，給我一個能打開新視角的問題。' },
+  { id:'visualize', emoji:'🎨', label:'視覺化',   prompt:'請把我們目前討論的核心概念，用視覺化方式呈現出來。', needsVisual:true },
+  { id:'challenge', emoji:'⚡', label:'挑戰我',   prompt:'請以「{roleHint}」的角色，挑戰我的想法。' },
+  { id:'summarize', emoji:'📋', label:'幫我整理', prompt:'請把目前的對話整理成一份簡潔的重點摘要。' },
+  { id:'reflect',   emoji:'🔍', label:'深度反思', prompt:'請給我一個深化思考的反思問題，幫助我把學到的東西跟工作實際連結。' },
+];
+
+function _getChipsDraft() {
+  if(S.chips) return S.chips;
+  const stored = safeStorage.get('_chipsDraft');
+  if(stored) { try { S.chips = JSON.parse(stored); return S.chips; } catch(_) {} }
+  S.chips = DEFAULT_CHIPS.map(c => ({ ...c }));
+  return S.chips;
+}
+
+function _persistChipsDraft() {
+  safeStorage.set('_chipsDraft', JSON.stringify(S.chips));
+  if(S.isLive && S.supabaseUrl && S.sessionId) _pushChipsUpdate(S.chips);
+}
+
+async function _pushChipsUpdate(chips) {
+  clearTimeout(_pushChipsUpdate._t);
+  _pushChipsUpdate._t = setTimeout(async () => {
+    try {
+      const res = await fetch(`${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}&select=config`, {
+        headers: { 'apikey': S.supabaseKey, 'Authorization': `Bearer ${S.supabaseKey}` }
+      });
+      const data = await res.json();
+      const cfg = data?.[0]?.config || {};
+      cfg.chips = chips;
+      await fetch(`${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': S.supabaseKey,
+          'Authorization': `Bearer ${S.supabaseKey}`,
+        },
+        body: JSON.stringify({ config: cfg })
+      });
+      addLog('chips', '快速指令已同步', 'system');
+    } catch(e) {
+      addLog('chips', `⚠ 快速指令同步失敗：${e.message}`, 'error');
+    }
+  }, 800);
+}
+
+function renderChipEditor() {
+  const el = document.getElementById('chipEditorList');
+  if(!el) return;
+  const chips = _getChipsDraft();
+  const rows = chips.map((c, i) => `
+    <div class="chip-row">
+      <input class="chip-emoji-in" maxlength="3" value="${_esc(c.emoji || '')}" oninput="onChipEdit(${i},'emoji',this.value)">
+      <input class="chip-label-in" maxlength="8" value="${_esc(c.label || '')}" oninput="onChipEdit(${i},'label',this.value)" placeholder="按鈕文字">
+      <input class="chip-prompt-in" value="${_esc(c.prompt || '')}" oninput="onChipEdit(${i},'prompt',this.value)" placeholder="prompt（{roleHint} 會替換成角色）">
+      <button class="chip-del" onclick="onChipDel(${i})" title="刪除">✕</button>
+    </div>
+  `).join('');
+  el.innerHTML = `
+    ${rows}
+    <div class="chip-add-row">
+      <button class="chip-add-btn" onclick="onChipAdd()">+ 新增指令</button>
+      <button class="chip-reset-btn" onclick="onChipsRestore()">↺ 還原</button>
+    </div>`;
+}
+
+window.onChipEdit = function(i, field, val) {
+  const chips = _getChipsDraft();
+  if(!chips[i]) return;
+  chips[i][field] = val;
+  _persistChipsDraft();
+};
+window.onChipAdd = function() {
+  const chips = _getChipsDraft();
+  if(chips.length >= 6) { showToast('⚠ 最多 6 個指令', 'warn'); return; }
+  chips.push({ id:'c'+Date.now(), emoji:'✦', label:'新指令', prompt:'' });
+  _persistChipsDraft();
+  renderChipEditor();
+};
+window.onChipDel = function(i) {
+  const chips = _getChipsDraft();
+  if(chips.length <= 1) { showToast('⚠ 至少保留一個指令', 'warn'); return; }
+  chips.splice(i, 1);
+  _persistChipsDraft();
+  renderChipEditor();
+};
+window.onChipsRestore = function() {
+  if(!confirm('要還原預設 5 個快速指令？')) return;
+  S.chips = DEFAULT_CHIPS.map(c => ({ ...c }));
+  _persistChipsDraft();
+  renderChipEditor();
+  showToast('✓ 已還原預設指令', 'success');
 };
 
 // Lazy-init cards state from localStorage or defaults.

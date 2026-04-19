@@ -1470,11 +1470,7 @@ body {
 
   <div class="input-bar" id="inputBar">
     <div class="input-actions" id="inputActions">
-      <div class="action-chip" onclick="triggerAction('discuss')">💬 討論</div>
-      <div class="action-chip" onclick="triggerAction('visualize')" data-feature="visual">🎨 視覺化</div>
-      <div class="action-chip" onclick="triggerAction('challenge')">⚡ 挑戰我</div>
-      <div class="action-chip" onclick="triggerAction('summarize')">📋 幫我整理</div>
-      <div class="action-chip" onclick="triggerAction('reflect')">🔍 深度反思</div>
+      <!-- Rendered by renderActionChips() from readConfig.chips() -->
     </div>
     <div class="input-row">
       <textarea class="chat-textarea" id="chatInput"
@@ -1565,6 +1561,13 @@ const DEFAULT_BRANDING = {
   tagline:  '你的 AI 學習夥伴，從今天開始',
   host:     '',
 };
+const DEFAULT_CHIPS = [
+  { id:'discuss',   emoji:'💬', label:'討論',     prompt:'請針對目前的討論主題，給我一個能打開新視角的問題。' },
+  { id:'visualize', emoji:'🎨', label:'視覺化',   prompt:'請把我們目前討論的核心概念，用視覺化方式呈現出來。', needsVisual:true },
+  { id:'challenge', emoji:'⚡', label:'挑戰我',   prompt:'請以「{roleHint}」的角色，挑戰我的想法。' },
+  { id:'summarize', emoji:'📋', label:'幫我整理', prompt:'請把目前的對話整理成一份簡潔的重點摘要。' },
+  { id:'reflect',   emoji:'🔍', label:'深度反思', prompt:'請給我一個深化思考的反思問題，幫助我把學到的東西跟工作實際連結。' },
+];
 const DEFAULT_CHECKIN = {
   name:  { enabled:true, prompt:'你叫什麼名字？',       max:20, hint:'最多 20 字，會顯示在大螢幕' },
   cards: { enabled:true, prompt:'選出最像你現在的字卡', min:1, max:2, hint:'最多選 2 張，你的選擇會個人化你的 AI 夥伴' },
@@ -1576,6 +1579,7 @@ const DEFAULT_CHECKIN = {
 const readConfig = {
   cards()    { return S.sessionConfig?.cards?.length    ? S.sessionConfig.cards    : DEFAULT_CARDS; },
   moods()    { return S.sessionConfig?.moods?.length    ? S.sessionConfig.moods    : DEFAULT_MOODS; },
+  chips()    { return S.sessionConfig?.chips?.length    ? S.sessionConfig.chips    : DEFAULT_CHIPS; },
   branding() { return { ...DEFAULT_BRANDING, ...(S.sessionConfig?.branding || {}) }; },
   checkin() {
     const src = S.sessionConfig?.checkin || {};
@@ -1975,6 +1979,7 @@ function initSession() {
     visual_enabled: CONFIG.demoMode ? true : (f?.visual_enabled ?? true),
   };
   applyFeatureFlags();
+  renderActionChips();
 
   // Set realtime badge status
   _updateRealtimeBadge(CONFIG.demoMode ? 'demo' : 'connecting');
@@ -2128,15 +2133,23 @@ function scrollChat() {
 }
 
 // ── ACTION CHIPS ──
-function triggerAction(type) {
-  const prompts = {
-    discuss:    '請針對目前的討論主題，給我一個能打開新視角的問題。',
-    visualize:  '請把我們目前討論的核心概念，用視覺化方式呈現出來。',
-    challenge:  '請以「' + (S.memory.profile?.roleHint || '持懷疑態度的同事') + '」的角色，挑戰我的想法。',
-    summarize:  '請把目前的對話整理成一份簡潔的重點摘要。',
-    reflect:    '請給我一個深化思考的反思問題，幫助我把學到的東西跟工作實際連結。',
-  };
-  document.getElementById('chatInput').value = prompts[type] || '';
+function renderActionChips() {
+  const el = document.getElementById('inputActions');
+  if(!el) return;
+  const chips = readConfig.chips();
+  el.innerHTML = chips.map(c => {
+    const dataAttr = c.needsVisual ? ' data-feature="visual"' : '';
+    const id = _escHtml(c.id || c.label);
+    return `<div class="action-chip" onclick="triggerAction('${id}')"${dataAttr}>${_escHtml(c.emoji || '')} ${_escHtml(c.label)}</div>`;
+  }).join('');
+}
+
+function triggerAction(id) {
+  const chip = readConfig.chips().find(c => (c.id || c.label) === id);
+  if(!chip) return;
+  const roleHint = S.memory.profile?.roleHint || '持懷疑態度的同事';
+  const text = (chip.prompt || '').replace(/\{roleHint\}/g, roleHint);
+  document.getElementById('chatInput').value = text;
   autoResize(document.getElementById('chatInput'));
   document.getElementById('chatInput').focus();
 }
