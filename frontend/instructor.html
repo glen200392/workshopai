@@ -332,6 +332,12 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
 /* Live aggregate for survey responses */
 .survey-agg-root { padding: 12px; }
+.survey-export-btn {
+  background: var(--blue-dim); border: 1px solid var(--blue); color: var(--blue);
+  padding: 5px 12px; border-radius: 4px; cursor: pointer;
+  font-size: 11px; font-family: var(--mono); transition: all 0.15s;
+}
+.survey-export-btn:hover { background: var(--blue); color: #0a1628; }
 .survey-agg-q { margin-bottom: 18px; }
 .survey-agg-prompt { font-weight: 600; margin-bottom: 6px; font-size: 13px; }
 .survey-agg-meta { font-size: 11px; color: var(--text-dim); margin-bottom: 8px; font-family: var(--mono); }
@@ -2553,11 +2559,16 @@ function renderSurveyAggregate() {
     const responses = S._surveyResponses[m.id] || [];
     const n = responses.length;
     const isActive = m.isActive;
+    const exportBtn = n > 0
+      ? `<button class="survey-export-btn" onclick="exportSurveyCSV('${m.id}')">📥 匯出 CSV</button>`
+      : '';
     const header = `
-      <h3 style="margin:0; font-size:15px; display:flex; align-items:center; gap:8px">
-        <span>${_esc(m.name)}</span>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap">
+        <h3 style="margin:0; font-size:15px">${_esc(m.name)}</h3>
         ${isActive ? '<span style="font-size:10px; color:var(--green); padding:2px 8px; border:1px solid var(--green); border-radius:999px">進行中</span>' : ''}
-      </h3>
+        <div style="flex:1"></div>
+        ${exportBtn}
+      </div>
       <div class="survey-agg-meta">${n} 位回應 · ${m.questions.length} 題</div>
     `;
     const qBlocks = m.questions.map((q, qi) => _renderSurveyQAgg(q, qi, responses)).join('');
@@ -2568,6 +2579,57 @@ function renderSurveyAggregate() {
       </div>`;
   }).join('');
 }
+
+// Export a survey's responses as CSV (one row per respondent, one column per question).
+// Single-choice answers are converted from index → option text.
+window.exportSurveyCSV = function(moduleId) {
+  const m = S.modules.find(x => x.id === moduleId);
+  const responses = S._surveyResponses[moduleId] || [];
+  if(!m || responses.length === 0) {
+    showToast('⚠ 這份問卷尚無回應', 'warn');
+    return;
+  }
+
+  // Header: participant name + one column per question
+  const header = ['participant_id', 'name', 'submitted_at'].concat(
+    m.questions.map((q, i) => `Q${i+1}_${q.prompt.slice(0, 30)}`)
+  );
+
+  const escape = (v) => {
+    const s = String(v == null ? '' : v);
+    if(/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+    return s;
+  };
+
+  const rows = responses.map(r => {
+    const p = S.participants.find(pp => pp.id === r.participantId);
+    const row = [r.participantId, p?.name || '匿名', r.submittedAt || ''];
+    for(const q of m.questions) {
+      const a = r.answers.find(x => x.qid === q.id);
+      if(!a) { row.push(''); continue; }
+      if(q.type === 'single') {
+        const idx = parseInt(a.answer, 10);
+        row.push(q.options?.[idx] ?? a.answer);
+      } else {
+        row.push(a.answer);
+      }
+    }
+    return row;
+  });
+
+  const csv = [header, ...rows].map(r => r.map(escape).join(',')).join('\r\n');
+  // BOM so Excel opens UTF-8 correctly
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `survey-${m.name || moduleId}-${Date.now()}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast(`✓ 已匯出 ${responses.length} 筆回應`, 'success');
+};
 
 function _renderSurveyQAgg(q, qi, responses) {
   const values = responses
