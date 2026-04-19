@@ -1064,6 +1064,35 @@ body {
 .toast.warn    { background: #3a2d14; border-color: rgba(232,168,58,0.35); }
 .toast.error   { background: #3a1e18; border-color: rgba(232,120,100,0.35); }
 
+/* ── ROLEPLAY CARD (student-side) ── */
+.roleplay-card {
+  background: linear-gradient(135deg, rgba(193,127,36,0.12), rgba(139,58,42,0.08));
+  border: 1px solid rgba(193,127,36,0.3);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin: 4px 0;
+}
+.roleplay-card-label {
+  font-family: var(--mono, monospace); font-size: 10px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--amber, #c17f24);
+  margin-bottom: 4px;
+}
+.roleplay-card-title {
+  font-family: var(--serif, serif); font-size: 17px;
+  color: var(--ai-text, #eae4cd); font-weight: 600;
+  margin-bottom: 8px;
+}
+.roleplay-card-desc {
+  font-size: 13px; color: var(--ai-text);
+  padding: 10px 12px; background: rgba(0,0,0,0.25);
+  border-radius: 8px; margin-bottom: 10px; line-height: 1.5;
+}
+.roleplay-card-hint {
+  font-size: 12px; color: var(--ai-dim);
+  line-height: 1.5; font-style: italic;
+}
+
 /* ── SURVEY CARD (student-side) ── */
 .survey-card {
   background: var(--ai-surface, rgba(255,255,255,0.04));
@@ -2599,7 +2628,21 @@ ${(unresolved_questions||[]).length ? `未解決的問題：${unresolved_questio
 - 優先觸發認知衝突（問出讓學員停頓的問題）
 - 主動連結學員的字卡選擇到當前討論
 - 不要重複你之前說過的內容
-- 永遠不要跳出角色或解釋你是 AI`;
+- 永遠不要跳出角色或解釋你是 AI
+${_buildRoleplaySection()}`;
+}
+
+// When the active module is a roleplay with a configured role, append the
+// role brief to the system prompt so the AI actually plays that role.
+function _buildRoleplaySection() {
+  const m = S._activeModuleObj;
+  if(!m || m.type !== 'roleplay' || !m.rolePrompt) return '';
+  return `
+【當前模組：角色扮演 — ${m.roleName}】
+${m.roleDesc ? `角色立場：${m.roleDesc}` : ''}
+${m.rolePrompt}
+
+重要：在此模組期間，你要**完全扮演**上述角色與學員互動。保留學習夥伴的溫暖基調，但立場與挑戰必須來自這個角色。`;
 }
 
 function updateMemory(role, content) {
@@ -2797,6 +2840,7 @@ function _hideConnectionBanner() {
 function _handleModuleChange(moduleId) {
   const module = (S.sessionConfig?.modules || []).find(m => m.id === moduleId);
   if(!module) return;
+  S._activeModuleObj = module;   // cached so buildSystemPrompt can read role
   document.getElementById('moduleBadge').textContent = module.name || '新活動';
 
   // Survey module gets its own card renderer
@@ -2805,11 +2849,38 @@ function _handleModuleChange(moduleId) {
     return;
   }
 
+  // Roleplay module with a configured role → dedicated intro card
+  if(module.type === 'roleplay' && module.roleName) {
+    renderRoleplayCard(module);
+    return;
+  }
+
   const taskMsg = { role:'task', content: { title: module.name, desc: module.prompt || '' }, type:'task', id: Date.now() };
   S.messages.push(taskMsg);
   renderMessage(taskMsg);
   scrollChat();
   addMessage('ai', `講師推送了新活動「${module.name}」。${module.prompt || ''}`);
+}
+
+// Roleplay card: introduces the role the AI is about to play
+function renderRoleplayCard(module) {
+  const area = document.getElementById('chatArea');
+  if(document.getElementById('role-' + module.id)) return;
+  const card = document.createElement('div');
+  card.className = 'msg-row ai';
+  card.id = 'role-' + module.id;
+  card.innerHTML = `
+    <div class="msg-avatar">🎭</div>
+    <div style="flex:1; min-width:0">
+      <div class="roleplay-card">
+        <div class="roleplay-card-label">▶ 角色扮演</div>
+        <div class="roleplay-card-title">和「${_escHtml(module.roleName)}」對話</div>
+        ${module.roleDesc ? `<div class="roleplay-card-desc">${_escHtml(module.roleDesc)}</div>` : ''}
+        <div class="roleplay-card-hint">接下來我會扮演這個角色回應你。試著用你的理由說服我 / 溝通看看。</div>
+      </div>
+    </div>`;
+  area.appendChild(card);
+  scrollChat();
 }
 
 // ══════════════════════════════════════════

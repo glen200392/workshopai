@@ -1133,6 +1133,38 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   </div>
 </div>
 
+<!-- ROLEPLAY DESIGNER MODAL -->
+<div class="modal-overlay" id="roleplayDesignerModal">
+  <div class="modal" style="width:min(540px, 92vw)">
+    <div class="modal-title" id="roleplayDesignerTitle">🎭 設計角色</div>
+    <div class="field-group">
+      <label class="field-label">角色名稱</label>
+      <input class="field-input" id="roleplayName" maxlength="20" placeholder="例：質疑 ROI 的財務主管">
+      <div class="field-hint">學員會看到「和這個角色對話」</div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">角色立場一句話</label>
+      <input class="field-input" id="roleplayDesc" maxlength="60" placeholder="例：強調成本效益，不相信 AI 投資回收">
+      <div class="field-hint">給學員看的簡介</div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">AI 角色扮演指引（必填）</label>
+      <textarea class="field-textarea" id="roleplayPrompt" rows="5" placeholder="描述這個角色會如何回應學員。例：
+你是一位強調成本效益的財務主管，對 AI 轉型計畫持懷疑態度。
+學員會向你提案，你要用數字壓力質疑他們：
+- 預算從哪來？
+- ROI 幾個月回收？
+- 失敗的保險？
+語氣犀利但不失禮，逼學員用商業語言說服你。"></textarea>
+      <div class="field-hint">會接在 system prompt 後，決定 AI 如何扮演這個角色</div>
+    </div>
+    <div class="modal-footer">
+      <button class="top-btn btn-ghost" onclick="closeRoleplayDesigner(false)">取消</button>
+      <button class="top-btn btn-start" onclick="closeRoleplayDesigner(true)">✓ 儲存角色</button>
+    </div>
+  </div>
+</div>
+
 <!-- SURVEY DESIGNER MODAL -->
 <div class="modal-overlay" id="surveyDesignerModal">
   <div class="modal" style="width:min(640px, 92vw); max-height: 85vh; display:flex; flex-direction:column;">
@@ -1867,6 +1899,9 @@ function renderModules() {
     const surveyBtn = m.type === 'survey'
       ? `<button class="maction module-design-btn" onclick="openSurveyDesigner('${m.id}')">📊 設計問卷 (${m.questions?.length || 0})</button>`
       : '';
+    const roleBtn = m.type === 'roleplay'
+      ? `<button class="maction module-design-btn" onclick="openRoleplayDesigner('${m.id}')">🎭 設計角色${m.roleName ? ' ✓' : ''}</button>`
+      : '';
     return `
     <div class="module-item ${m.isActive?'active-module':''}" id="mod-${m.id}">
       <div class="module-seq">模組 ${m.seq} · ${m.duration}分</div>
@@ -1875,6 +1910,7 @@ function renderModules() {
       <div class="module-actions">
         <button class="maction ${m.isActive?'push':''}" onclick="pushModule('${m.id}')">${m.isActive?'✓ 進行中':'▶ 推送'}</button>
         ${surveyBtn}
+        ${roleBtn}
         <button class="maction" onclick="editModule('${m.id}')">編輯</button>
         <button class="maction" onclick="deleteModule('${m.id}')">刪除</button>
       </div>
@@ -2016,6 +2052,43 @@ function editModule(id) {
   document.getElementById('newModuleDuration').value = m.duration;
   document.getElementById('newModuleType').value = m.type;
   openModal();
+}
+
+// ══════════════════════════════════════════
+// ROLEPLAY DESIGNER
+// ══════════════════════════════════════════
+function openRoleplayDesigner(moduleId) {
+  const m = S.modules.find(m => m.id === moduleId);
+  if(!m) return;
+  document.getElementById('roleplayDesignerTitle').textContent = `🎭 設計角色：${m.name}`;
+  document.getElementById('roleplayName').value   = m.roleName   || '';
+  document.getElementById('roleplayDesc').value   = m.roleDesc   || '';
+  document.getElementById('roleplayPrompt').value = m.rolePrompt || '';
+  document.getElementById('roleplayDesignerModal').classList.add('open');
+  document.getElementById('roleplayDesignerModal')._editingId = moduleId;
+  setTimeout(() => document.getElementById('roleplayName')?.focus(), 50);
+}
+
+function closeRoleplayDesigner(save) {
+  const overlay = document.getElementById('roleplayDesignerModal');
+  if(!save) { overlay.classList.remove('open'); return; }
+  const id = overlay._editingId;
+  const m = S.modules.find(m => m.id === id);
+  if(!m) { overlay.classList.remove('open'); return; }
+  const name   = document.getElementById('roleplayName').value.trim();
+  const desc   = document.getElementById('roleplayDesc').value.trim();
+  const prompt = document.getElementById('roleplayPrompt').value.trim();
+  if(!name || !prompt) {
+    showToast('⚠ 角色名稱與 AI 指引都是必填', 'warn');
+    return;
+  }
+  m.roleName   = name;
+  m.roleDesc   = desc;
+  m.rolePrompt = prompt;
+  overlay.classList.remove('open');
+  renderModules();
+  showToast('✓ 角色已儲存', 'success');
+  if(S.isLive && S.supabaseUrl && S.sessionId) _pushModulesUpdate();
 }
 
 // ══════════════════════════════════════════
