@@ -1026,6 +1026,51 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
 /* AI Insight panel */
 .insight-body { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.insight-card-prompt {
+  font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  padding: 6px 8px; margin-bottom: 6px;
+  background: rgba(0,0,0,0.2); border-left: 2px solid var(--purple);
+  border-radius: 3px;
+}
+
+/* Insight history */
+.insight-history-section {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.insight-history-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  letter-spacing: 0.06em; margin-bottom: 8px;
+}
+.insight-tiny-btn {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-dim); padding: 3px 8px; border-radius: 3px;
+  font-size: 10px; cursor: pointer; font-family: var(--mono);
+}
+.insight-tiny-btn:hover { border-color: var(--purple); color: var(--purple); }
+.insight-hist-row {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 8px 10px; margin-bottom: 6px;
+  cursor: pointer; transition: all 0.15s;
+}
+.insight-hist-row:hover {
+  border-color: var(--purple); background: var(--purple-dim);
+}
+.insight-hist-time {
+  font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+  margin-bottom: 3px;
+}
+.insight-hist-prompt {
+  font-size: 11px; color: var(--text-mid); font-weight: 600;
+  margin-bottom: 3px;
+}
+.insight-hist-preview {
+  font-size: 11px; color: var(--text-dim);
+  line-height: 1.4;
+}
+
 .insight-card {
   background: var(--surface2);
   border: 1px solid var(--border);
@@ -1642,6 +1687,17 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
         </div>
         <button class="ai-run-btn" onclick="runInsight()">✦ 執行 AI 洞察分析</button>
         <div id="insightResults"></div>
+
+        <div class="insight-history-section">
+          <div class="insight-history-head">
+            <span>📚 歷史洞察</span>
+            <div style="display:flex; gap:6px">
+              <button class="insight-tiny-btn" onclick="exportInsightHistory()" title="匯出為 Markdown">匯出</button>
+              <button class="insight-tiny-btn" onclick="clearInsightHistory()" title="清除本場次歷史">清除</button>
+            </div>
+          </div>
+          <div id="insightHistoryList"></div>
+        </div>
       </div>
     </div>
 
@@ -1803,6 +1859,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderCardConfig();
   renderCheckinStepsEditor();
   renderChipEditor();
+  renderInsightHistory();
   restoreSettings();
   restoreBranding();
   renderEmptyInvite();
@@ -3031,14 +3088,10 @@ async function runInsight() {
 
   if(!S.claudeKey) {
     setTimeout(() => {
-      results.innerHTML = `<div class="insight-card" style="margin-top:8px">
-        <div class="insight-card-label">⚡ 群體洞察（示範）</div>
-        <div class="insight-card-text">今天的群體整體呈現「觀望 → 好奇」的轉換動態。主要張力：效率期待 vs 責任歸屬的不確定。建議：在收斂環節直接點名「誰來負責」這個問題，讓它成為全場討論焦點。</div>
-        <div class="tension-row" style="margin-top:8px">
-          <span class="tension-tag">⚡ 效率 vs 責任</span>
-          <span class="tension-tag">⚡ 期待 vs 恐懼</span>
-        </div>
-      </div>`;
+      const demoText = '今天的群體整體呈現「觀望 → 好奇」的轉換動態。主要張力：效率期待 vs 責任歸屬的不確定。建議：在收斂環節直接點名「誰來負責」這個問題，讓它成為全場討論焦點。';
+      _saveInsightToHistory(prompt, demoText, '1.4');
+      renderInsightResult(prompt, demoText, '1.4');
+      renderInsightHistory();
     }, 1400);
     return;
   }
@@ -3063,16 +3116,103 @@ async function runInsight() {
     const data = await res.json();
     const text = data.content?.[0]?.text || '分析失敗';
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    results.innerHTML = `<div class="insight-card" style="margin-top:8px">
-      <div class="insight-card-label">⚡ AI 洞察 <span style="font-size:9px;color:var(--text-dim);font-weight:400">${elapsed}s</span></div>
-      <div class="insight-card-text">${text.replace(/\n/g,'<br>')}</div>
-    </div>`;
+    _saveInsightToHistory(prompt, text, elapsed);
+    renderInsightResult(prompt, text, elapsed);
+    renderInsightHistory();
     addLog('insight', `群體洞察完成（${elapsed}s）`, 'instructor');
   } catch(e) {
     results.innerHTML = `<div class="insight-card" style="margin-top:8px"><div class="insight-card-text" style="color:var(--red)">分析失敗：${e.message}</div></div>`;
     addLog('insight', `⚠ 洞察失敗：${e.message}`, 'error');
   }
 }
+
+// ── INSIGHT HISTORY ──
+function _getInsightHistory() {
+  if(S._insightHistory) return S._insightHistory;
+  const stored = safeStorage.get('_insightHistory_' + (S.sessionId || 'none'));
+  if(stored) { try { S._insightHistory = JSON.parse(stored); return S._insightHistory; } catch(_) {} }
+  S._insightHistory = [];
+  return S._insightHistory;
+}
+
+function _saveInsightToHistory(prompt, text, elapsed) {
+  const hist = _getInsightHistory();
+  hist.unshift({
+    id: 'ih' + Date.now(),
+    prompt, text, elapsed,
+    at: new Date().toISOString(),
+    participantCount: S.participants.length,
+  });
+  // Cap at 20 to avoid localStorage bloat
+  if(hist.length > 20) hist.length = 20;
+  safeStorage.set('_insightHistory_' + (S.sessionId || 'none'), JSON.stringify(hist));
+}
+
+function renderInsightResult(prompt, text, elapsed) {
+  const results = document.getElementById('insightResults');
+  if(!results) return;
+  results.innerHTML = `<div class="insight-card" style="margin-top:8px">
+    <div class="insight-card-label">⚡ AI 洞察 <span style="font-size:9px;color:var(--text-dim);font-weight:400">${elapsed}s</span></div>
+    <div class="insight-card-prompt">❯ ${_esc(prompt)}</div>
+    <div class="insight-card-text">${_esc(text).replace(/\n/g,'<br>')}</div>
+  </div>`;
+}
+
+function renderInsightHistory() {
+  const el = document.getElementById('insightHistoryList');
+  if(!el) return;
+  const hist = _getInsightHistory();
+  if(hist.length === 0) {
+    el.innerHTML = '<div style="color:var(--text-dim); font-size:11px; padding:8px 0">（尚無歷史紀錄）</div>';
+    return;
+  }
+  el.innerHTML = hist.map(h => `
+    <div class="insight-hist-row" onclick="replayInsight('${h.id}')" title="點擊重新顯示">
+      <div class="insight-hist-time">${_formatInsightTime(h.at)} · ${h.participantCount} 人 · ${h.elapsed}s</div>
+      <div class="insight-hist-prompt">❯ ${_esc(h.prompt.slice(0, 40))}${h.prompt.length > 40 ? '...' : ''}</div>
+      <div class="insight-hist-preview">${_esc(h.text.slice(0, 80))}${h.text.length > 80 ? '...' : ''}</div>
+    </div>`).join('');
+}
+
+function _formatInsightTime(iso) {
+  const d = new Date(iso);
+  return d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+}
+
+window.replayInsight = function(id) {
+  const h = _getInsightHistory().find(x => x.id === id);
+  if(!h) return;
+  renderInsightResult(h.prompt, h.text, h.elapsed);
+};
+
+window.exportInsightHistory = function() {
+  const hist = _getInsightHistory();
+  if(hist.length === 0) { showToast('⚠ 尚無歷史紀錄', 'warn'); return; }
+  const lines = ['# AI 群體洞察歷史', `> 場次 ${S.joinCode} · 匯出於 ${new Date().toLocaleString('zh-TW')}`, ''];
+  hist.forEach((h, i) => {
+    lines.push(`## ${i+1}. ${_formatInsightTime(h.at)} （${h.participantCount} 人，用時 ${h.elapsed}s）`);
+    lines.push(`**講師問：** ${h.prompt}`, '');
+    lines.push(h.text, '', '---', '');
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `insights-${S.joinCode}-${Date.now()}.md`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast('✓ 已匯出洞察歷史', 'success');
+};
+
+window.clearInsightHistory = function() {
+  if(!confirm('要清除這場次的所有洞察歷史？（不會影響資料庫，只清本機暫存）')) return;
+  S._insightHistory = [];
+  safeStorage.set('_insightHistory_' + (S.sessionId || 'none'), '[]');
+  renderInsightHistory();
+  showToast('✓ 已清除歷史', 'success');
+};
 
 async function runGroupInsight() {
   switchRightTab('insight');
