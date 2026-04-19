@@ -2819,23 +2819,45 @@ function _updateSearchCount(q, count) {
 // PROJECTION SYNC
 // ══════════════════════════════════════════
 function syncProjection() {
-  const responses = S.participants.flatMap(p => (p.messages||[]).filter(m=>m.role==='user').slice(-2));
-  const words = {};
-  responses.forEach(m => {
-    m.content.split(/[\s，。？！、；：]/g).filter(w=>w.length>1).forEach(w=>{ words[w]=(words[w]||0)+1; });
-  });
-  const sorted = Object.entries(words).sort((a,b)=>b[1]-a[1]);
+  // Prefer explicit convergence keywords if the active module is type='convergence'.
+  // Otherwise fall back to chat-derived word splitting.
+  const activeModule = S.modules.find(m => m.isActive);
+  const isConvergence = activeModule?.type === 'convergence';
+  const kwList = isConvergence ? (S._keywords?.[activeModule.id] || []) : [];
+
+  let sorted;
+  let responsesDisplay;
+  let projQLabel = document.getElementById('projQuestion');
+  if(projQLabel && activeModule) {
+    projQLabel.textContent = activeModule.prompt || activeModule.name || '';
+  }
+
+  if(isConvergence && kwList.length > 0) {
+    const counts = {};
+    kwList.forEach(k => { counts[k.keyword] = (counts[k.keyword] || 0) + 1; });
+    sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+    responsesDisplay = kwList.slice(-8).reverse().map(k => k.keyword);
+  } else {
+    const responses = S.participants.flatMap(p => (p.messages||[]).filter(m=>m.role==='user').slice(-2));
+    const words = {};
+    responses.forEach(m => {
+      m.content.split(/[\s，。？！、；：]/g).filter(w=>w.length>1).forEach(w=>{ words[w]=(words[w]||0)+1; });
+    });
+    sorted = Object.entries(words).sort((a,b)=>b[1]-a[1]);
+    responsesDisplay = responses.slice(-6).map(m => m.content);
+  }
+
   const max = sorted[0]?.[1]||1;
   document.getElementById('projWordCloud').innerHTML = sorted.slice(0,20).map(([w,c])=>{
     const r=c/max; const sz=r>0.8?5:r>0.6?4:r>0.4?3:r>0.2?2:1;
     return `<span class="wc-bubble wc-${sz}">${w}</span>`;
   }).join('') || '<span style="color:var(--text-dim);font-size:12px">等待回應...</span>';
 
-  document.getElementById('projResponses').innerHTML = responses.slice(-6).map(m=>
-    `<div class="rstream-item">${m.content}</div>`
+  document.getElementById('projResponses').innerHTML = responsesDisplay.map(t =>
+    `<div class="rstream-item">${t}</div>`
   ).join('') || '<span style="color:var(--text-dim);font-size:12px;font-family:var(--mono)">等待回應...</span>';
 
-  document.getElementById('pstatR').textContent = responses.length;
+  document.getElementById('pstatR').textContent = responsesDisplay.length;
   document.getElementById('pstatW').textContent = sorted.length;
 
   // Card heatmap
@@ -3040,6 +3062,20 @@ function _doInstructorSubscribe(sb) {
       filter: `session_id=eq.${S.sessionId}`
     }, payload => {
       const c = payload.new;
+      // Convergence keywords: route to keyword aggregate, don't pollute chat
+      if(c.content_type === 'keyword') {
+        const moduleId = c.metadata?.module_id || 'unknown';
+        if(!S._keywords) S._keywords = {};
+        if(!S._keywords[moduleId]) S._keywords[moduleId] = [];
+        S._keywords[moduleId].push({
+          keyword: c.content,
+          participantId: c.participant_id,
+          at: c.created_at || new Date().toISOString(),
+        });
+        // If projection view is visible, refresh
+        if(document.getElementById('projectionView')?.style.display === 'flex') syncProjection();
+        return;
+      }
       // Survey responses: not a chat message — route to aggregate
       if(c.content_type === 'survey_response') {
         try {

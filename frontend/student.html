@@ -1093,6 +1093,71 @@ body {
   line-height: 1.5; font-style: italic;
 }
 
+/* ── CONVERGENCE CARD (student-side) ── */
+.conv-card {
+  background: linear-gradient(135deg, rgba(77,159,255,0.1), rgba(156,107,255,0.08));
+  border: 1px solid rgba(77,159,255,0.3);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin: 4px 0;
+}
+.conv-card-label {
+  font-family: var(--mono, monospace); font-size: 10px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: #6ba8ff; margin-bottom: 4px;
+}
+.conv-card-title {
+  font-family: var(--serif, serif); font-size: 16px;
+  color: var(--ai-text, #eae4cd); font-weight: 600;
+  margin-bottom: 8px;
+}
+.conv-card-prompt {
+  font-size: 13px; color: var(--ai-text);
+  padding: 8px 10px; background: rgba(0,0,0,0.18);
+  border-radius: 6px; margin-bottom: 8px; line-height: 1.5;
+}
+.conv-card-hint {
+  font-size: 12px; color: var(--ai-dim);
+  line-height: 1.5; margin-bottom: 10px;
+}
+.conv-inputs { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.conv-input {
+  width: 100%; box-sizing: border-box;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px; padding: 10px 12px;
+  color: var(--ai-text, #eae4cd);
+  font-family: var(--sans, system-ui); font-size: 14px;
+  transition: border-color 0.15s;
+}
+.conv-input:focus {
+  outline: none; border-color: rgba(77,159,255,0.5);
+}
+.conv-add-btn {
+  width: 100%; background: transparent;
+  border: 1px dashed rgba(255,255,255,0.18);
+  color: var(--ai-dim); padding: 8px;
+  border-radius: 6px; font-size: 12px;
+  cursor: pointer; margin-bottom: 8px;
+  transition: all 0.15s;
+}
+.conv-add-btn:hover { border-color: rgba(77,159,255,0.5); color: #6ba8ff; }
+.conv-submit-btn {
+  width: 100%; padding: 12px; border-radius: 10px;
+  background: #4d9fff; color: #0a1628;
+  border: none; cursor: pointer;
+  font-size: 14px; font-weight: 700;
+  transition: transform 0.1s, background 0.15s;
+}
+.conv-submit-btn:hover { background: #6ba8ff; }
+.conv-submit-btn:active { transform: scale(0.98); }
+.conv-submit-btn:disabled { opacity: 0.5; cursor: progress; }
+.conv-done-msg {
+  text-align: center; padding: 8px 0 0;
+  color: #6ba8ff;
+  font-size: 12px; font-weight: 600;
+}
+
 /* ── SURVEY CARD (student-side) ── */
 .survey-card {
   background: var(--ai-surface, rgba(255,255,255,0.04));
@@ -2855,6 +2920,12 @@ function _handleModuleChange(moduleId) {
     return;
   }
 
+  // Convergence module → keyword collection card
+  if(module.type === 'convergence') {
+    renderConvergenceCard(module);
+    return;
+  }
+
   const taskMsg = { role:'task', content: { title: module.name, desc: module.prompt || '' }, type:'task', id: Date.now() };
   S.messages.push(taskMsg);
   renderMessage(taskMsg);
@@ -2943,6 +3014,106 @@ function renderSurveyCard(module) {
   area.appendChild(card);
   scrollChat();
 }
+
+// Convergence card: learner submits short keywords that aggregate into
+// the instructor's live word cloud.
+function renderConvergenceCard(module) {
+  const area = document.getElementById('chatArea');
+  if(document.getElementById('conv-' + module.id)) return;
+  const card = document.createElement('div');
+  card.className = 'msg-row ai';
+  card.id = 'conv-' + module.id;
+  card.innerHTML = `
+    <div class="msg-avatar">💭</div>
+    <div style="flex:1; min-width:0">
+      <div class="conv-card">
+        <div class="conv-card-label">▶ 想法收斂</div>
+        <div class="conv-card-title">${_escHtml(module.name)}</div>
+        ${module.prompt ? `<div class="conv-card-prompt">${_escHtml(module.prompt)}</div>` : ''}
+        <div class="conv-card-hint">寫下 1-5 個關鍵字或短句（每個 1-8 字為佳），送出後會匯入大螢幕的共同關鍵字雲。</div>
+        <div class="conv-inputs" id="conv-inputs-${module.id}">
+          <input class="conv-input" maxlength="20" placeholder="關鍵字 1">
+          <input class="conv-input" maxlength="20" placeholder="關鍵字 2">
+          <input class="conv-input" maxlength="20" placeholder="關鍵字 3">
+        </div>
+        <button class="conv-add-btn" onclick="addConvInput('${module.id}')">+ 再多加一個</button>
+        <button class="conv-submit-btn" onclick="submitConvergence('${module.id}')">送出到大螢幕</button>
+        <div class="conv-done-msg" id="conv-done-${module.id}" style="display:none">✓ 已送出，歡迎繼續補充（可再次送出）</div>
+      </div>
+    </div>`;
+  area.appendChild(card);
+  scrollChat();
+}
+
+window.addConvInput = function(moduleId) {
+  const wrap = document.getElementById('conv-inputs-' + moduleId);
+  if(!wrap) return;
+  if(wrap.querySelectorAll('input').length >= 8) {
+    showToast('⚠ 最多 8 個關鍵字', 'warn');
+    return;
+  }
+  const input = document.createElement('input');
+  input.className = 'conv-input';
+  input.maxLength = 20;
+  input.placeholder = `關鍵字 ${wrap.querySelectorAll('input').length + 1}`;
+  wrap.appendChild(input);
+  input.focus();
+};
+
+window.submitConvergence = async function(moduleId) {
+  const card = document.getElementById('conv-' + moduleId);
+  if(!card) return;
+  const keywords = [...card.querySelectorAll('.conv-input')]
+    .map(i => i.value.trim())
+    .filter(Boolean);
+  if(keywords.length === 0) {
+    showToast('⚠ 請至少寫 1 個關鍵字', 'warn');
+    return;
+  }
+
+  const btn = card.querySelector('.conv-submit-btn');
+  btn.disabled = true;
+  btn.textContent = '送出中...';
+
+  if(CONFIG.supabaseUrl && !CONFIG.demoMode && S.participantId) {
+    try {
+      // Send each keyword as its own row so instructor aggregate is simple
+      const rows = keywords.map(kw => ({
+        session_id: S.sessionId,
+        participant_id: S.participantId,
+        role: 'user',
+        content: kw,
+        content_type: 'keyword',
+        metadata: { module_id: moduleId },
+      }));
+      const res = await fetch(`${CONFIG.supabaseUrl}/rest/v1/conversations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': CONFIG.supabaseKey,
+          'Authorization': `Bearer ${CONFIG.supabaseKey}`,
+        },
+        body: JSON.stringify(rows)
+      });
+      if(!res.ok) throw new Error(await res.text());
+      showToast(`✓ 送出 ${keywords.length} 個關鍵字`, 'success');
+    } catch(e) {
+      showToast('⚠ 送出失敗，請重試', 'error');
+      btn.disabled = false;
+      btn.textContent = '送出到大螢幕';
+      console.error('submitConvergence failed:', e);
+      return;
+    }
+  } else {
+    showToast(`✓ 記錄 ${keywords.length} 個關鍵字（示範模式）`, 'success');
+  }
+
+  // Clear inputs so learner can submit more later
+  card.querySelectorAll('.conv-input').forEach(i => i.value = '');
+  btn.disabled = false;
+  btn.textContent = '再送出一批';
+  document.getElementById('conv-done-' + moduleId).style.display = 'block';
+};
 
 function _escHtml(s) {
   return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
