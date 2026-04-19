@@ -332,6 +332,12 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
 /* Live aggregate for survey responses */
 .survey-agg-root { padding: 12px; }
+.survey-export-btn {
+  background: var(--blue-dim); border: 1px solid var(--blue); color: var(--blue);
+  padding: 5px 12px; border-radius: 4px; cursor: pointer;
+  font-size: 11px; font-family: var(--mono); transition: all 0.15s;
+}
+.survey-export-btn:hover { background: var(--blue); color: #0a1628; }
 .survey-agg-q { margin-bottom: 18px; }
 .survey-agg-prompt { font-weight: 600; margin-bottom: 6px; font-size: 13px; }
 .survey-agg-meta { font-size: 11px; color: var(--text-dim); margin-bottom: 8px; font-family: var(--mono); }
@@ -407,6 +413,63 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
   font-family: var(--mono); text-align: center;
 }
 .ck-num-label { font-size: 11px; color: var(--text-dim); line-height: 24px; }
+
+/* ── Chip editor ── */
+.chip-row {
+  display: flex; gap: 4px; align-items: center;
+  padding: 4px; margin-bottom: 4px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.chip-emoji-in {
+  width: 28px; height: 28px;
+  text-align: center;
+  font-size: 14px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text);
+  padding: 0;
+}
+.chip-label-in {
+  width: 70px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text);
+  padding: 5px 8px; font-size: 12px;
+  font-weight: 600;
+}
+.chip-prompt-in {
+  flex: 1; min-width: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 4px; color: var(--text);
+  padding: 5px 8px; font-size: 11px;
+  color: var(--text-mid);
+  font-family: var(--sans);
+}
+.chip-emoji-in:focus, .chip-label-in:focus, .chip-prompt-in:focus {
+  outline: none; border-color: var(--green);
+}
+.chip-del {
+  width: 22px; height: 22px;
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-dim); border-radius: 3px; font-size: 10px;
+  cursor: pointer; flex-shrink: 0;
+}
+.chip-del:hover { background: var(--red-dim); color: var(--red); border-color: var(--red); }
+.chip-add-row {
+  display: flex; gap: 6px; margin-top: 6px;
+}
+.chip-add-btn {
+  flex: 1; background: transparent;
+  border: 1px dashed var(--border); color: var(--text-dim);
+  padding: 5px; border-radius: 4px; cursor: pointer;
+  font-size: 11px;
+}
+.chip-add-btn:hover { border-color: var(--green); color: var(--green); }
+.chip-reset-btn {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-mid); padding: 5px 10px; border-radius: 4px;
+  cursor: pointer; font-size: 11px;
+}
+.chip-reset-btn:hover { border-color: var(--amber); color: var(--amber); }
 
 /* ── Card editor ── */
 .card-dim-block { margin-bottom: 14px; }
@@ -963,6 +1026,51 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
 
 /* AI Insight panel */
 .insight-body { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.insight-card-prompt {
+  font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  padding: 6px 8px; margin-bottom: 6px;
+  background: rgba(0,0,0,0.2); border-left: 2px solid var(--purple);
+  border-radius: 3px;
+}
+
+/* Insight history */
+.insight-history-section {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.insight-history-head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--mono); font-size: 11px; color: var(--text-dim);
+  letter-spacing: 0.06em; margin-bottom: 8px;
+}
+.insight-tiny-btn {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-dim); padding: 3px 8px; border-radius: 3px;
+  font-size: 10px; cursor: pointer; font-family: var(--mono);
+}
+.insight-tiny-btn:hover { border-color: var(--purple); color: var(--purple); }
+.insight-hist-row {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 8px 10px; margin-bottom: 6px;
+  cursor: pointer; transition: all 0.15s;
+}
+.insight-hist-row:hover {
+  border-color: var(--purple); background: var(--purple-dim);
+}
+.insight-hist-time {
+  font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+  margin-bottom: 3px;
+}
+.insight-hist-prompt {
+  font-size: 11px; color: var(--text-mid); font-weight: 600;
+  margin-bottom: 3px;
+}
+.insight-hist-preview {
+  font-size: 11px; color: var(--text-dim);
+  line-height: 1.4;
+}
+
 .insight-card {
   background: var(--surface2);
   border: 1px solid var(--border);
@@ -1129,6 +1237,38 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
     <div class="modal-footer">
       <button class="top-btn btn-ghost" onclick="closePushModal(false)">取消</button>
       <button class="top-btn btn-start" id="pushModalSend" onclick="closePushModal(true)">送出推送</button>
+    </div>
+  </div>
+</div>
+
+<!-- ROLEPLAY DESIGNER MODAL -->
+<div class="modal-overlay" id="roleplayDesignerModal">
+  <div class="modal" style="width:min(540px, 92vw)">
+    <div class="modal-title" id="roleplayDesignerTitle">🎭 設計角色</div>
+    <div class="field-group">
+      <label class="field-label">角色名稱</label>
+      <input class="field-input" id="roleplayName" maxlength="20" placeholder="例：質疑 ROI 的財務主管">
+      <div class="field-hint">學員會看到「和這個角色對話」</div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">角色立場一句話</label>
+      <input class="field-input" id="roleplayDesc" maxlength="60" placeholder="例：強調成本效益，不相信 AI 投資回收">
+      <div class="field-hint">給學員看的簡介</div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">AI 角色扮演指引（必填）</label>
+      <textarea class="field-textarea" id="roleplayPrompt" rows="5" placeholder="描述這個角色會如何回應學員。例：
+你是一位強調成本效益的財務主管，對 AI 轉型計畫持懷疑態度。
+學員會向你提案，你要用數字壓力質疑他們：
+- 預算從哪來？
+- ROI 幾個月回收？
+- 失敗的保險？
+語氣犀利但不失禮，逼學員用商業語言說服你。"></textarea>
+      <div class="field-hint">會接在 system prompt 後，決定 AI 如何扮演這個角色</div>
+    </div>
+    <div class="modal-footer">
+      <button class="top-btn btn-ghost" onclick="closeRoleplayDesigner(false)">取消</button>
+      <button class="top-btn btn-start" onclick="closeRoleplayDesigner(true)">✓ 儲存角色</button>
     </div>
   </div>
 </div>
@@ -1422,6 +1562,13 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
         <div class="field-hint">會以廣播方式推送給所有學員</div>
       </div>
 
+      <!-- ─── 快速指令（Action Chips） ─── -->
+      <div class="section-header" style="margin-top:16px">⚡ 快速指令</div>
+      <div class="field-group" style="font-size:11px;color:var(--text-dim);margin-top:-4px">
+        學員對話區上方的快速按鈕；最多 6 個，每個點擊會把 prompt 填入輸入框
+      </div>
+      <div id="chipEditorList"></div>
+
       <!-- ─── 字卡編輯器 ─── -->
       <div class="section-header" style="margin-top:16px">🃏 字卡庫</div>
       <div class="field-group">
@@ -1540,6 +1687,17 @@ html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(-
         </div>
         <button class="ai-run-btn" onclick="runInsight()">✦ 執行 AI 洞察分析</button>
         <div id="insightResults"></div>
+
+        <div class="insight-history-section">
+          <div class="insight-history-head">
+            <span>📚 歷史洞察</span>
+            <div style="display:flex; gap:6px">
+              <button class="insight-tiny-btn" onclick="exportInsightHistory()" title="匯出為 Markdown">匯出</button>
+              <button class="insight-tiny-btn" onclick="clearInsightHistory()" title="清除本場次歷史">清除</button>
+            </div>
+          </div>
+          <div id="insightHistoryList"></div>
+        </div>
       </div>
     </div>
 
@@ -1700,6 +1858,8 @@ document.addEventListener('DOMContentLoaded', () => {
   renderModules();
   renderCardConfig();
   renderCheckinStepsEditor();
+  renderChipEditor();
+  renderInsightHistory();
   restoreSettings();
   restoreBranding();
   renderEmptyInvite();
@@ -1776,6 +1936,7 @@ async function writeSessionToSupabase() {
       join_code: S.joinCode,
       branding: collectBranding(),
       cards: _getCardsDraft(),
+      chips: _getChipsDraft(),
       checkin: _getCheckinDraft(),
       ai_config: {
         claudeModel: S.aiConfig.claudeModel,
@@ -1867,6 +2028,9 @@ function renderModules() {
     const surveyBtn = m.type === 'survey'
       ? `<button class="maction module-design-btn" onclick="openSurveyDesigner('${m.id}')">📊 設計問卷 (${m.questions?.length || 0})</button>`
       : '';
+    const roleBtn = m.type === 'roleplay'
+      ? `<button class="maction module-design-btn" onclick="openRoleplayDesigner('${m.id}')">🎭 設計角色${m.roleName ? ' ✓' : ''}</button>`
+      : '';
     return `
     <div class="module-item ${m.isActive?'active-module':''}" id="mod-${m.id}">
       <div class="module-seq">模組 ${m.seq} · ${m.duration}分</div>
@@ -1875,6 +2039,7 @@ function renderModules() {
       <div class="module-actions">
         <button class="maction ${m.isActive?'push':''}" onclick="pushModule('${m.id}')">${m.isActive?'✓ 進行中':'▶ 推送'}</button>
         ${surveyBtn}
+        ${roleBtn}
         <button class="maction" onclick="editModule('${m.id}')">編輯</button>
         <button class="maction" onclick="deleteModule('${m.id}')">刪除</button>
       </div>
@@ -2016,6 +2181,43 @@ function editModule(id) {
   document.getElementById('newModuleDuration').value = m.duration;
   document.getElementById('newModuleType').value = m.type;
   openModal();
+}
+
+// ══════════════════════════════════════════
+// ROLEPLAY DESIGNER
+// ══════════════════════════════════════════
+function openRoleplayDesigner(moduleId) {
+  const m = S.modules.find(m => m.id === moduleId);
+  if(!m) return;
+  document.getElementById('roleplayDesignerTitle').textContent = `🎭 設計角色：${m.name}`;
+  document.getElementById('roleplayName').value   = m.roleName   || '';
+  document.getElementById('roleplayDesc').value   = m.roleDesc   || '';
+  document.getElementById('roleplayPrompt').value = m.rolePrompt || '';
+  document.getElementById('roleplayDesignerModal').classList.add('open');
+  document.getElementById('roleplayDesignerModal')._editingId = moduleId;
+  setTimeout(() => document.getElementById('roleplayName')?.focus(), 50);
+}
+
+function closeRoleplayDesigner(save) {
+  const overlay = document.getElementById('roleplayDesignerModal');
+  if(!save) { overlay.classList.remove('open'); return; }
+  const id = overlay._editingId;
+  const m = S.modules.find(m => m.id === id);
+  if(!m) { overlay.classList.remove('open'); return; }
+  const name   = document.getElementById('roleplayName').value.trim();
+  const desc   = document.getElementById('roleplayDesc').value.trim();
+  const prompt = document.getElementById('roleplayPrompt').value.trim();
+  if(!name || !prompt) {
+    showToast('⚠ 角色名稱與 AI 指引都是必填', 'warn');
+    return;
+  }
+  m.roleName   = name;
+  m.roleDesc   = desc;
+  m.rolePrompt = prompt;
+  overlay.classList.remove('open');
+  renderModules();
+  showToast('✓ 角色已儲存', 'success');
+  if(S.isLive && S.supabaseUrl && S.sessionId) _pushModulesUpdate();
 }
 
 // ══════════════════════════════════════════
@@ -2414,11 +2616,16 @@ function renderSurveyAggregate() {
     const responses = S._surveyResponses[m.id] || [];
     const n = responses.length;
     const isActive = m.isActive;
+    const exportBtn = n > 0
+      ? `<button class="survey-export-btn" onclick="exportSurveyCSV('${m.id}')">📥 匯出 CSV</button>`
+      : '';
     const header = `
-      <h3 style="margin:0; font-size:15px; display:flex; align-items:center; gap:8px">
-        <span>${_esc(m.name)}</span>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap">
+        <h3 style="margin:0; font-size:15px">${_esc(m.name)}</h3>
         ${isActive ? '<span style="font-size:10px; color:var(--green); padding:2px 8px; border:1px solid var(--green); border-radius:999px">進行中</span>' : ''}
-      </h3>
+        <div style="flex:1"></div>
+        ${exportBtn}
+      </div>
       <div class="survey-agg-meta">${n} 位回應 · ${m.questions.length} 題</div>
     `;
     const qBlocks = m.questions.map((q, qi) => _renderSurveyQAgg(q, qi, responses)).join('');
@@ -2429,6 +2636,57 @@ function renderSurveyAggregate() {
       </div>`;
   }).join('');
 }
+
+// Export a survey's responses as CSV (one row per respondent, one column per question).
+// Single-choice answers are converted from index → option text.
+window.exportSurveyCSV = function(moduleId) {
+  const m = S.modules.find(x => x.id === moduleId);
+  const responses = S._surveyResponses[moduleId] || [];
+  if(!m || responses.length === 0) {
+    showToast('⚠ 這份問卷尚無回應', 'warn');
+    return;
+  }
+
+  // Header: participant name + one column per question
+  const header = ['participant_id', 'name', 'submitted_at'].concat(
+    m.questions.map((q, i) => `Q${i+1}_${q.prompt.slice(0, 30)}`)
+  );
+
+  const escape = (v) => {
+    const s = String(v == null ? '' : v);
+    if(/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+    return s;
+  };
+
+  const rows = responses.map(r => {
+    const p = S.participants.find(pp => pp.id === r.participantId);
+    const row = [r.participantId, p?.name || '匿名', r.submittedAt || ''];
+    for(const q of m.questions) {
+      const a = r.answers.find(x => x.qid === q.id);
+      if(!a) { row.push(''); continue; }
+      if(q.type === 'single') {
+        const idx = parseInt(a.answer, 10);
+        row.push(q.options?.[idx] ?? a.answer);
+      } else {
+        row.push(a.answer);
+      }
+    }
+    return row;
+  });
+
+  const csv = [header, ...rows].map(r => r.map(escape).join(',')).join('\r\n');
+  // BOM so Excel opens UTF-8 correctly
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `survey-${m.name || moduleId}-${Date.now()}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast(`✓ 已匯出 ${responses.length} 筆回應`, 'success');
+};
 
 function _renderSurveyQAgg(q, qi, responses) {
   const values = responses
@@ -2746,23 +3004,45 @@ function _updateSearchCount(q, count) {
 // PROJECTION SYNC
 // ══════════════════════════════════════════
 function syncProjection() {
-  const responses = S.participants.flatMap(p => (p.messages||[]).filter(m=>m.role==='user').slice(-2));
-  const words = {};
-  responses.forEach(m => {
-    m.content.split(/[\s，。？！、；：]/g).filter(w=>w.length>1).forEach(w=>{ words[w]=(words[w]||0)+1; });
-  });
-  const sorted = Object.entries(words).sort((a,b)=>b[1]-a[1]);
+  // Prefer explicit convergence keywords if the active module is type='convergence'.
+  // Otherwise fall back to chat-derived word splitting.
+  const activeModule = S.modules.find(m => m.isActive);
+  const isConvergence = activeModule?.type === 'convergence';
+  const kwList = isConvergence ? (S._keywords?.[activeModule.id] || []) : [];
+
+  let sorted;
+  let responsesDisplay;
+  let projQLabel = document.getElementById('projQuestion');
+  if(projQLabel && activeModule) {
+    projQLabel.textContent = activeModule.prompt || activeModule.name || '';
+  }
+
+  if(isConvergence && kwList.length > 0) {
+    const counts = {};
+    kwList.forEach(k => { counts[k.keyword] = (counts[k.keyword] || 0) + 1; });
+    sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+    responsesDisplay = kwList.slice(-8).reverse().map(k => k.keyword);
+  } else {
+    const responses = S.participants.flatMap(p => (p.messages||[]).filter(m=>m.role==='user').slice(-2));
+    const words = {};
+    responses.forEach(m => {
+      m.content.split(/[\s，。？！、；：]/g).filter(w=>w.length>1).forEach(w=>{ words[w]=(words[w]||0)+1; });
+    });
+    sorted = Object.entries(words).sort((a,b)=>b[1]-a[1]);
+    responsesDisplay = responses.slice(-6).map(m => m.content);
+  }
+
   const max = sorted[0]?.[1]||1;
   document.getElementById('projWordCloud').innerHTML = sorted.slice(0,20).map(([w,c])=>{
     const r=c/max; const sz=r>0.8?5:r>0.6?4:r>0.4?3:r>0.2?2:1;
     return `<span class="wc-bubble wc-${sz}">${w}</span>`;
   }).join('') || '<span style="color:var(--text-dim);font-size:12px">等待回應...</span>';
 
-  document.getElementById('projResponses').innerHTML = responses.slice(-6).map(m=>
-    `<div class="rstream-item">${m.content}</div>`
+  document.getElementById('projResponses').innerHTML = responsesDisplay.map(t =>
+    `<div class="rstream-item">${t}</div>`
   ).join('') || '<span style="color:var(--text-dim);font-size:12px;font-family:var(--mono)">等待回應...</span>';
 
-  document.getElementById('pstatR').textContent = responses.length;
+  document.getElementById('pstatR').textContent = responsesDisplay.length;
   document.getElementById('pstatW').textContent = sorted.length;
 
   // Card heatmap
@@ -2808,14 +3088,10 @@ async function runInsight() {
 
   if(!S.claudeKey) {
     setTimeout(() => {
-      results.innerHTML = `<div class="insight-card" style="margin-top:8px">
-        <div class="insight-card-label">⚡ 群體洞察（示範）</div>
-        <div class="insight-card-text">今天的群體整體呈現「觀望 → 好奇」的轉換動態。主要張力：效率期待 vs 責任歸屬的不確定。建議：在收斂環節直接點名「誰來負責」這個問題，讓它成為全場討論焦點。</div>
-        <div class="tension-row" style="margin-top:8px">
-          <span class="tension-tag">⚡ 效率 vs 責任</span>
-          <span class="tension-tag">⚡ 期待 vs 恐懼</span>
-        </div>
-      </div>`;
+      const demoText = '今天的群體整體呈現「觀望 → 好奇」的轉換動態。主要張力：效率期待 vs 責任歸屬的不確定。建議：在收斂環節直接點名「誰來負責」這個問題，讓它成為全場討論焦點。';
+      _saveInsightToHistory(prompt, demoText, '1.4');
+      renderInsightResult(prompt, demoText, '1.4');
+      renderInsightHistory();
     }, 1400);
     return;
   }
@@ -2840,16 +3116,103 @@ async function runInsight() {
     const data = await res.json();
     const text = data.content?.[0]?.text || '分析失敗';
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-    results.innerHTML = `<div class="insight-card" style="margin-top:8px">
-      <div class="insight-card-label">⚡ AI 洞察 <span style="font-size:9px;color:var(--text-dim);font-weight:400">${elapsed}s</span></div>
-      <div class="insight-card-text">${text.replace(/\n/g,'<br>')}</div>
-    </div>`;
+    _saveInsightToHistory(prompt, text, elapsed);
+    renderInsightResult(prompt, text, elapsed);
+    renderInsightHistory();
     addLog('insight', `群體洞察完成（${elapsed}s）`, 'instructor');
   } catch(e) {
     results.innerHTML = `<div class="insight-card" style="margin-top:8px"><div class="insight-card-text" style="color:var(--red)">分析失敗：${e.message}</div></div>`;
     addLog('insight', `⚠ 洞察失敗：${e.message}`, 'error');
   }
 }
+
+// ── INSIGHT HISTORY ──
+function _getInsightHistory() {
+  if(S._insightHistory) return S._insightHistory;
+  const stored = safeStorage.get('_insightHistory_' + (S.sessionId || 'none'));
+  if(stored) { try { S._insightHistory = JSON.parse(stored); return S._insightHistory; } catch(_) {} }
+  S._insightHistory = [];
+  return S._insightHistory;
+}
+
+function _saveInsightToHistory(prompt, text, elapsed) {
+  const hist = _getInsightHistory();
+  hist.unshift({
+    id: 'ih' + Date.now(),
+    prompt, text, elapsed,
+    at: new Date().toISOString(),
+    participantCount: S.participants.length,
+  });
+  // Cap at 20 to avoid localStorage bloat
+  if(hist.length > 20) hist.length = 20;
+  safeStorage.set('_insightHistory_' + (S.sessionId || 'none'), JSON.stringify(hist));
+}
+
+function renderInsightResult(prompt, text, elapsed) {
+  const results = document.getElementById('insightResults');
+  if(!results) return;
+  results.innerHTML = `<div class="insight-card" style="margin-top:8px">
+    <div class="insight-card-label">⚡ AI 洞察 <span style="font-size:9px;color:var(--text-dim);font-weight:400">${elapsed}s</span></div>
+    <div class="insight-card-prompt">❯ ${_esc(prompt)}</div>
+    <div class="insight-card-text">${_esc(text).replace(/\n/g,'<br>')}</div>
+  </div>`;
+}
+
+function renderInsightHistory() {
+  const el = document.getElementById('insightHistoryList');
+  if(!el) return;
+  const hist = _getInsightHistory();
+  if(hist.length === 0) {
+    el.innerHTML = '<div style="color:var(--text-dim); font-size:11px; padding:8px 0">（尚無歷史紀錄）</div>';
+    return;
+  }
+  el.innerHTML = hist.map(h => `
+    <div class="insight-hist-row" onclick="replayInsight('${h.id}')" title="點擊重新顯示">
+      <div class="insight-hist-time">${_formatInsightTime(h.at)} · ${h.participantCount} 人 · ${h.elapsed}s</div>
+      <div class="insight-hist-prompt">❯ ${_esc(h.prompt.slice(0, 40))}${h.prompt.length > 40 ? '...' : ''}</div>
+      <div class="insight-hist-preview">${_esc(h.text.slice(0, 80))}${h.text.length > 80 ? '...' : ''}</div>
+    </div>`).join('');
+}
+
+function _formatInsightTime(iso) {
+  const d = new Date(iso);
+  return d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+}
+
+window.replayInsight = function(id) {
+  const h = _getInsightHistory().find(x => x.id === id);
+  if(!h) return;
+  renderInsightResult(h.prompt, h.text, h.elapsed);
+};
+
+window.exportInsightHistory = function() {
+  const hist = _getInsightHistory();
+  if(hist.length === 0) { showToast('⚠ 尚無歷史紀錄', 'warn'); return; }
+  const lines = ['# AI 群體洞察歷史', `> 場次 ${S.joinCode} · 匯出於 ${new Date().toLocaleString('zh-TW')}`, ''];
+  hist.forEach((h, i) => {
+    lines.push(`## ${i+1}. ${_formatInsightTime(h.at)} （${h.participantCount} 人，用時 ${h.elapsed}s）`);
+    lines.push(`**講師問：** ${h.prompt}`, '');
+    lines.push(h.text, '', '---', '');
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `insights-${S.joinCode}-${Date.now()}.md`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast('✓ 已匯出洞察歷史', 'success');
+};
+
+window.clearInsightHistory = function() {
+  if(!confirm('要清除這場次的所有洞察歷史？（不會影響資料庫，只清本機暫存）')) return;
+  S._insightHistory = [];
+  safeStorage.set('_insightHistory_' + (S.sessionId || 'none'), '[]');
+  renderInsightHistory();
+  showToast('✓ 已清除歷史', 'success');
+};
 
 async function runGroupInsight() {
   switchRightTab('insight');
@@ -2967,6 +3330,20 @@ function _doInstructorSubscribe(sb) {
       filter: `session_id=eq.${S.sessionId}`
     }, payload => {
       const c = payload.new;
+      // Convergence keywords: route to keyword aggregate, don't pollute chat
+      if(c.content_type === 'keyword') {
+        const moduleId = c.metadata?.module_id || 'unknown';
+        if(!S._keywords) S._keywords = {};
+        if(!S._keywords[moduleId]) S._keywords[moduleId] = [];
+        S._keywords[moduleId].push({
+          keyword: c.content,
+          participantId: c.participant_id,
+          at: c.created_at || new Date().toISOString(),
+        });
+        // If projection view is visible, refresh
+        if(document.getElementById('projectionView')?.style.display === 'flex') syncProjection();
+        return;
+      }
       // Survey responses: not a chat message — route to aggregate
       if(c.content_type === 'survey_response') {
         try {
@@ -3172,6 +3549,104 @@ window.onCheckinNumChange = function(key, field, val) {
     if(field === 'max' && cfg.cards.max < cfg.cards.min) cfg.cards.min = cfg.cards.max;
   }
   _persistCheckinDraft();
+};
+
+// ══════════════════════════════════════════
+// ACTION CHIP EDITOR
+// ══════════════════════════════════════════
+const DEFAULT_CHIPS = [
+  { id:'discuss',   emoji:'💬', label:'討論',     prompt:'請針對目前的討論主題，給我一個能打開新視角的問題。' },
+  { id:'visualize', emoji:'🎨', label:'視覺化',   prompt:'請把我們目前討論的核心概念，用視覺化方式呈現出來。', needsVisual:true },
+  { id:'challenge', emoji:'⚡', label:'挑戰我',   prompt:'請以「{roleHint}」的角色，挑戰我的想法。' },
+  { id:'summarize', emoji:'📋', label:'幫我整理', prompt:'請把目前的對話整理成一份簡潔的重點摘要。' },
+  { id:'reflect',   emoji:'🔍', label:'深度反思', prompt:'請給我一個深化思考的反思問題，幫助我把學到的東西跟工作實際連結。' },
+];
+
+function _getChipsDraft() {
+  if(S.chips) return S.chips;
+  const stored = safeStorage.get('_chipsDraft');
+  if(stored) { try { S.chips = JSON.parse(stored); return S.chips; } catch(_) {} }
+  S.chips = DEFAULT_CHIPS.map(c => ({ ...c }));
+  return S.chips;
+}
+
+function _persistChipsDraft() {
+  safeStorage.set('_chipsDraft', JSON.stringify(S.chips));
+  if(S.isLive && S.supabaseUrl && S.sessionId) _pushChipsUpdate(S.chips);
+}
+
+async function _pushChipsUpdate(chips) {
+  clearTimeout(_pushChipsUpdate._t);
+  _pushChipsUpdate._t = setTimeout(async () => {
+    try {
+      const res = await fetch(`${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}&select=config`, {
+        headers: { 'apikey': S.supabaseKey, 'Authorization': `Bearer ${S.supabaseKey}` }
+      });
+      const data = await res.json();
+      const cfg = data?.[0]?.config || {};
+      cfg.chips = chips;
+      await fetch(`${S.supabaseUrl}/rest/v1/sessions?id=eq.${S.sessionId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': S.supabaseKey,
+          'Authorization': `Bearer ${S.supabaseKey}`,
+        },
+        body: JSON.stringify({ config: cfg })
+      });
+      addLog('chips', '快速指令已同步', 'system');
+    } catch(e) {
+      addLog('chips', `⚠ 快速指令同步失敗：${e.message}`, 'error');
+    }
+  }, 800);
+}
+
+function renderChipEditor() {
+  const el = document.getElementById('chipEditorList');
+  if(!el) return;
+  const chips = _getChipsDraft();
+  const rows = chips.map((c, i) => `
+    <div class="chip-row">
+      <input class="chip-emoji-in" maxlength="3" value="${_esc(c.emoji || '')}" oninput="onChipEdit(${i},'emoji',this.value)">
+      <input class="chip-label-in" maxlength="8" value="${_esc(c.label || '')}" oninput="onChipEdit(${i},'label',this.value)" placeholder="按鈕文字">
+      <input class="chip-prompt-in" value="${_esc(c.prompt || '')}" oninput="onChipEdit(${i},'prompt',this.value)" placeholder="prompt（{roleHint} 會替換成角色）">
+      <button class="chip-del" onclick="onChipDel(${i})" title="刪除">✕</button>
+    </div>
+  `).join('');
+  el.innerHTML = `
+    ${rows}
+    <div class="chip-add-row">
+      <button class="chip-add-btn" onclick="onChipAdd()">+ 新增指令</button>
+      <button class="chip-reset-btn" onclick="onChipsRestore()">↺ 還原</button>
+    </div>`;
+}
+
+window.onChipEdit = function(i, field, val) {
+  const chips = _getChipsDraft();
+  if(!chips[i]) return;
+  chips[i][field] = val;
+  _persistChipsDraft();
+};
+window.onChipAdd = function() {
+  const chips = _getChipsDraft();
+  if(chips.length >= 6) { showToast('⚠ 最多 6 個指令', 'warn'); return; }
+  chips.push({ id:'c'+Date.now(), emoji:'✦', label:'新指令', prompt:'' });
+  _persistChipsDraft();
+  renderChipEditor();
+};
+window.onChipDel = function(i) {
+  const chips = _getChipsDraft();
+  if(chips.length <= 1) { showToast('⚠ 至少保留一個指令', 'warn'); return; }
+  chips.splice(i, 1);
+  _persistChipsDraft();
+  renderChipEditor();
+};
+window.onChipsRestore = function() {
+  if(!confirm('要還原預設 5 個快速指令？')) return;
+  S.chips = DEFAULT_CHIPS.map(c => ({ ...c }));
+  _persistChipsDraft();
+  renderChipEditor();
+  showToast('✓ 已還原預設指令', 'success');
 };
 
 // Lazy-init cards state from localStorage or defaults.

@@ -1064,6 +1064,177 @@ body {
 .toast.warn    { background: #3a2d14; border-color: rgba(232,168,58,0.35); }
 .toast.error   { background: #3a1e18; border-color: rgba(232,120,100,0.35); }
 
+/* ── END-OF-SESSION SUMMARY (student-side) ── */
+.end-summary {
+  background: linear-gradient(155deg, rgba(45,90,61,0.18), rgba(193,127,36,0.12));
+  border: 1px solid rgba(90,173,120,0.35);
+  border-radius: 16px;
+  padding: 18px;
+  margin: 8px 0;
+}
+.end-summary-label {
+  font-family: var(--mono, monospace); font-size: 10px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ai-accent, #5aad78);
+  margin-bottom: 6px;
+}
+.end-summary-title {
+  font-family: var(--serif, serif); font-size: 20px;
+  color: var(--ai-text, #eae4cd); font-weight: 700;
+  margin-bottom: 14px;
+}
+.end-summary-stats {
+  display: flex; gap: 8px; margin-bottom: 14px;
+}
+.end-stat {
+  flex: 1; text-align: center;
+  padding: 10px 4px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.end-stat-num {
+  font-family: var(--mono); font-size: 22px; font-weight: 700;
+  color: var(--ai-accent, #5aad78);
+  line-height: 1;
+}
+.end-stat-label {
+  font-size: 11px; color: var(--ai-dim);
+  margin-top: 3px; letter-spacing: 0.04em;
+}
+.end-summary-profile {
+  background: rgba(0,0,0,0.18); border-radius: 8px;
+  padding: 10px 12px; margin-bottom: 14px;
+  font-size: 13px;
+}
+.end-summary-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 3px 0;
+}
+.end-summary-key {
+  font-size: 11px; color: var(--ai-dim);
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+.end-summary-val {
+  color: var(--ai-text); font-weight: 500;
+  text-align: right; max-width: 60%;
+}
+.end-summary-insights {
+  background: rgba(0,0,0,0.18); border-radius: 8px;
+  padding: 12px; margin-bottom: 14px;
+}
+.end-summary-subhead {
+  font-size: 11px; color: var(--ai-dim); letter-spacing: 0.06em;
+  text-transform: uppercase; margin-bottom: 8px;
+}
+.end-summary-insight {
+  font-size: 13px; color: var(--ai-text);
+  line-height: 1.5; padding: 4px 0;
+}
+.end-summary-btn {
+  width: 100%; padding: 12px; border-radius: 10px;
+  background: var(--accent, #2d5a3d); color: #fff;
+  border: none; cursor: pointer;
+  font-size: 14px; font-weight: 600;
+  transition: transform 0.1s, background 0.15s;
+}
+.end-summary-btn:hover { background: #3a7050; }
+.end-summary-btn:active { transform: scale(0.98); }
+
+/* ── ROLEPLAY CARD (student-side) ── */
+.roleplay-card {
+  background: linear-gradient(135deg, rgba(193,127,36,0.12), rgba(139,58,42,0.08));
+  border: 1px solid rgba(193,127,36,0.3);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin: 4px 0;
+}
+.roleplay-card-label {
+  font-family: var(--mono, monospace); font-size: 10px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--amber, #c17f24);
+  margin-bottom: 4px;
+}
+.roleplay-card-title {
+  font-family: var(--serif, serif); font-size: 17px;
+  color: var(--ai-text, #eae4cd); font-weight: 600;
+  margin-bottom: 8px;
+}
+.roleplay-card-desc {
+  font-size: 13px; color: var(--ai-text);
+  padding: 10px 12px; background: rgba(0,0,0,0.25);
+  border-radius: 8px; margin-bottom: 10px; line-height: 1.5;
+}
+.roleplay-card-hint {
+  font-size: 12px; color: var(--ai-dim);
+  line-height: 1.5; font-style: italic;
+}
+
+/* ── CONVERGENCE CARD (student-side) ── */
+.conv-card {
+  background: linear-gradient(135deg, rgba(77,159,255,0.1), rgba(156,107,255,0.08));
+  border: 1px solid rgba(77,159,255,0.3);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin: 4px 0;
+}
+.conv-card-label {
+  font-family: var(--mono, monospace); font-size: 10px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: #6ba8ff; margin-bottom: 4px;
+}
+.conv-card-title {
+  font-family: var(--serif, serif); font-size: 16px;
+  color: var(--ai-text, #eae4cd); font-weight: 600;
+  margin-bottom: 8px;
+}
+.conv-card-prompt {
+  font-size: 13px; color: var(--ai-text);
+  padding: 8px 10px; background: rgba(0,0,0,0.18);
+  border-radius: 6px; margin-bottom: 8px; line-height: 1.5;
+}
+.conv-card-hint {
+  font-size: 12px; color: var(--ai-dim);
+  line-height: 1.5; margin-bottom: 10px;
+}
+.conv-inputs { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.conv-input {
+  width: 100%; box-sizing: border-box;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px; padding: 10px 12px;
+  color: var(--ai-text, #eae4cd);
+  font-family: var(--sans, system-ui); font-size: 14px;
+  transition: border-color 0.15s;
+}
+.conv-input:focus {
+  outline: none; border-color: rgba(77,159,255,0.5);
+}
+.conv-add-btn {
+  width: 100%; background: transparent;
+  border: 1px dashed rgba(255,255,255,0.18);
+  color: var(--ai-dim); padding: 8px;
+  border-radius: 6px; font-size: 12px;
+  cursor: pointer; margin-bottom: 8px;
+  transition: all 0.15s;
+}
+.conv-add-btn:hover { border-color: rgba(77,159,255,0.5); color: #6ba8ff; }
+.conv-submit-btn {
+  width: 100%; padding: 12px; border-radius: 10px;
+  background: #4d9fff; color: #0a1628;
+  border: none; cursor: pointer;
+  font-size: 14px; font-weight: 700;
+  transition: transform 0.1s, background 0.15s;
+}
+.conv-submit-btn:hover { background: #6ba8ff; }
+.conv-submit-btn:active { transform: scale(0.98); }
+.conv-submit-btn:disabled { opacity: 0.5; cursor: progress; }
+.conv-done-msg {
+  text-align: center; padding: 8px 0 0;
+  color: #6ba8ff;
+  font-size: 12px; font-weight: 600;
+}
+
 /* ── SURVEY CARD (student-side) ── */
 .survey-card {
   background: var(--ai-surface, rgba(255,255,255,0.04));
@@ -1376,11 +1547,7 @@ body {
 
   <div class="input-bar" id="inputBar">
     <div class="input-actions" id="inputActions">
-      <div class="action-chip" onclick="triggerAction('discuss')">💬 討論</div>
-      <div class="action-chip" onclick="triggerAction('visualize')" data-feature="visual">🎨 視覺化</div>
-      <div class="action-chip" onclick="triggerAction('challenge')">⚡ 挑戰我</div>
-      <div class="action-chip" onclick="triggerAction('summarize')">📋 幫我整理</div>
-      <div class="action-chip" onclick="triggerAction('reflect')">🔍 深度反思</div>
+      <!-- Rendered by renderActionChips() from readConfig.chips() -->
     </div>
     <div class="input-row">
       <textarea class="chat-textarea" id="chatInput"
@@ -1471,6 +1638,13 @@ const DEFAULT_BRANDING = {
   tagline:  '你的 AI 學習夥伴，從今天開始',
   host:     '',
 };
+const DEFAULT_CHIPS = [
+  { id:'discuss',   emoji:'💬', label:'討論',     prompt:'請針對目前的討論主題，給我一個能打開新視角的問題。' },
+  { id:'visualize', emoji:'🎨', label:'視覺化',   prompt:'請把我們目前討論的核心概念，用視覺化方式呈現出來。', needsVisual:true },
+  { id:'challenge', emoji:'⚡', label:'挑戰我',   prompt:'請以「{roleHint}」的角色，挑戰我的想法。' },
+  { id:'summarize', emoji:'📋', label:'幫我整理', prompt:'請把目前的對話整理成一份簡潔的重點摘要。' },
+  { id:'reflect',   emoji:'🔍', label:'深度反思', prompt:'請給我一個深化思考的反思問題，幫助我把學到的東西跟工作實際連結。' },
+];
 const DEFAULT_CHECKIN = {
   name:  { enabled:true, prompt:'你叫什麼名字？',       max:20, hint:'最多 20 字，會顯示在大螢幕' },
   cards: { enabled:true, prompt:'選出最像你現在的字卡', min:1, max:2, hint:'最多選 2 張，你的選擇會個人化你的 AI 夥伴' },
@@ -1482,6 +1656,7 @@ const DEFAULT_CHECKIN = {
 const readConfig = {
   cards()    { return S.sessionConfig?.cards?.length    ? S.sessionConfig.cards    : DEFAULT_CARDS; },
   moods()    { return S.sessionConfig?.moods?.length    ? S.sessionConfig.moods    : DEFAULT_MOODS; },
+  chips()    { return S.sessionConfig?.chips?.length    ? S.sessionConfig.chips    : DEFAULT_CHIPS; },
   branding() { return { ...DEFAULT_BRANDING, ...(S.sessionConfig?.branding || {}) }; },
   checkin() {
     const src = S.sessionConfig?.checkin || {};
@@ -1881,6 +2056,7 @@ function initSession() {
     visual_enabled: CONFIG.demoMode ? true : (f?.visual_enabled ?? true),
   };
   applyFeatureFlags();
+  renderActionChips();
 
   // Set realtime badge status
   _updateRealtimeBadge(CONFIG.demoMode ? 'demo' : 'connecting');
@@ -2034,15 +2210,23 @@ function scrollChat() {
 }
 
 // ── ACTION CHIPS ──
-function triggerAction(type) {
-  const prompts = {
-    discuss:    '請針對目前的討論主題，給我一個能打開新視角的問題。',
-    visualize:  '請把我們目前討論的核心概念，用視覺化方式呈現出來。',
-    challenge:  '請以「' + (S.memory.profile?.roleHint || '持懷疑態度的同事') + '」的角色，挑戰我的想法。',
-    summarize:  '請把目前的對話整理成一份簡潔的重點摘要。',
-    reflect:    '請給我一個深化思考的反思問題，幫助我把學到的東西跟工作實際連結。',
-  };
-  document.getElementById('chatInput').value = prompts[type] || '';
+function renderActionChips() {
+  const el = document.getElementById('inputActions');
+  if(!el) return;
+  const chips = readConfig.chips();
+  el.innerHTML = chips.map(c => {
+    const dataAttr = c.needsVisual ? ' data-feature="visual"' : '';
+    const id = _escHtml(c.id || c.label);
+    return `<div class="action-chip" onclick="triggerAction('${id}')"${dataAttr}>${_escHtml(c.emoji || '')} ${_escHtml(c.label)}</div>`;
+  }).join('');
+}
+
+function triggerAction(id) {
+  const chip = readConfig.chips().find(c => (c.id || c.label) === id);
+  if(!chip) return;
+  const roleHint = S.memory.profile?.roleHint || '持懷疑態度的同事';
+  const text = (chip.prompt || '').replace(/\{roleHint\}/g, roleHint);
+  document.getElementById('chatInput').value = text;
   autoResize(document.getElementById('chatInput'));
   document.getElementById('chatInput').focus();
 }
@@ -2599,7 +2783,21 @@ ${(unresolved_questions||[]).length ? `未解決的問題：${unresolved_questio
 - 優先觸發認知衝突（問出讓學員停頓的問題）
 - 主動連結學員的字卡選擇到當前討論
 - 不要重複你之前說過的內容
-- 永遠不要跳出角色或解釋你是 AI`;
+- 永遠不要跳出角色或解釋你是 AI
+${_buildRoleplaySection()}`;
+}
+
+// When the active module is a roleplay with a configured role, append the
+// role brief to the system prompt so the AI actually plays that role.
+function _buildRoleplaySection() {
+  const m = S._activeModuleObj;
+  if(!m || m.type !== 'roleplay' || !m.rolePrompt) return '';
+  return `
+【當前模組：角色扮演 — ${m.roleName}】
+${m.roleDesc ? `角色立場：${m.roleDesc}` : ''}
+${m.rolePrompt}
+
+重要：在此模組期間，你要**完全扮演**上述角色與學員互動。保留學習夥伴的溫暖基調，但立場與挑戰必須來自這個角色。`;
 }
 
 function updateMemory(role, content) {
@@ -2773,7 +2971,116 @@ function _handleSessionEnded() {
   document.getElementById('companionState').textContent = '工作坊已結束';
   _showConnectionBanner('✨ 工作坊已結束，感謝你的參與。對話已保留。', { persistent: true, tone: 'info' });
   addMessage('ai', '講師已結束這場工作坊，我們的對話到此告一段落。✨ 你今天的分享已被記錄下來，謝謝你的投入。');
+  // Render the personalised summary card at the end of the chat
+  renderEndSummary();
 }
+
+// End-of-workshop summary card: shows learner profile, stats, top insights,
+// and a button to download the full conversation as markdown.
+function renderEndSummary() {
+  const area = document.getElementById('chatArea');
+  if(document.getElementById('endSummaryCard')) return;
+
+  const name = S.name || '學員';
+  const picks = (S.picks || []).join('、') || '（未選）';
+  const mood = S.mood || '—';
+  const host = readConfig.branding().host;
+  const title = readConfig.branding().title;
+
+  // Stats from in-memory conversation
+  const userMsgs = S.messages.filter(m => m.role === 'user' && m.type === 'text');
+  const aiMsgs   = S.messages.filter(m => m.role === 'ai'   && m.type === 'text');
+  const artifacts = S.messages.filter(m => m.type && m.type.startsWith('artifact'));
+
+  const insights = (S.memory?.learning_state?.key_insights || []).slice(0, 3);
+  const insightsHtml = insights.length
+    ? `<div class="end-summary-insights">
+         <div class="end-summary-subhead">你今天分享的幾個想法</div>
+         ${insights.map(ins => `<div class="end-summary-insight">💭 ${_escHtml(ins)}</div>`).join('')}
+       </div>`
+    : '';
+
+  const card = document.createElement('div');
+  card.id = 'endSummaryCard';
+  card.className = 'msg-row ai';
+  card.innerHTML = `
+    <div class="msg-avatar">✨</div>
+    <div style="flex:1; min-width:0">
+      <div class="end-summary">
+        <div class="end-summary-label">▶ 今日回顧 · ${_escHtml(title)}${host ? ` · ${_escHtml(host)} 主持` : ''}</div>
+        <div class="end-summary-title">${_escHtml(name)}，謝謝你的參與 🌿</div>
+
+        <div class="end-summary-stats">
+          <div class="end-stat"><div class="end-stat-num">${userMsgs.length}</div><div class="end-stat-label">則分享</div></div>
+          <div class="end-stat"><div class="end-stat-num">${aiMsgs.length}</div><div class="end-stat-label">次對話</div></div>
+          <div class="end-stat"><div class="end-stat-num">${artifacts.length}</div><div class="end-stat-label">張概念圖</div></div>
+        </div>
+
+        <div class="end-summary-profile">
+          <div class="end-summary-row"><span class="end-summary-key">今天帶來</span><span class="end-summary-val">${_escHtml(picks)}</span></div>
+          <div class="end-summary-row"><span class="end-summary-key">能量狀態</span><span class="end-summary-val">${_escHtml(mood)}</span></div>
+        </div>
+
+        ${insightsHtml}
+
+        <button class="end-summary-btn" onclick="exportMyConversation()">📥 下載我的對話紀錄</button>
+      </div>
+    </div>`;
+  area.appendChild(card);
+  scrollChat();
+}
+
+// Export full conversation as a markdown text file the learner can save locally.
+window.exportMyConversation = function() {
+  const name = S.name || 'workshop';
+  const title = readConfig.branding().title;
+  const host = readConfig.branding().host;
+  const when = new Date().toLocaleString('zh-TW');
+
+  const lines = [
+    `# ${title} · ${name} 的學習紀錄`,
+    host ? `> ${host} 主持` : '',
+    `> 匯出時間：${when}`,
+    '',
+    `## 我的選擇`,
+    `- 字卡：${(S.picks || []).join('、') || '（未選）'}`,
+    `- 能量：${S.mood || '—'}`,
+    '',
+    `## 對話紀錄`,
+    '',
+  ];
+
+  for(const m of S.messages) {
+    if(m.type === 'text') {
+      const who = m.role === 'ai' ? '🤖 AI 夥伴' : '🙋 我';
+      const text = (m.content || '').replace(/\n/g, '\n> ');
+      lines.push(`**${who}**`, '', `> ${text}`, '');
+    } else if(m.type === 'task') {
+      const t = m.content || {};
+      lines.push(`### 🧭 活動推送：${t.title || ''}`, t.desc ? `> ${t.desc}` : '', '');
+    } else if(m.type && m.type.startsWith('artifact')) {
+      lines.push(`### 🎨 視覺化`, '（內嵌圖像略，可截圖保留）', '');
+    }
+  }
+
+  const insights = S.memory?.learning_state?.key_insights || [];
+  if(insights.length) {
+    lines.push('## 關鍵洞察', '');
+    insights.forEach(i => lines.push(`- ${i}`));
+  }
+
+  const md = lines.filter(l => l !== undefined).join('\n');
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `workshop-${name}-${Date.now()}.md`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast('✓ 已下載對話紀錄', 'success');
+};
 
 function _showConnectionBanner(msg, opts = {}) {
   let el = document.getElementById('connectionBanner');
@@ -2797,6 +3104,7 @@ function _hideConnectionBanner() {
 function _handleModuleChange(moduleId) {
   const module = (S.sessionConfig?.modules || []).find(m => m.id === moduleId);
   if(!module) return;
+  S._activeModuleObj = module;   // cached so buildSystemPrompt can read role
   document.getElementById('moduleBadge').textContent = module.name || '新活動';
 
   // Survey module gets its own card renderer
@@ -2805,11 +3113,44 @@ function _handleModuleChange(moduleId) {
     return;
   }
 
+  // Roleplay module with a configured role → dedicated intro card
+  if(module.type === 'roleplay' && module.roleName) {
+    renderRoleplayCard(module);
+    return;
+  }
+
+  // Convergence module → keyword collection card
+  if(module.type === 'convergence') {
+    renderConvergenceCard(module);
+    return;
+  }
+
   const taskMsg = { role:'task', content: { title: module.name, desc: module.prompt || '' }, type:'task', id: Date.now() };
   S.messages.push(taskMsg);
   renderMessage(taskMsg);
   scrollChat();
   addMessage('ai', `講師推送了新活動「${module.name}」。${module.prompt || ''}`);
+}
+
+// Roleplay card: introduces the role the AI is about to play
+function renderRoleplayCard(module) {
+  const area = document.getElementById('chatArea');
+  if(document.getElementById('role-' + module.id)) return;
+  const card = document.createElement('div');
+  card.className = 'msg-row ai';
+  card.id = 'role-' + module.id;
+  card.innerHTML = `
+    <div class="msg-avatar">🎭</div>
+    <div style="flex:1; min-width:0">
+      <div class="roleplay-card">
+        <div class="roleplay-card-label">▶ 角色扮演</div>
+        <div class="roleplay-card-title">和「${_escHtml(module.roleName)}」對話</div>
+        ${module.roleDesc ? `<div class="roleplay-card-desc">${_escHtml(module.roleDesc)}</div>` : ''}
+        <div class="roleplay-card-hint">接下來我會扮演這個角色回應你。試著用你的理由說服我 / 溝通看看。</div>
+      </div>
+    </div>`;
+  area.appendChild(card);
+  scrollChat();
 }
 
 // ══════════════════════════════════════════
@@ -2872,6 +3213,106 @@ function renderSurveyCard(module) {
   area.appendChild(card);
   scrollChat();
 }
+
+// Convergence card: learner submits short keywords that aggregate into
+// the instructor's live word cloud.
+function renderConvergenceCard(module) {
+  const area = document.getElementById('chatArea');
+  if(document.getElementById('conv-' + module.id)) return;
+  const card = document.createElement('div');
+  card.className = 'msg-row ai';
+  card.id = 'conv-' + module.id;
+  card.innerHTML = `
+    <div class="msg-avatar">💭</div>
+    <div style="flex:1; min-width:0">
+      <div class="conv-card">
+        <div class="conv-card-label">▶ 想法收斂</div>
+        <div class="conv-card-title">${_escHtml(module.name)}</div>
+        ${module.prompt ? `<div class="conv-card-prompt">${_escHtml(module.prompt)}</div>` : ''}
+        <div class="conv-card-hint">寫下 1-5 個關鍵字或短句（每個 1-8 字為佳），送出後會匯入大螢幕的共同關鍵字雲。</div>
+        <div class="conv-inputs" id="conv-inputs-${module.id}">
+          <input class="conv-input" maxlength="20" placeholder="關鍵字 1">
+          <input class="conv-input" maxlength="20" placeholder="關鍵字 2">
+          <input class="conv-input" maxlength="20" placeholder="關鍵字 3">
+        </div>
+        <button class="conv-add-btn" onclick="addConvInput('${module.id}')">+ 再多加一個</button>
+        <button class="conv-submit-btn" onclick="submitConvergence('${module.id}')">送出到大螢幕</button>
+        <div class="conv-done-msg" id="conv-done-${module.id}" style="display:none">✓ 已送出，歡迎繼續補充（可再次送出）</div>
+      </div>
+    </div>`;
+  area.appendChild(card);
+  scrollChat();
+}
+
+window.addConvInput = function(moduleId) {
+  const wrap = document.getElementById('conv-inputs-' + moduleId);
+  if(!wrap) return;
+  if(wrap.querySelectorAll('input').length >= 8) {
+    showToast('⚠ 最多 8 個關鍵字', 'warn');
+    return;
+  }
+  const input = document.createElement('input');
+  input.className = 'conv-input';
+  input.maxLength = 20;
+  input.placeholder = `關鍵字 ${wrap.querySelectorAll('input').length + 1}`;
+  wrap.appendChild(input);
+  input.focus();
+};
+
+window.submitConvergence = async function(moduleId) {
+  const card = document.getElementById('conv-' + moduleId);
+  if(!card) return;
+  const keywords = [...card.querySelectorAll('.conv-input')]
+    .map(i => i.value.trim())
+    .filter(Boolean);
+  if(keywords.length === 0) {
+    showToast('⚠ 請至少寫 1 個關鍵字', 'warn');
+    return;
+  }
+
+  const btn = card.querySelector('.conv-submit-btn');
+  btn.disabled = true;
+  btn.textContent = '送出中...';
+
+  if(CONFIG.supabaseUrl && !CONFIG.demoMode && S.participantId) {
+    try {
+      // Send each keyword as its own row so instructor aggregate is simple
+      const rows = keywords.map(kw => ({
+        session_id: S.sessionId,
+        participant_id: S.participantId,
+        role: 'user',
+        content: kw,
+        content_type: 'keyword',
+        metadata: { module_id: moduleId },
+      }));
+      const res = await fetch(`${CONFIG.supabaseUrl}/rest/v1/conversations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': CONFIG.supabaseKey,
+          'Authorization': `Bearer ${CONFIG.supabaseKey}`,
+        },
+        body: JSON.stringify(rows)
+      });
+      if(!res.ok) throw new Error(await res.text());
+      showToast(`✓ 送出 ${keywords.length} 個關鍵字`, 'success');
+    } catch(e) {
+      showToast('⚠ 送出失敗，請重試', 'error');
+      btn.disabled = false;
+      btn.textContent = '送出到大螢幕';
+      console.error('submitConvergence failed:', e);
+      return;
+    }
+  } else {
+    showToast(`✓ 記錄 ${keywords.length} 個關鍵字（示範模式）`, 'success');
+  }
+
+  // Clear inputs so learner can submit more later
+  card.querySelectorAll('.conv-input').forEach(i => i.value = '');
+  btn.disabled = false;
+  btn.textContent = '再送出一批';
+  document.getElementById('conv-done-' + moduleId).style.display = 'block';
+};
 
 function _escHtml(s) {
   return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
