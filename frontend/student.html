@@ -1064,6 +1064,83 @@ body {
 .toast.warn    { background: #3a2d14; border-color: rgba(232,168,58,0.35); }
 .toast.error   { background: #3a1e18; border-color: rgba(232,120,100,0.35); }
 
+/* ── END-OF-SESSION SUMMARY (student-side) ── */
+.end-summary {
+  background: linear-gradient(155deg, rgba(45,90,61,0.18), rgba(193,127,36,0.12));
+  border: 1px solid rgba(90,173,120,0.35);
+  border-radius: 16px;
+  padding: 18px;
+  margin: 8px 0;
+}
+.end-summary-label {
+  font-family: var(--mono, monospace); font-size: 10px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ai-accent, #5aad78);
+  margin-bottom: 6px;
+}
+.end-summary-title {
+  font-family: var(--serif, serif); font-size: 20px;
+  color: var(--ai-text, #eae4cd); font-weight: 700;
+  margin-bottom: 14px;
+}
+.end-summary-stats {
+  display: flex; gap: 8px; margin-bottom: 14px;
+}
+.end-stat {
+  flex: 1; text-align: center;
+  padding: 10px 4px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.end-stat-num {
+  font-family: var(--mono); font-size: 22px; font-weight: 700;
+  color: var(--ai-accent, #5aad78);
+  line-height: 1;
+}
+.end-stat-label {
+  font-size: 11px; color: var(--ai-dim);
+  margin-top: 3px; letter-spacing: 0.04em;
+}
+.end-summary-profile {
+  background: rgba(0,0,0,0.18); border-radius: 8px;
+  padding: 10px 12px; margin-bottom: 14px;
+  font-size: 13px;
+}
+.end-summary-row {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 3px 0;
+}
+.end-summary-key {
+  font-size: 11px; color: var(--ai-dim);
+  letter-spacing: 0.06em; text-transform: uppercase;
+}
+.end-summary-val {
+  color: var(--ai-text); font-weight: 500;
+  text-align: right; max-width: 60%;
+}
+.end-summary-insights {
+  background: rgba(0,0,0,0.18); border-radius: 8px;
+  padding: 12px; margin-bottom: 14px;
+}
+.end-summary-subhead {
+  font-size: 11px; color: var(--ai-dim); letter-spacing: 0.06em;
+  text-transform: uppercase; margin-bottom: 8px;
+}
+.end-summary-insight {
+  font-size: 13px; color: var(--ai-text);
+  line-height: 1.5; padding: 4px 0;
+}
+.end-summary-btn {
+  width: 100%; padding: 12px; border-radius: 10px;
+  background: var(--accent, #2d5a3d); color: #fff;
+  border: none; cursor: pointer;
+  font-size: 14px; font-weight: 600;
+  transition: transform 0.1s, background 0.15s;
+}
+.end-summary-btn:hover { background: #3a7050; }
+.end-summary-btn:active { transform: scale(0.98); }
+
 /* ── ROLEPLAY CARD (student-side) ── */
 .roleplay-card {
   background: linear-gradient(135deg, rgba(193,127,36,0.12), rgba(139,58,42,0.08));
@@ -2894,7 +2971,116 @@ function _handleSessionEnded() {
   document.getElementById('companionState').textContent = '工作坊已結束';
   _showConnectionBanner('✨ 工作坊已結束，感謝你的參與。對話已保留。', { persistent: true, tone: 'info' });
   addMessage('ai', '講師已結束這場工作坊，我們的對話到此告一段落。✨ 你今天的分享已被記錄下來，謝謝你的投入。');
+  // Render the personalised summary card at the end of the chat
+  renderEndSummary();
 }
+
+// End-of-workshop summary card: shows learner profile, stats, top insights,
+// and a button to download the full conversation as markdown.
+function renderEndSummary() {
+  const area = document.getElementById('chatArea');
+  if(document.getElementById('endSummaryCard')) return;
+
+  const name = S.name || '學員';
+  const picks = (S.picks || []).join('、') || '（未選）';
+  const mood = S.mood || '—';
+  const host = readConfig.branding().host;
+  const title = readConfig.branding().title;
+
+  // Stats from in-memory conversation
+  const userMsgs = S.messages.filter(m => m.role === 'user' && m.type === 'text');
+  const aiMsgs   = S.messages.filter(m => m.role === 'ai'   && m.type === 'text');
+  const artifacts = S.messages.filter(m => m.type && m.type.startsWith('artifact'));
+
+  const insights = (S.memory?.learning_state?.key_insights || []).slice(0, 3);
+  const insightsHtml = insights.length
+    ? `<div class="end-summary-insights">
+         <div class="end-summary-subhead">你今天分享的幾個想法</div>
+         ${insights.map(ins => `<div class="end-summary-insight">💭 ${_escHtml(ins)}</div>`).join('')}
+       </div>`
+    : '';
+
+  const card = document.createElement('div');
+  card.id = 'endSummaryCard';
+  card.className = 'msg-row ai';
+  card.innerHTML = `
+    <div class="msg-avatar">✨</div>
+    <div style="flex:1; min-width:0">
+      <div class="end-summary">
+        <div class="end-summary-label">▶ 今日回顧 · ${_escHtml(title)}${host ? ` · ${_escHtml(host)} 主持` : ''}</div>
+        <div class="end-summary-title">${_escHtml(name)}，謝謝你的參與 🌿</div>
+
+        <div class="end-summary-stats">
+          <div class="end-stat"><div class="end-stat-num">${userMsgs.length}</div><div class="end-stat-label">則分享</div></div>
+          <div class="end-stat"><div class="end-stat-num">${aiMsgs.length}</div><div class="end-stat-label">次對話</div></div>
+          <div class="end-stat"><div class="end-stat-num">${artifacts.length}</div><div class="end-stat-label">張概念圖</div></div>
+        </div>
+
+        <div class="end-summary-profile">
+          <div class="end-summary-row"><span class="end-summary-key">今天帶來</span><span class="end-summary-val">${_escHtml(picks)}</span></div>
+          <div class="end-summary-row"><span class="end-summary-key">能量狀態</span><span class="end-summary-val">${_escHtml(mood)}</span></div>
+        </div>
+
+        ${insightsHtml}
+
+        <button class="end-summary-btn" onclick="exportMyConversation()">📥 下載我的對話紀錄</button>
+      </div>
+    </div>`;
+  area.appendChild(card);
+  scrollChat();
+}
+
+// Export full conversation as a markdown text file the learner can save locally.
+window.exportMyConversation = function() {
+  const name = S.name || 'workshop';
+  const title = readConfig.branding().title;
+  const host = readConfig.branding().host;
+  const when = new Date().toLocaleString('zh-TW');
+
+  const lines = [
+    `# ${title} · ${name} 的學習紀錄`,
+    host ? `> ${host} 主持` : '',
+    `> 匯出時間：${when}`,
+    '',
+    `## 我的選擇`,
+    `- 字卡：${(S.picks || []).join('、') || '（未選）'}`,
+    `- 能量：${S.mood || '—'}`,
+    '',
+    `## 對話紀錄`,
+    '',
+  ];
+
+  for(const m of S.messages) {
+    if(m.type === 'text') {
+      const who = m.role === 'ai' ? '🤖 AI 夥伴' : '🙋 我';
+      const text = (m.content || '').replace(/\n/g, '\n> ');
+      lines.push(`**${who}**`, '', `> ${text}`, '');
+    } else if(m.type === 'task') {
+      const t = m.content || {};
+      lines.push(`### 🧭 活動推送：${t.title || ''}`, t.desc ? `> ${t.desc}` : '', '');
+    } else if(m.type && m.type.startsWith('artifact')) {
+      lines.push(`### 🎨 視覺化`, '（內嵌圖像略，可截圖保留）', '');
+    }
+  }
+
+  const insights = S.memory?.learning_state?.key_insights || [];
+  if(insights.length) {
+    lines.push('## 關鍵洞察', '');
+    insights.forEach(i => lines.push(`- ${i}`));
+  }
+
+  const md = lines.filter(l => l !== undefined).join('\n');
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `workshop-${name}-${Date.now()}.md`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast('✓ 已下載對話紀錄', 'success');
+};
 
 function _showConnectionBanner(msg, opts = {}) {
   let el = document.getElementById('connectionBanner');
