@@ -17,6 +17,13 @@ WorkshopAI 是一套**企業內部工作坊與培訓的 AI 人機協作工具**�
 - 活動結束後資料消失，沒有後續追蹤
 - L1/L2 學習成效，無法到達 L3（行為改變）
 
+> **[DESIGN HYPOTHESIS — no transfer evidence yet]**（tri-line audit C7, 2026-06-11）
+> 「工作坊內每位學員專屬 AI 夥伴 + 認知摩擦 → L3 行為改變」是**設計假說**，目前**無 RCT / transfer 證據**直接支撐這個複合外推。
+> - 各機制本身有獨立證據：認知摩擦（Sinha & Kapur 2021, *RER* meta-analysis：productive failure → 概念理解與近移轉，限 STEM 學術情境）、長期 AI 陪伴（Terblanche et al. 2022, 10 個月縱貫 RCT）。
+> - 缺證據的是「**單場工作坊 → L3**」這個複合外推，非各機制本身。
+> - 關於訓練移轉：移轉**大致同等**取決於學員特質（cognitive ability ρ=.37）、訓練設計、工作環境（supervisor support ρ=.31〔小樣本〕、transfer climate ρ=.27）三類因素（Blume, Ford, Baldwin & Huang 2010, *Journal of Management* 36(4):1065-1105, Table 1 及 p.1079）；課中體驗只是必要非充分條件，不可簡化為環境決定論。
+> - 驗證路徑：可規劃以 90 天行為追蹤實測驗證本假說。
+
 WorkshopAI 的解法：
 - **每位學員有自己的 AI 學習夥伴**，從報到開始到結束全程陪伴
 - AI 夥伴根據學員的字卡選擇**個人化**：對話風格、角色扮演對手、討論切入點都不同
@@ -301,6 +308,16 @@ curl -X POST https://xxx.supabase.co/functions/v1/ai-proxy \
 - ❌ 不要讓學員端持有任何 API key
 - ❌ 不要引入 Socket.IO（用 Supabase Realtime）
 - ❌ 不要改變字卡系統設計（已定案）
+
+### 資料保護待辦 [BLOCKER before activation]
+
+> 本原型蒐集員工 **mood（能量/情緒）、恐懼字卡、完整對話 log** 以做**群體洞察**（instructor 端 AI 群體分析）。這類資料屬高敏感的職場情緒/心理推斷。**正式啟用（任何真實場次蒐集員工資料）前，必須先完成以下法遵與技術分析，否則不得上線：**
+>
+> 1. **EU AI Act Art. 5(1)(f)** — 禁止在職場與教育機構推斷自然人情緒（emotion inference）。需分析：mood 字卡 + 對話 log → 群體洞察是否構成「情緒推斷系統」？是否落入工作坊/培訓即「教育機構」情境？（影響 CZ/UK 等 EU 據點，亦影響集團政策對齊）
+> 2. **台灣個資法 §8（告知義務）、§19–20（蒐集/處理/利用之特定目的與合法事由）** — 員工情緒與對話屬個人資料，需明確告知目的、取得合法事由、限定利用範圍，並評估是否屬特種個資。
+> 3. **Supabase RLS（Row Level Security）** — `participants.memory`、`conversations.content`、`events.payload` 等含敏感資料的表必須上 RLS policy，確保僅授權角色可讀；anon key 不得直接讀取個人對話/情緒資料。
+>
+> 在三項分析完成並取得核可前，此項標為 **[BLOCKER before activation]**。（tri-line audit C7, 2026-06-11）
 
 ---
 
